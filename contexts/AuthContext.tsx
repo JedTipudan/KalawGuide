@@ -8,7 +8,6 @@ import {
   signOut as authSignOut,
   updateUserRole,
 } from '../services/auth/authService';
-import { seedDatabase } from '../database/seeds';
 
 interface AuthContextValue {
   user: User | null;
@@ -29,19 +28,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Safety net: no matter what, clear the splash after 4 seconds
+    const safetyTimer = setTimeout(() => {
+      if (!cancelled) setIsLoading(false);
+    }, 4000);
+
     async function init() {
+      // First ensure the DB is open and migrated — this must complete before
+      // anything else touches SQLite, including restoreSession and seed.
       try {
-        await seedDatabase();
-        const session = await restoreSession();
+        const { getDatabase } = await import('../database/migrations/init');
+        await getDatabase();
+      } catch (e) {
+        console.error('DB init error:', e);
+      }
+
+      try {
+        const session = await Promise.race([
+          restoreSession(),
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 3000)),
+        ]);
         if (!cancelled && session) setUser(session.user);
-      } catch (error) {
-        console.error('Auth init error:', error);
+      } catch (e) {
+        console.error('Session restore error:', e);
       } finally {
+        clearTimeout(safetyTimer);
         if (!cancelled) setIsLoading(false);
       }
+
+      // Seed runs after DB is confirmed open — getDatabase() returns the
+      // cached promise so no second open occurs.
+      try {
+        const { seedDatabase } = await import('../database/seeds');
+        await seedDatabase();
+      } catch (e) {
+        console.error('Seed error:', e);
+      }
     }
+
     init();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(safetyTimer); };
   }, []);
 
   const signIn = useCallback(async (credentials: SignInCredentials) => {

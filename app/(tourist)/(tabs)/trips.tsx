@@ -48,6 +48,10 @@ export default function TripsScreen() {
 
   async function createNew() {
     if (!user) return;
+    if (Platform.OS === 'web') {
+      router.push('/(web)/explore?from=trips' as any);
+      return;
+    }
     const id = generateId();
     const start = new Date();
     const end = new Date(start);
@@ -62,14 +66,9 @@ export default function TripsScreen() {
         [id, user.id, 'My Trip to Mati', startIso, endIso, now(), now()]
       );
       await load();
-      const base = Platform.OS === 'web' ? '/(web)' : '/(tourist)';
-      router.push(Platform.OS === 'web'
-        ? (`${base}/itinerary/${id}` as any)
-        : { pathname: '/(tourist)/itinerary/[id]', params: { id } } as any
-      );
+      router.push({ pathname: '/(tourist)/itinerary/[id]', params: { id } } as any);
     } catch (e) {
-      if (Platform.OS === 'web') window.alert('Could not create itinerary.');
-      else Alert.alert('Error', 'Could not create itinerary.');
+      Alert.alert('Error', 'Could not create itinerary.');
     }
   }
 
@@ -164,7 +163,7 @@ export default function TripsScreen() {
           );
         }}
       />
-      <KalawAssistanceFAB />
+      {Platform.OS !== 'web' && <KalawAssistanceFAB />}
     </SafeAreaView>
   );
 }

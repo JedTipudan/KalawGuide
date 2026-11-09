@@ -1,16 +1,34 @@
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
-import { Redirect } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { Redirect, useRouter } from 'expo-router';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Typography, Radius } from '../constants/tokens';
 
 export default function IndexScreen() {
   const { colors } = useTheme();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
 
-  // On web, only this file renders when the URL is exactly "/".
-  // For any other URL (e.g. /(web)/explore on refresh), Expo Router
-  // renders that screen directly — this file never runs.
-  if (Platform.OS === 'web') return <Redirect href={'/(web)/landing' as any} />;
+  // Web: inline script in WebAppShell already rewrote the URL before React
+  // hydrated. Just redirect to landing and let the auth guard take over.
+  if (Platform.OS === 'web') {
+    return <Redirect href={'/(web)/landing' as any} />;
+  }
+
+  // Native: once auth finishes loading, redirect from here directly.
+  // This is more reliable than depending on _layout.tsx segments which can
+  // be [] or 'index' inconsistently across Android versions.
+  useEffect(() => {
+    if (isLoading) return;
+    const role = user?.role ?? null;
+    if (!user) router.replace('/(auth)/welcome');
+    else if (role === 'tourist') router.replace('/(tourist)/(tabs)/home');
+    else if (role === 'business_owner') router.replace('/(business)/dashboard');
+    else if (role === 'admin') router.replace('/(admin)/dashboard');
+    else router.replace('/(auth)/welcome');
+  }, [isLoading, user]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
@@ -19,6 +37,11 @@ export default function IndexScreen() {
       </View>
       <Text style={styles.appName}>KalawGuide</Text>
       <Text style={styles.tagline}>Discover Mati City</Text>
+      <ActivityIndicator
+        size="small"
+        color="rgba(255,255,255,0.7)"
+        style={{ marginTop: 24 }}
+      />
     </View>
   );
 }

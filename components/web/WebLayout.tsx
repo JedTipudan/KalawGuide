@@ -16,7 +16,9 @@ export function WebLayout({ children, navVariant = 'public', scrollable = true }
   const content = (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
       <WebNav variant={navVariant} />
-      <View style={styles.body}>{children}</View>
+      <div className="page-enter" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <View style={styles.body}>{children}</View>
+      </div>
       <View style={[styles.footer, { borderTopColor: colors.border }]}>
         <Text style={[styles.footerText, { color: colors.muted }]}>
           KalawGuide · Privacy Policy · Terms and Conditions
@@ -40,8 +42,8 @@ export function WebLayout({ children, navVariant = 'public', scrollable = true }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
-  page: { flex: 1, minHeight: '100%' as any },
+  scrollContent: { flexGrow: 1, minHeight: '100vh' as any },
+  page: { flex: 1 },
   body: { flex: 1 },
   footer: {
     paddingVertical: Spacing.lg,

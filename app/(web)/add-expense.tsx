@@ -6,7 +6,7 @@ import AddExpenseScreen from '../(tourist)/add-expense';
 export default function WebAddExpenseScreen() {
   return (
     <View style={styles.root}>
-      <WebLayout navVariant="tourist" scrollable={false}>
+      <WebLayout navVariant="tourist" scrollable={true}>
         <View style={styles.workspace}>
           <AddExpenseScreen />
         </View>

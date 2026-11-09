@@ -1,7 +1,7 @@
 {
   "name": "kalawguide",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo-google-fonts/manrope": "^0.2.3",

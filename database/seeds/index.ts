@@ -4,7 +4,6 @@ import { generateId, now } from '../../utils/helpers';
 const ADMIN_EMAIL = 'admin@kalawguide.app';
 const ADMIN_PASSWORD = 'admin2024!';
 
-// Pure-JS hash — crypto.subtle is unavailable on Hermes (React Native)
 function hashPassword(password: string): string {
   const str = password + 'kalawguide_salt_2024';
   let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
@@ -20,136 +19,79 @@ function hashPassword(password: string): string {
 
 export async function seedDatabase(): Promise<void> {
   const db = await getDatabase();
+  const { storage } = await import('../../utils/storage');
 
-  // Seed default admin account — admin@kalawguide.app / admin2024!
+  await storage.setItem('pwd_admin_kalawguide_001', hashPassword(ADMIN_PASSWORD));
+
   const adminExists = await db.getFirstAsync<{ id: string }>(
     'SELECT id FROM users WHERE email = ?', [ADMIN_EMAIL]
   );
-  const { storage } = await import('../../utils/storage');
-  if (!adminExists) {
-    const adminId = 'admin_kalawguide_001';
-    const timestamp = now();
-    await db.runAsync(
-      `INSERT INTO users (id, email, display_name, role, provider, created_at, updated_at)
-       VALUES (?, ?, 'KalawGuide Admin', 'admin', 'email', ?, ?)`,
-      [adminId, ADMIN_EMAIL, timestamp, timestamp]
-    );
-  }
-  // Always re-sync the admin password hash (handles hash function changes)
-  await storage.setItem('pwd_admin_kalawguide_001', hashPassword(ADMIN_PASSWORD));
-
-  // Check if destinations already seeded
-  const existing = await db.getFirstAsync<{ count: number }>(
+  const catCount = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) as count FROM destination_categories'
   );
-  if (existing && existing.count > 0) return;
 
-  const categories = [
-    { id: generateId(), name: 'Beach', icon: 'waves', color: '#075C73' },
-    { id: generateId(), name: 'Nature', icon: 'tree', color: '#197151' },
-    { id: generateId(), name: 'Cultural', icon: 'landmark', color: '#956112' },
-    { id: generateId(), name: 'Adventure', icon: 'mountain', color: '#AC3545' },
-    { id: generateId(), name: 'Food', icon: 'utensils', color: '#087F75' },
-    { id: generateId(), name: 'Accommodation', icon: 'bed', color: '#57717A' },
-  ];
+  const needsAdmin = !adminExists;
+  const needsSeed = !catCount || catCount.count === 0;
 
-  for (const cat of categories) {
-    await db.runAsync(
-      'INSERT INTO destination_categories (id, name, icon, color) VALUES (?, ?, ?, ?)',
-      [cat.id, cat.name, cat.icon, cat.color]
-    );
-  }
+  if (!needsAdmin && !needsSeed) return;
 
-  const beachCatId = categories[0].id;
-  const natureCatId = categories[1].id;
-  const adventureCatId = categories[3].id;
+  const ts = now();
 
-  const destinations = [
-    {
-      id: generateId(),
-      name: 'Dahican Beach',
-      description: 'A pristine white-sand beach in Mati City, famous for surfing and skimboarding. One of the longest beaches in Davao Oriental.',
-      categoryId: beachCatId,
-      location: 'Mati City, Davao Oriental',
-      latitude: 6.9333, longitude: 126.2167,
-      estimatedFee: 0, feeVerified: 0, isFeatured: 1,
-    },
-    {
-      id: generateId(),
-      name: 'Cape San Agustin',
-      description: 'A scenic cape at the southeastern tip of Mindanao offering stunning ocean views and a historic lighthouse.',
-      categoryId: natureCatId,
-      location: 'Mati City, Davao Oriental',
-      latitude: 6.8167, longitude: 126.2333,
-      estimatedFee: 0, feeVerified: 0, isFeatured: 1,
-    },
-    {
-      id: generateId(),
-      name: 'Pujada Bay',
-      description: 'A protected bay with crystal-clear waters, mangroves, and diverse marine life. Ideal for snorkeling and island hopping.',
-      categoryId: beachCatId,
-      location: 'Mati City, Davao Oriental',
-      latitude: 6.9500, longitude: 126.2500,
-      estimatedFee: 0, feeVerified: 0, isFeatured: 1,
-    },
-    {
-      id: generateId(),
-      name: 'Mount Hamiguitan Range',
-      description: 'A UNESCO World Heritage Site and wildlife sanctuary home to the Philippine Eagle and rare pygmy forest.',
-      categoryId: adventureCatId,
-      location: 'San Isidro, Davao Oriental',
-      latitude: 7.0833, longitude: 126.1667,
-      estimatedFee: 500, feeVerified: 0, isFeatured: 1,
-    },
-    {
-      id: generateId(),
-      name: 'Aliwagwag Falls',
-      description: 'A spectacular series of cascading waterfalls in Cateel, Davao Oriental — one of the highest in the Philippines.',
-      categoryId: natureCatId,
-      location: 'Cateel, Davao Oriental',
-      latitude: 7.7833, longitude: 126.4500,
-      estimatedFee: 50, feeVerified: 0, isFeatured: 0,
-    },
-    {
-      id: generateId(),
-      name: 'Mati City Public Market',
-      description: 'The central market of Mati City offering fresh local produce, seafood, and regional delicacies.',
-      categoryId: categories[4].id,
-      location: 'Mati City, Davao Oriental',
-      latitude: 6.9500, longitude: 126.2167,
-      estimatedFee: 0, feeVerified: 0, isFeatured: 0,
-    },
-  ];
+  await db.execAsync('BEGIN;');
+  try {
+    if (needsAdmin) {
+      await db.runAsync(
+        `INSERT OR IGNORE INTO users (id, email, display_name, role, provider, status, created_at, updated_at)
+         VALUES ('admin_kalawguide_001', ?, 'KalawGuide Admin', 'admin', 'email', 'active', ?, ?)`,
+        [ADMIN_EMAIL, ts, ts]
+      );
+    }
 
-  for (const dest of destinations) {
-    await db.runAsync(
-      `INSERT INTO destinations
-        (id, name, description, category_id, location, latitude, longitude,
-         estimated_fee, fee_verified, is_featured, is_active, image_urls, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, '[]', ?, ?)`,
-      [
-        dest.id, dest.name, dest.description, dest.categoryId,
-        dest.location, dest.latitude, dest.longitude,
-        dest.estimatedFee, dest.feeVerified, dest.isFeatured,
-        now(), now(),
-      ]
-    );
-  }
+    if (needsSeed) {
+      const catIds = Array.from({ length: 6 }, () => generateId());
 
-  const emergencyContacts = [
-    { id: generateId(), name: 'Mati City Police Station', organization: 'Philippine National Police', contactNumber: '(087) 388-1234', description: 'Local police emergency response', isVerified: 0 },
-    { id: generateId(), name: 'Davao Oriental Provincial Hospital', organization: 'Department of Health', contactNumber: '(087) 388-5678', description: 'Main provincial hospital in Mati City', isVerified: 0 },
-    { id: generateId(), name: 'Bureau of Fire Protection — Mati', organization: 'Bureau of Fire Protection', contactNumber: '(087) 388-9012', description: 'Fire emergency response', isVerified: 0 },
-    { id: generateId(), name: 'Philippine Coast Guard — Davao Oriental', organization: 'Philippine Coast Guard', contactNumber: '(087) 388-3456', description: 'Maritime emergency and sea rescue', isVerified: 0 },
-    { id: generateId(), name: 'Mati City Disaster Risk Reduction', organization: 'CDRRMO Mati City', contactNumber: '(087) 388-7890', description: 'Disaster response and coordination', isVerified: 0 },
-  ];
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[0],'Beach','waves','#075C73']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[1],'Nature','tree','#197151']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[2],'Cultural','landmark','#956112']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[3],'Adventure','mountain','#AC3545']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[4],'Food','utensils','#087F75']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[5],'Accommodation','bed','#57717A']);
 
-  for (const contact of emergencyContacts) {
-    await db.runAsync(
-      `INSERT INTO emergency_contacts
-        (id, name, organization, contact_number, description, is_verified, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [contact.id, contact.name, contact.organization, contact.contactNumber, contact.description, contact.isVerified, now(), now()]
-    );
+      const dests: [string, string, string, string, number, number, number, number, number][] = [
+        [generateId(),'Dahican Beach','A pristine white-sand beach in Mati City, famous for surfing and skimboarding.',catIds[0],6.9333,126.2167,0,0,1],
+        [generateId(),'Cape San Agustin','A scenic cape at the southeastern tip of Mindanao offering stunning ocean views.',catIds[1],6.8167,126.2333,0,0,1],
+        [generateId(),'Pujada Bay','A protected bay with crystal-clear waters and diverse marine life.',catIds[0],6.9500,126.2500,0,0,1],
+        [generateId(),'Mount Hamiguitan Range','A UNESCO World Heritage Site and wildlife sanctuary.',catIds[3],7.0833,126.1667,500,0,1],
+        [generateId(),'Aliwagwag Falls','A spectacular series of cascading waterfalls in Cateel.',catIds[1],7.7833,126.4500,50,0,0],
+        [generateId(),'Mati City Public Market','The central market offering fresh local produce and seafood.',catIds[4],6.9500,126.2167,0,0,0],
+      ];
+      const locs = ['Mati City, Davao Oriental','Mati City, Davao Oriental','Mati City, Davao Oriental','San Isidro, Davao Oriental','Cateel, Davao Oriental','Mati City, Davao Oriental'];
+      for (let i = 0; i < dests.length; i++) {
+        const [id, name, desc, catId, lat, lng, fee, feeV, featured] = dests[i];
+        await db.runAsync(
+          `INSERT OR IGNORE INTO destinations (id,name,description,category_id,location,latitude,longitude,estimated_fee,fee_verified,is_featured,is_active,image_urls,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,1,'[]',?,?)`,
+          [id, name, desc, catId, locs[i], lat, lng, fee, feeV, featured, ts, ts]
+        );
+      }
+
+      const ecs: [string, string, string, string, string][] = [
+        [generateId(),'Mati City Police Station','Philippine National Police','(087) 388-1234','Local police emergency response'],
+        [generateId(),'Davao Oriental Provincial Hospital','Department of Health','(087) 388-5678','Main provincial hospital in Mati City'],
+        [generateId(),'Bureau of Fire Protection — Mati','Bureau of Fire Protection','(087) 388-9012','Fire emergency response'],
+        [generateId(),'Philippine Coast Guard — Davao Oriental','Philippine Coast Guard','(087) 388-3456','Maritime emergency and sea rescue'],
+        [generateId(),'Mati City Disaster Risk Reduction','CDRRMO Mati City','(087) 388-7890','Disaster response and coordination'],
+      ];
+      for (const [id, name, org, num, desc] of ecs) {
+        await db.runAsync(
+          `INSERT OR IGNORE INTO emergency_contacts (id,name,organization,contact_number,description,is_verified,created_at,updated_at) VALUES (?,?,?,?,?,0,?,?)`,
+          [id, name, org, num, desc, ts, ts]
+        );
+      }
+    }
+
+    await db.execAsync('COMMIT;');
+  } catch (e) {
+    await db.execAsync('ROLLBACK;');
+    throw e;
   }
 }

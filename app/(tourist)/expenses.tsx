@@ -138,7 +138,7 @@ export default function ExpensesScreen() {
           </View>
         )}
       />
-      <KalawAssistanceFAB />
+      {Platform.OS !== 'web' && <KalawAssistanceFAB />}
     </SafeAreaView>
   );
 }

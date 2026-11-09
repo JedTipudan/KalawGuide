@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 
-const HERO_BG = require('../../assets/images/hero-bg.png');
+const HERO_SLIDES = [
+  require('../../assets/images/hero-bg.png'),
+  require('../../assets/images/hero-coast.png'),
+  require('../../assets/images/dest-waniban.png'),
+  require('../../assets/images/dest-sleeping-dinosaur.png'),
+];
 
 export default function WebLandingScreen() {
-  const { colors, mode, setMode } = useTheme();
+  const { colors, mode, setMode, isDark } = useTheme();
   const router = useRouter();
   const [destinations, setDestinations] = useState<{ id: string; name: string; location: string; estimated_fee: number | null }[]>([]);
   const [search, setSearch] = useState('');
+  const [slideIndex, setSlideIndex] = useState(0);
 
   useEffect(() => {
     getDatabase().then(db =>
@@ -18,6 +24,11 @@ export default function WebLandingScreen() {
         'SELECT id, name, location, estimated_fee FROM destinations WHERE is_featured = 1 AND is_active = 1 LIMIT 3'
       )
     ).then(setDestinations).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setSlideIndex(i => (i + 1) % HERO_SLIDES.length), 4500);
+    return () => clearInterval(t);
   }, []);
 
   const themeLabel = mode === 'light' ? '☀ Light' : mode === 'dark' ? '☾ Dark' : '◐ System';
@@ -29,15 +40,27 @@ export default function WebLandingScreen() {
 
   const featuredDests = destinations.length > 0 ? destinations : PLACEHOLDER_DESTS;
 
+  const budgetBg      = isDark ? colors.surface : '#F2EBDC';
+  const budgetCardBg  = isDark ? colors.subtle  : '#FFFFFF';
+  const budgetTitle   = isDark ? colors.text    : '#122F3C';
+  const budgetMuted   = isDark ? colors.muted   : '#57717A';
+  const budgetDivider = isDark ? colors.border  : '#DDE7E7';
+  const whyBg         = isDark ? colors.subtle  : '#EDF3F2';
+  const whyTitle      = isDark ? colors.text    : '#122F3C';
+  const whyMuted      = isDark ? colors.muted   : '#57717A';
+
   return (
     <ScrollView style={[s.root, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+
       {/* ── Navigation ── */}
       <View style={[s.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[s.navLogo, { color: colors.primary }]}>≋  KalawGuide</Text>
         <View style={s.navLinks}>
           {['Home', 'Explore Destinations', 'Local Businesses', 'About'].map(l => (
             <TouchableOpacity key={l} onPress={() => l === 'Explore Destinations' ? router.push('/(web)/explore' as any) : undefined}>
-              <Text style={[s.navLink, { color: colors.muted }]}>{l}</Text>
+              <div className="nav-link">
+                <Text style={[s.navLink, { color: colors.muted }]}>{l}</Text>
+              </div>
             </TouchableOpacity>
           ))}
         </View>
@@ -49,176 +72,214 @@ export default function WebLandingScreen() {
             <Text style={[s.navBtnText, { color: colors.text }]}>Sign in</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[s.navBtnPrimary, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/register-tourist' as any)}>
-            <Text style={[s.navBtnText, { color: '#FFFFFF' }]}>Get started</Text>
+            <Text style={[s.navBtnText, { color: colors.onPrimary }]}>Get started</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* ── Hero ── */}
-      <ImageBackground source={HERO_BG} style={s.hero} resizeMode="cover">
-        <View style={s.heroOverlay} />
-        <View style={s.heroContent}>
-          <Text style={s.heroEyebrow}>MATI CITY, DAVAO ORIENTAL  /  PHILIPPINES</Text>
-          <Text style={s.heroTitle}>{'Discover More.\nTravel Smarter.\nSpend Better.'}</Text>
-          <Text style={s.heroSub}>
-            Explore destinations, estimate your travel expenses, discover local businesses, and plan your next adventure with KalawGuide.
-          </Text>
-          <View style={s.heroBtns}>
-            <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/explore' as any)}>
-              <Text style={s.heroBtnText}>Explore Destinations</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.heroBtnSecondary, { borderColor: 'rgba(255,255,255,0.6)' }]} onPress={() => router.push('/(web)/register-tourist' as any)}>
-              <Text style={s.heroBtnText}>Plan Your Trip</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={s.heroCaption}>Go beyond the usual. Start somewhere local.</Text>
-        </View>
-      </ImageBackground>
-
-      {/* ── Travel search ── */}
-      <View style={[s.searchSection, { backgroundColor: colors.surface }]}>
-        <View style={s.searchRow}>
-          <TextInput
-            style={[s.searchInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-            placeholder="Where would you like to go?"
-            placeholderTextColor={colors.muted}
-            value={search}
-            onChangeText={setSearch}
-            onSubmitEditing={() => search.trim() && router.push({ pathname: '/(web)/explore' as any, params: { q: search.trim() } })}
-          />
-          <TouchableOpacity
-            style={[s.searchBtn, { backgroundColor: colors.primary }]}
-            onPress={() => search.trim() && router.push({ pathname: '/(web)/explore' as any, params: { q: search.trim() } })}
+      {/* ── Hero carousel — all slides stacked, CSS opacity transition ── */}
+      <View style={s.hero}>
+        {/* All slides rendered; only active one is visible via CSS */}
+        {HERO_SLIDES.map((src, i) => (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: i === slideIndex ? 1 : 0,
+              transition: 'opacity 1s cubic-bezier(0.4,0,0.2,1)',
+            } as any}
           >
-            <Text style={s.searchBtnText}>Find my next escape</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* ── Featured destinations ── */}
-      <View style={[s.section, { backgroundColor: colors.background }]}>
-        <Text style={[s.eyebrow, { color: colors.accent }]}>THE COAST IS CALLING</Text>
-        <Text style={[s.sectionTitle, { color: colors.text }]}>Find your kind of escape.</Text>
-        <Text style={[s.sectionSub, { color: colors.muted }]}>A fresh perspective on Mati and Davao Oriental.</Text>
-        <View style={s.destGrid}>
-          {featuredDests.map((d, i) => (
-            <TouchableOpacity
-              key={d.id ? d.id : `placeholder-${i}`}
-              style={[s.destCard, { backgroundColor: colors.surface }]}
-              onPress={() => d.id ? router.push(`/(web)/destination/${d.id}` as any) : router.push('/(web)/explore' as any)}
-              activeOpacity={0.85}
-            >
-              <View style={[s.destImg, { backgroundColor: colors.subtle }]}>
-                <Text style={s.destImgIcon}>{DEST_ICONS[i % DEST_ICONS.length]}</Text>
-              </View>
-              <View style={s.destBody}>
-                <Text style={[s.destName, { color: colors.text }]} numberOfLines={1}>{d.name}</Text>
-                <Text style={[s.destLoc, { color: colors.muted }]}>📍 {d.location}</Text>
-                <Text style={[s.destFee, { color: colors.muted }]}>
-                  {d.estimated_fee != null ? (d.estimated_fee === 0 ? 'Free' : `₱${d.estimated_fee}`) : 'Free'}
-                </Text>
-              </View>
+            <Image source={src} style={s.heroSlideImg} resizeMode="cover" />
+          </div>
+        ))}
+        <View style={s.heroOverlay} />
+        {/* dots */}
+        <View style={s.heroDots}>
+          {HERO_SLIDES.map((_, i) => (
+            <TouchableOpacity key={i} onPress={() => setSlideIndex(i)}>
+              <View style={[s.heroDot, i === slideIndex && s.heroDotActive]} />
             </TouchableOpacity>
           ))}
         </View>
+        {/* text */}
+        <div className="reveal-left" style={{ zIndex: 2, position: 'relative' } as any}>
+          <View style={s.heroContent}>
+            <Text style={s.heroEyebrow}>MATI CITY, DAVAO ORIENTAL  /  PHILIPPINES</Text>
+            <Text style={s.heroTitle}>{'Discover More.\nTravel Smarter.\nSpend Better.'}</Text>
+            <Text style={s.heroSub}>
+              Explore destinations, estimate your travel expenses, discover local businesses, and plan your next adventure with KalawGuide.
+            </Text>
+            <View style={s.heroBtns}>
+              <div className="hover-glow">
+                <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/explore' as any)}>
+                  <Text style={[s.heroBtnText, { color: colors.onPrimary }]}>Explore Destinations</Text>
+                </TouchableOpacity>
+              </div>
+              <div className="hover-glow">
+                <TouchableOpacity style={s.heroBtnSecondary} onPress={() => router.push('/(web)/register-tourist' as any)}>
+                  <Text style={s.heroBtnText}>Plan Your Trip</Text>
+                </TouchableOpacity>
+              </div>
+            </View>
+            <Text style={s.heroCaption}>Go beyond the usual. Start somewhere local.</Text>
+          </View>
+        </div>
+      </View>
+
+      {/* ── Travel search ── */}
+      <div className="reveal">
+        <View style={[s.searchSection, { backgroundColor: colors.surface }]}>
+          <View style={s.searchRow}>
+            <TextInput
+              style={[s.searchInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              placeholder="Where would you like to go?"
+              placeholderTextColor={colors.muted}
+              value={search}
+              onChangeText={setSearch}
+              onSubmitEditing={() => search.trim() && router.push({ pathname: '/(web)/explore' as any, params: { q: search.trim() } })}
+            />
+            <TouchableOpacity
+              style={[s.searchBtn, { backgroundColor: colors.primary }]}
+              onPress={() => search.trim() && router.push({ pathname: '/(web)/explore' as any, params: { q: search.trim() } })}
+            >
+              <Text style={[s.searchBtnText, { color: colors.onPrimary }]}>Find my next escape</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </div>
+
+      {/* ── Featured destinations ── */}
+      <View style={[s.section, { backgroundColor: colors.background }]}>
+        <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>THE COAST IS CALLING</Text></div>
+        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>Find your kind of escape.</Text></div>
+        <div className="reveal"><Text style={[s.sectionSub, { color: colors.muted }]}>A fresh perspective on Mati and Davao Oriental.</Text></div>
+        <div className="dest-grid reveal-group">
+          {featuredDests.map((d, i) => (
+            <div key={d.id || i} className="reveal hover-lift">
+              <TouchableOpacity
+                style={[s.destCard, { backgroundColor: colors.surface }]}
+                onPress={() => d.id ? router.push(`/(web)/destination/${d.id}` as any) : router.push('/(web)/explore' as any)}
+                activeOpacity={0.85}
+              >
+                <View style={[s.destImg, { backgroundColor: colors.subtle }]}>
+                  <Text style={s.destImgIcon}>{DEST_ICONS[i % DEST_ICONS.length]}</Text>
+                </View>
+                <View style={s.destBody}>
+                  <Text style={[s.destName, { color: colors.text }]} numberOfLines={1}>{d.name}</Text>
+                  <Text style={[s.destLoc, { color: colors.muted }]}>📍 {d.location}</Text>
+                  <Text style={[s.destFee, { color: colors.muted }]}>
+                    {d.estimated_fee != null ? (d.estimated_fee === 0 ? 'Free' : `₱${d.estimated_fee}`) : 'Free'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </div>
+          ))}
+        </div>
       </View>
 
       {/* ── Explore by category ── */}
       <View style={[s.section, { backgroundColor: colors.background }]}>
-        <Text style={[s.eyebrow, { color: colors.accent }]}>FOLLOW YOUR CURIOSITY</Text>
-        <Text style={[s.sectionTitle, { color: colors.text }]}>A place for every kind of traveler.</Text>
-        <View style={s.catGrid}>
+        <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>FOLLOW YOUR CURIOSITY</Text></div>
+        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>A place for every kind of traveler.</Text></div>
+        <div className="reveal reveal-group" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12 } as any}>
           {CATEGORIES.map(c => (
-            <TouchableOpacity
-              key={c}
-              style={[s.catChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => router.push('/(web)/explore' as any)}
-            >
-              <Text style={[s.catChipText, { color: colors.primary }]}>{c}</Text>
-            </TouchableOpacity>
+            <div key={c} className="reveal hover-chip">
+              <TouchableOpacity style={[s.catChip, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push('/(web)/explore' as any)}>
+                <Text style={[s.catChipText, { color: colors.primary }]}>{c}</Text>
+              </TouchableOpacity>
+            </div>
           ))}
-        </View>
+        </div>
       </View>
 
       {/* ── Budget planner promo ── */}
-      <View style={[s.section, { backgroundColor: '#F2EBDC' }]}>
-        <View style={s.budgetRow}>
+      <View style={[s.section, { backgroundColor: budgetBg }]}>
+        <div className="reveal" style={{ display: 'flex', flexDirection: 'row', gap: 32, alignItems: 'flex-start' } as any}>
           <View style={s.budgetLeft}>
             <Text style={[s.eyebrow, { color: colors.accent }]}>LESS GUESSWORK. MORE GOING.</Text>
-            <Text style={[s.sectionTitle, { color: '#122F3C' }]}>Know Your Budget Before You Travel.</Text>
-            <Text style={[s.sectionSub, { color: '#57717A' }]}>
+            <Text style={[s.sectionTitle, { color: budgetTitle }]}>Know Your Budget Before You Travel.</Text>
+            <Text style={[s.sectionSub, { color: budgetMuted }]}>
               Build a realistic plan around your own estimates, then track what you actually spend.
             </Text>
-            <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: colors.primary, alignSelf: 'flex-start' }]} onPress={() => router.push('/(web)/sign-in' as any)}>
-              <Text style={s.heroBtnText}>Plan Your Budget</Text>
-            </TouchableOpacity>
+            <div className="hover-glow" style={{ alignSelf: 'flex-start' } as any}>
+              <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/sign-in' as any)}>
+                <Text style={[s.heroBtnText, { color: colors.onPrimary }]}>Plan Your Budget</Text>
+              </TouchableOpacity>
+            </div>
           </View>
-          <View style={[s.budgetCard, { backgroundColor: '#FFFFFF' }]}>
-            <Text style={[s.budgetCardTitle, { color: '#122F3C' }]}>A weekend for two</Text>
-            <Text style={{ color: '#57717A', fontSize: 12, marginBottom: 12 }}>Example only · 2 travelers · 3 days</Text>
-            {[['Transportation', '₱2,000'], ['Accommodation', '₱4,000'], ['Food', '₱3,000'], ['Activities', '₱2,000'], ['Other expenses', '₱1,000']].map(([label, val]) => (
-              <View key={label} style={s.budgetRow2}>
-                <Text style={{ color: '#57717A', fontSize: 14 }}>{label}</Text>
-                <Text style={{ color: '#57717A', fontSize: 14 }}>{val}</Text>
+          <div className="reveal-scale hover-lift" style={{ flex: 1 } as any}>
+            <View style={[s.budgetCard, { backgroundColor: budgetCardBg, borderColor: colors.border, borderWidth: 1 }]}>
+              <Text style={[s.budgetCardTitle, { color: budgetTitle }]}>A weekend for two</Text>
+              <Text style={[s.budgetMeta, { color: budgetMuted }]}>Example only · 2 travelers · 3 days</Text>
+              {[['Transportation', '₱2,000'], ['Accommodation', '₱4,000'], ['Food', '₱3,000'], ['Activities', '₱2,000'], ['Other expenses', '₱1,000']].map(([label, val]) => (
+                <View key={label} style={s.budgetRow2}>
+                  <Text style={[s.budgetRowText, { color: budgetMuted }]}>{label}</Text>
+                  <Text style={[s.budgetRowText, { color: budgetMuted }]}>{val}</Text>
+                </View>
+              ))}
+              <View style={[s.budgetDivider, { backgroundColor: budgetDivider }]} />
+              <View style={s.budgetRow2}>
+                <Text style={[s.budgetTotal, { color: budgetTitle }]}>Estimated total</Text>
+                <Text style={[s.budgetTotal, { color: colors.primary }]}>₱12,000</Text>
               </View>
-            ))}
-            <View style={[s.budgetDivider, { backgroundColor: '#DDE7E7' }]} />
-            <View style={s.budgetRow2}>
-              <Text style={{ color: '#122F3C', fontSize: 16, fontWeight: '700' }}>Estimated total</Text>
-              <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '700' }}>₱12,000</Text>
+              <Text style={[s.budgetPerPerson, { color: budgetMuted }]}>₱6,000 per person · Traveler-entered amounts</Text>
             </View>
-            <Text style={{ color: '#57717A', fontSize: 12 }}>₱6,000 per person · Traveler-entered amounts</Text>
-          </View>
-        </View>
+          </div>
+        </div>
       </View>
 
       {/* ── Local businesses ── */}
       <View style={[s.section, { backgroundColor: colors.background }]}>
-        <Text style={[s.eyebrow, { color: colors.accent }]}>SUPPORT LOCAL</Text>
-        <Text style={[s.sectionTitle, { color: colors.text }]}>Meet the people behind the places.</Text>
-        <Text style={[s.sectionSub, { color: colors.muted }]}>Find a stay, a great meal, or help getting around.</Text>
-        <View style={s.destGrid}>
+        <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>SUPPORT LOCAL</Text></div>
+        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>Meet the people behind the places.</Text></div>
+        <div className="reveal"><Text style={[s.sectionSub, { color: colors.muted }]}>Find a stay, a great meal, or help getting around.</Text></div>
+        <div className="dest-grid reveal-group">
           {BIZ_PLACEHOLDERS.map((b, i) => (
-            <TouchableOpacity key={i} style={[s.destCard, { backgroundColor: colors.surface }]} onPress={() => router.push('/(web)/businesses' as any)} activeOpacity={0.85}>
-              <View style={[s.destImg, { backgroundColor: colors.subtle }]}>
-                <Text style={s.destImgIcon}>{b.icon}</Text>
-              </View>
-              <View style={s.destBody}>
-                <Text style={[s.destName, { color: colors.text }]}>{b.name}</Text>
-                <Text style={[s.destLoc, { color: colors.muted }]}>{b.type}</Text>
-              </View>
-            </TouchableOpacity>
+            <div key={i} className="reveal hover-lift">
+              <TouchableOpacity style={[s.destCard, { backgroundColor: colors.surface }]} onPress={() => router.push('/(web)/businesses' as any)} activeOpacity={0.85}>
+                <View style={[s.destImg, { backgroundColor: colors.subtle }]}>
+                  <Text style={s.destImgIcon}>{b.icon}</Text>
+                </View>
+                <View style={s.destBody}>
+                  <Text style={[s.destName, { color: colors.text }]}>{b.name}</Text>
+                  <Text style={[s.destLoc, { color: colors.muted }]}>{b.type}</Text>
+                </View>
+              </TouchableOpacity>
+            </div>
           ))}
-        </View>
+        </div>
       </View>
 
       {/* ── How it works ── */}
       <View style={[s.section, { backgroundColor: colors.background }]}>
-        <Text style={[s.eyebrow, { color: colors.accent }]}>YOUR NEXT TRIP, SIMPLIFIED</Text>
-        <Text style={[s.sectionTitle, { color: colors.text }]}>{'From "where?" to "we\'re here."'}</Text>
-        <View style={s.stepsRow}>
+        <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>YOUR NEXT TRIP, SIMPLIFIED</Text></div>
+        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>{'From "where?" to "we\'re here."'}</Text></div>
+        <div className="reveal reveal-group" style={{ display: 'flex', flexDirection: 'row', gap: 20 } as any}>
           {STEPS.map((step, i) => (
-            <View key={i} style={s.stepCol}>
-              <Text style={[s.stepNum, { color: colors.accent }]}>0{i + 1}</Text>
-              <Text style={[s.stepTitle, { color: colors.text }]}>{step.title}</Text>
-              <Text style={[s.stepDesc, { color: colors.muted }]}>{step.desc}</Text>
-            </View>
+            <div key={i} className="reveal" style={{ flex: 1 } as any}>
+              <View style={s.stepCol}>
+                <Text style={[s.stepNum, { color: colors.accent }]}>0{i + 1}</Text>
+                <Text style={[s.stepTitle, { color: colors.text }]}>{step.title}</Text>
+                <Text style={[s.stepDesc, { color: colors.muted }]}>{step.desc}</Text>
+              </View>
+            </div>
           ))}
-        </View>
+        </div>
       </View>
 
       {/* ── Why KalawGuide ── */}
-      <View style={[s.section, { backgroundColor: '#EDF3F2' }]}>
-        <Text style={[s.eyebrow, { color: colors.accent }]}>BUILT AROUND YOUR JOURNEY</Text>
-        <Text style={[s.sectionTitle, { color: '#122F3C' }]}>Everything you need. Nothing in the way.</Text>
-        <Text style={[s.sectionSub, { color: '#57717A' }]}>Travel planning in one platform, made for a more considered adventure.</Text>
-        <View style={s.benefitsGrid}>
+      <View style={[s.section, { backgroundColor: whyBg }]}>
+        <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>BUILT AROUND YOUR JOURNEY</Text></div>
+        <div className="reveal"><Text style={[s.sectionTitle, { color: whyTitle }]}>Everything you need. Nothing in the way.</Text></div>
+        <div className="reveal"><Text style={[s.sectionSub, { color: whyMuted }]}>Travel planning in one platform, made for a more considered adventure.</Text></div>
+        <div className="reveal reveal-group" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 16 } as any}>
           {BENEFITS.map(b => (
-            <View key={b} style={s.benefitItem}>
-              <Text style={[s.benefitText, { color: '#122F3C' }]}>✓  {b}</Text>
-            </View>
+            <div key={b} className="reveal" style={{ width: '47%' } as any}>
+              <Text style={[s.benefitText, { color: whyTitle }]}>✓  {b}</Text>
+            </div>
           ))}
-        </View>
+        </div>
       </View>
 
       {/* ── Footer ── */}
@@ -237,6 +298,7 @@ export default function WebLandingScreen() {
         </View>
         <Text style={[s.footerCopy, { color: colors.muted }]}>© KalawGuide · Concept design · Destination photography is illustrative.</Text>
       </View>
+
     </ScrollView>
   );
 }
@@ -268,71 +330,72 @@ const BENEFITS = [
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  // Nav
   nav: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 72, paddingVertical: 20, borderBottomWidth: 1, gap: 24 },
-  navLogo: { fontFamily: 'Inter_700Bold', fontSize: 24, fontWeight: '700', marginRight: 8, WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' } as any,
+  navLogo: { fontSize: 24, fontWeight: '700', marginRight: 8 },
   navLinks: { flex: 1, flexDirection: 'row', gap: 28 },
   navLink: { fontSize: 14, fontWeight: '400' },
   navRight: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   navBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
   navBtnPrimary: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
   navBtnText: { fontSize: 14, fontWeight: '600' },
-  // Hero
-  hero: { width: '100%' as any, height: 650, justifyContent: 'flex-end' },
-  heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(6,28,38,0.43)' },
-  heroContent: { paddingLeft: 72, paddingBottom: 78, gap: 22, maxWidth: 700 },
+  // Hero — reduced to 500px, all slides stacked absolutely
+  hero: { width: '100%' as any, height: 500, justifyContent: 'flex-end', overflow: 'hidden' },
+  heroSlideImg: { position: 'absolute', top: 0, left: 0, width: '100%' as any, height: '100%' as any },
+  heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(6,28,38,0.50)', zIndex: 1 },
+  heroDots: { position: 'absolute', bottom: 24, right: 72, flexDirection: 'row', gap: 8, zIndex: 3 },
+  heroDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.45)' },
+  heroDotActive: { backgroundColor: '#FFFFFF', width: 22, borderRadius: 4 },
+  heroContent: { paddingLeft: 72, paddingBottom: 60, gap: 18, maxWidth: 680 },
   heroEyebrow: { color: '#D4FAF0', fontSize: 12, fontWeight: '700', letterSpacing: 1 },
-  heroTitle: { color: '#FFFFFF', fontSize: 64, fontWeight: '800', lineHeight: 72 },
-  heroSub: { color: '#F0F7F7', fontSize: 18, lineHeight: 26 },
-  heroBtns: { flexDirection: 'row', gap: 20 },
+  heroTitle: { color: '#FFFFFF', fontSize: 52, fontWeight: '800', lineHeight: 62 },
+  heroSub: { color: '#F0F7F7', fontSize: 17, lineHeight: 26 },
+  heroBtns: { flexDirection: 'row', gap: 16 },
   heroBtnPrimary: { paddingHorizontal: 20, paddingVertical: 13, borderRadius: 12 },
   heroBtnSecondary: { paddingHorizontal: 20, paddingVertical: 13, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.15)' },
   heroBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-  heroCaption: { color: '#FFFFFF', fontSize: 12 },
+  heroCaption: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
   // Search
   searchSection: { paddingHorizontal: 72, paddingVertical: 32 },
-  searchRow: { flexDirection: 'row', gap: 16, maxWidth: 1296 },
+  searchRow: { flexDirection: 'row', gap: 16 },
   searchInput: { flex: 1, height: 52, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, fontSize: 14, fontWeight: '600' },
   searchBtn: { paddingHorizontal: 20, paddingVertical: 13, borderRadius: 12, justifyContent: 'center' },
-  searchBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  searchBtnText: { fontSize: 14, fontWeight: '600' },
   // Sections
   section: { paddingHorizontal: 72, paddingVertical: 56, gap: 24 },
   eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1 },
   sectionTitle: { fontSize: 36, fontWeight: '700', lineHeight: 52 },
-  sectionSub: { fontSize: 16, lineHeight: 24 },
-  // Destinations
-  destGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20 },
-  destCard: { width: 418, borderRadius: 20, overflow: 'hidden' },
-  destImg: { height: 238, alignItems: 'center', justifyContent: 'center' },
+  sectionSub: { fontSize: 16, lineHeight: 26 },
+  // Destination cards
+  destImg: { height: 200, alignItems: 'center', justifyContent: 'center' },
   destImgIcon: { fontSize: 56 },
+  destCard: { borderRadius: 20, overflow: 'hidden' },
   destBody: { padding: 20, gap: 6 },
   destName: { fontSize: 16, fontWeight: '700' },
   destLoc: { fontSize: 14 },
   destFee: { fontSize: 14 },
   // Categories
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   catChip: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 12, borderWidth: 1 },
   catChipText: { fontSize: 14, fontWeight: '700' },
   // Budget
-  budgetRow: { flexDirection: 'row', gap: 32, alignItems: 'flex-start', maxWidth: 1296 },
   budgetLeft: { flex: 1, gap: 20 },
-  budgetCard: { width: 632, borderRadius: 20, padding: 24, gap: 8 },
+  budgetCard: { borderRadius: 20, padding: 28, gap: 10 },
   budgetCardTitle: { fontSize: 22, fontWeight: '700' },
+  budgetMeta: { fontSize: 12, marginBottom: 4 },
   budgetRow2: { flexDirection: 'row', justifyContent: 'space-between' },
+  budgetRowText: { fontSize: 14 },
   budgetDivider: { height: 1, marginVertical: 8 },
+  budgetTotal: { fontSize: 16, fontWeight: '700' },
+  budgetPerPerson: { fontSize: 12 },
   // Steps
-  stepsRow: { flexDirection: 'row', gap: 20 },
-  stepCol: { flex: 1, gap: 20 },
+  stepCol: { gap: 12 },
   stepNum: { fontSize: 32, fontWeight: '700' },
   stepTitle: { fontSize: 20, fontWeight: '700' },
-  stepDesc: { fontSize: 14, lineHeight: 20 },
+  stepDesc: { fontSize: 14, lineHeight: 22 },
   // Benefits
-  benefitsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  benefitItem: { width: '47%' as any },
   benefitText: { fontSize: 16, fontWeight: '700' },
   // Footer
   footer: { paddingHorizontal: 72, paddingVertical: 56, gap: 16, borderTopWidth: 1 },
-  footerLogo: { fontSize: 28, fontWeight: '700', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' } as any,
+  footerLogo: { fontSize: 28, fontWeight: '700' },
   footerSub: { fontSize: 16 },
   footerLinks: { flexDirection: 'row', gap: 24, flexWrap: 'wrap' },
   footerLink: { fontSize: 14 },

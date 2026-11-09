@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { WebLayout } from '../../../components/web/WebLayout';
 import { getDatabase } from '../../../database/migrations/init';
+import { generateId, now } from '../../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
 
 interface DestinationDetail {
@@ -15,10 +17,42 @@ interface DestinationDetail {
 
 export default function WebDestinationDetailScreen() {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [dest, setDest] = useState<DestinationDetail | null>(null);
+  const [adding, setAdding] = useState(false);
   const shadow = isDark ? Shadows.dark.md : Shadows.light.md;
+
+  async function addToMyTrips() {
+    if (!user || !dest || adding) return;
+    setAdding(true);
+    try {
+      const db = await getDatabase();
+      const itinId = generateId();
+      const start = new Date();
+      const end = new Date(start);
+      end.setDate(end.getDate() + 2);
+      const startIso = start.toISOString().split('T')[0];
+      const endIso = end.toISOString().split('T')[0];
+      const ts = now();
+      await db.runAsync(
+        `INSERT INTO itineraries (id, user_id, title, start_date, end_date, created_at, updated_at, sync_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'local_only')`,
+        [itinId, user.id, `Trip to ${dest.name}`, startIso, endIso, ts, ts]
+      );
+      await db.runAsync(
+        `INSERT INTO itinerary_items (id, itinerary_id, day_number, time, title, description, destination_id, estimated_cost, sort_order, created_at, updated_at)
+         VALUES (?, ?, 1, '09:00', ?, ?, ?, ?, 0, ?, ?)`,
+        [generateId(), itinId, `Visit ${dest.name}`, dest.description, dest.id, dest.estimated_fee ?? 0, ts, ts]
+      );
+      router.push(`/(web)/trips` as any);
+    } catch (e) {
+      window.alert('Could not create trip.');
+    } finally {
+      setAdding(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -99,12 +133,15 @@ export default function WebDestinationDetailScreen() {
 
               <View style={styles.actions}>
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => router.push('/(web)/trips' as any)}
+                  style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: adding ? 0.7 : 1 }]}
+                  onPress={addToMyTrips}
                   activeOpacity={0.8}
+                  disabled={adding}
                 >
                   <Text style={styles.actionIcon}>📅</Text>
-                  <Text style={[styles.actionLabel, { color: colors.onPrimary }]}>Add to Itinerary</Text>
+                  <Text style={[styles.actionLabel, { color: colors.onPrimary }]}>
+                    {adding ? 'Adding...' : 'Add to My Trips'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border }]}

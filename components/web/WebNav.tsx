@@ -40,33 +40,39 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
         {variant === 'tourist' && (
           <View style={styles.navLinks}>
             {TOURIST_LINKS.map(l => (
-              <TouchableOpacity key={l.route} onPress={() => router.push(l.route as any)}>
-                <Text style={[styles.navLink, { color: pathname === l.route ? colors.primary : colors.muted }]}>
-                  {l.label}
-                </Text>
-              </TouchableOpacity>
+              <div key={l.route} className="nav-link">
+                <TouchableOpacity onPress={() => router.push(l.route as any)}>
+                  <Text style={[styles.navLink, { color: pathname === l.route ? colors.primary : colors.muted }]}>
+                    {l.label}
+                  </Text>
+                </TouchableOpacity>
+              </div>
             ))}
           </View>
         )}
         {variant === 'business' && (
           <View style={styles.navLinks}>
             {BUSINESS_LINKS.map(l => (
-              <TouchableOpacity key={l.route} onPress={() => router.push(l.route as any)}>
-                <Text style={[styles.navLink, { color: pathname === l.route ? colors.primary : colors.muted }]}>
-                  {l.label}
-                </Text>
-              </TouchableOpacity>
+              <div key={l.route} className="nav-link">
+                <TouchableOpacity onPress={() => router.push(l.route as any)}>
+                  <Text style={[styles.navLink, { color: pathname === l.route ? colors.primary : colors.muted }]}>
+                    {l.label}
+                  </Text>
+                </TouchableOpacity>
+              </div>
             ))}
           </View>
         )}
         {variant === 'admin' && (
           <View style={styles.navLinks}>
             {ADMIN_LINKS.map(l => (
-              <TouchableOpacity key={l.route} onPress={() => router.push(l.route as any)}>
-                <Text style={[styles.navLink, { color: pathname === l.route ? colors.primary : colors.muted }]}>
-                  {l.label}
-                </Text>
-              </TouchableOpacity>
+              <div key={l.route} className="nav-link">
+                <TouchableOpacity onPress={() => router.push(l.route as any)}>
+                  <Text style={[styles.navLink, { color: pathname === l.route ? colors.primary : colors.muted }]}>
+                    {l.label}
+                  </Text>
+                </TouchableOpacity>
+              </div>
             ))}
           </View>
         )}

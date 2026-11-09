@@ -7,7 +7,7 @@ import BudgetScreen from '../(tourist)/budget';
 export default function WebBudgetScreen() {
   return (
     <View style={styles.root}>
-      <WebLayout navVariant="tourist" scrollable={false}>
+      <WebLayout navVariant="tourist" scrollable={true}>
         <View style={styles.workspace}>
           <BudgetScreen />
         </View>

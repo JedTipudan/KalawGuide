@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList,
-  TextInput, TouchableOpacity, ActivityIndicator,
+  TextInput, TouchableOpacity, ActivityIndicator, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -150,7 +150,7 @@ export default function BusinessesScreen() {
           )}
         />
       )}
-      <KalawAssistanceFAB />
+      {Platform.OS !== 'web' && <KalawAssistanceFAB />}
     </SafeAreaView>
   );
 }
