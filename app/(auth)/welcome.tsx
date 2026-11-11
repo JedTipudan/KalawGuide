@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
-import { KalawButton } from '../../components/common/KalawButton';
-import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { Typography } from '../../constants/tokens';
 import { storage } from '../../utils/storage';
 
 const ONBOARDED_KEY = 'kalawguide_onboarded';
@@ -15,12 +14,8 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     storage.getItem(ONBOARDED_KEY).then(val => {
-      if (!val) {
-        // First launch — go to onboarding
-        router.replace('/(auth)/onboarding');
-      } else {
-        setChecking(false);
-      }
+      if (!val) router.replace('/(auth)/onboarding');
+      else setChecking(false);
     });
   }, []);
 
@@ -34,62 +29,79 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Brand */}
-      <View style={styles.brand}>
-        <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
-          <Text style={styles.logoText}>K</Text>
+      {/* App bar */}
+      <View style={[styles.appBar, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.appBarTitle, { color: colors.primary }]}>≋ KalawGuide</Text>
+        <TouchableOpacity>
+          <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        {/* Hero placeholder */}
+        <View style={[styles.hero, { backgroundColor: colors.subtle }]}>
+          <Text style={styles.heroEmoji}>🏖</Text>
         </View>
-        <Text style={[styles.appName, { color: colors.text }]}>KalawGuide</Text>
-        <Text style={[styles.tagline, { color: colors.muted }]}>
-          Discover Mati City, Davao Oriental
+
+        <Text style={[styles.locationLabel, { color: colors.accent }]}>MATI CITY · DAVAO ORIENTAL</Text>
+        <Text style={[styles.heading, { color: colors.text }]}>
+          Your next adventure,{'\n'}a little more local.
         </Text>
-        <View style={[styles.badge, { backgroundColor: colors.sand }]}>
-          <Text style={[styles.badgeText, { color: colors.text }]}>
-            📍 Mati City, Davao Oriental, Philippines
-          </Text>
-        </View>
+        <Text style={[styles.tagline, { color: colors.muted }]}>Discover. Plan. Go.</Text>
       </View>
 
       {/* Actions */}
       <View style={styles.actions}>
-        <KalawButton
-          label="Sign In"
+        <TouchableOpacity
+          style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
           onPress={() => router.push('/(auth)/sign-in')}
-          fullWidth
-          size="lg"
-        />
-        <KalawButton
-          label="Register as Tourist"
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>Sign In</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.secondaryBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => router.push('/(auth)/register-tourist')}
-          variant="secondary"
-          fullWidth
-          size="lg"
-        />
-        <KalawButton
-          label="Register as Business Owner"
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.secondaryBtnText, { color: colors.text }]}>Register as Tourist</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.secondaryBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => router.push('/(auth)/register-business')}
-          variant="ghost"
-          fullWidth
-        />
-      </View>
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.secondaryBtnText, { color: colors.text }]}>Register as Business Owner</Text>
+        </TouchableOpacity>
 
-      <Text style={[styles.legal, { color: colors.muted }]}>
-        KalawGuide · Privacy Policy · Terms and Conditions
-      </Text>
+        <Text style={[styles.legal, { color: colors.muted }]}>
+          KalawGuide · Privacy Policy · Terms and Conditions
+        </Text>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { flex: 1, paddingHorizontal: Spacing.xl, justifyContent: 'space-between', paddingVertical: Spacing.xxxl },
-  brand: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.base },
-  logoMark: { width: 88, height: 88, borderRadius: Radius.xl, alignItems: 'center', justifyContent: 'center' },
-  logoText: { fontSize: 44, fontWeight: '700', color: '#FFFFFF', fontFamily: Typography.fontFamilyBody },
-  appName: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h2, fontWeight: Typography.weight.bold },
-  tagline: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, textAlign: 'center' },
-  badge: { marginTop: Spacing.sm, paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, borderRadius: Radius.xl },
-  badgeText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  actions: { gap: Spacing.md, paddingBottom: Spacing.lg },
-  legal: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, textAlign: 'center' },
+  container: { flex: 1 },
+  appBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 12,
+  },
+  appBarTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.semiBold },
+  menuIcon: { fontFamily: Typography.fontFamilyBody, fontSize: 22 },
+  content: { flex: 1, paddingHorizontal: 20, paddingTop: 20, gap: 16 },
+  hero: { width: '100%', height: 260, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  heroEmoji: { fontSize: 72 },
+  locationLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.semiBold },
+  heading: { fontFamily: Typography.fontFamilyBody, fontSize: 28, fontWeight: Typography.weight.bold, lineHeight: 40 },
+  tagline: { fontFamily: Typography.fontFamilyBody, fontSize: 16 },
+  actions: { paddingHorizontal: 20, paddingBottom: 32, gap: 12 },
+  primaryBtn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  primaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  secondaryBtn: { borderWidth: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  secondaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  legal: { fontFamily: Typography.fontFamilyBody, fontSize: 12, textAlign: 'center', marginTop: 4 },
 });

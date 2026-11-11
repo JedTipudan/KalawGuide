@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  KeyboardAvoidingView, Platform, TouchableOpacity,
+  KeyboardAvoidingView, Platform, TouchableOpacity, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { KalawButton } from '../../components/common/KalawButton';
-import { KalawInput } from '../../components/common/KalawInput';
 import { calculateBudget } from '../../services/budget/budgetService';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
-import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { Typography } from '../../constants/tokens';
 import { BudgetPlan } from '../../types';
 
 export default function BudgetScreen() {
@@ -19,15 +17,17 @@ export default function BudgetScreen() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [title, setTitle] = useState('My Mati Trip Budget');
-  const [travelers, setTravelers] = useState('1');
+  const [destination, setDestination] = useState('Mati City');
+  const [travelers, setTravelers] = useState('2');
+  const [travelDate, setTravelDate] = useState('');
   const [days, setDays] = useState('3');
-  const [transportation, setTransportation] = useState('');
-  const [accommodation, setAccommodation] = useState('');
-  const [food, setFood] = useState('');
-  const [activities, setActivities] = useState('');
-  const [miscellaneous, setMiscellaneous] = useState('');
+  const [transportation, setTransportation] = useState('2000');
+  const [accommodation, setAccommodation] = useState('4000');
+  const [food, setFood] = useState('3000');
+  const [activities, setActivities] = useState('2000');
+  const [other, setOther] = useState('1000');
   const [saving, setSaving] = useState(false);
+  const [calculated, setCalculated] = useState(false);
 
   const plan: Partial<BudgetPlan> = {
     travelers: Number(travelers) || 1,
@@ -36,9 +36,8 @@ export default function BudgetScreen() {
     accommodation: Number(accommodation) || 0,
     food: Number(food) || 0,
     activities: Number(activities) || 0,
-    miscellaneous: Number(miscellaneous) || 0,
+    miscellaneous: Number(other) || 0,
   };
-
   const summary = calculateBudget(plan);
 
   async function handleSave() {
@@ -51,100 +50,112 @@ export default function BudgetScreen() {
         `INSERT INTO budget_plans (id, user_id, title, travelers, duration_days, transportation,
          accommodation, food, activities, miscellaneous, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, user.id, title.trim() || 'My Budget', plan.travelers!, plan.durationDays!,
+        [id, user.id, `Trip to ${destination}`, plan.travelers!, plan.durationDays!,
          plan.transportation!, plan.accommodation!, plan.food!, plan.activities!, plan.miscellaneous!,
          now(), now()]
       );
       const base = Platform.OS === 'web' ? '/(web)' : '/(tourist)';
       router.push({ pathname: `${base}/budget-results`, params: { id } } as any);
-    } catch (e) {
-      console.error('save budget error:', e);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e) { /* silent */ } finally { setSaving(false); }
   }
 
   const FIELDS = [
-    { label: 'Transportation (₱)', placeholder: 'Total transport cost', value: transportation, onChange: setTransportation, hint: 'Bus, van, tricycle, etc.' },
-    { label: 'Accommodation per night (₱)', placeholder: '0.00', value: accommodation, onChange: setAccommodation, hint: `× ${days || 1} night(s) = ₱${summary.accommodation.toLocaleString()}` },
-    { label: 'Food per person per day (₱)', placeholder: '0.00', value: food, onChange: setFood, hint: `× ${days || 1} day(s) × ${travelers || 1} person(s) = ₱${summary.food.toLocaleString()}` },
-    { label: 'Activities (₱)', placeholder: 'Total activity costs', value: activities, onChange: setActivities, hint: 'Tours, entrance fees, etc.' },
-    { label: 'Miscellaneous (₱)', placeholder: 'Other expenses', value: miscellaneous, onChange: setMiscellaneous, hint: 'Shopping, tips, emergencies' },
+    { label: 'Destination', placeholder: 'Mati City', value: destination, onChange: setDestination },
+    { label: 'Number of travelers', placeholder: '2 travelers', value: travelers, onChange: setTravelers },
+    { label: 'Travel date', placeholder: '12 June 2027', value: travelDate, onChange: setTravelDate },
+    { label: 'Number of days', placeholder: '3 days', value: days, onChange: setDays },
+    { label: 'Transportation · total', placeholder: '₱2,000', value: transportation, onChange: setTransportation },
+    { label: 'Accommodation · total', placeholder: '₱4,000', value: accommodation, onChange: setAccommodation },
+    { label: 'Food budget · total', placeholder: '₱3,000', value: food, onChange: setFood },
+    { label: 'Activities · total', placeholder: '₱2,000', value: activities, onChange: setActivities },
+    { label: 'Other expenses · total', placeholder: '₱1,000', value: other, onChange: setOther },
   ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Nav bar */}
+      <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.navTitle, { color: colors.primary }]}>‹ Budget planner</Text>
+        <TouchableOpacity onPress={() => router.push('/(tourist)/settings' as any)}>
+          <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Text style={[styles.backText, { color: colors.primary }]}>← Back</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={[styles.title, { color: colors.text }]}>Budget Planner</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>
-            Estimate your travel costs for Mati City
-          </Text>
-
-          <View style={[styles.estimateNote, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
-            <Text style={[styles.estimateNoteText, { color: colors.muted }]}>
-              ⚠️ All amounts are estimates based on your inputs. Actual costs may vary. Always confirm prices locally.
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            <Text style={[styles.title, { color: colors.text }]}>Plan your travel budget</Text>
+            <Text style={[styles.subtitle, { color: colors.muted }]}>
+              Use your own estimates. Save a budget that works for you.
             </Text>
-          </View>
 
-          <View style={styles.form}>
-            <KalawInput label="Budget Title" placeholder="e.g. Mati Summer Trip" value={title} onChangeText={setTitle} />
-
-            <View style={styles.row}>
-              <View style={styles.halfField}>
-                <KalawInput label="Travelers" placeholder="1" value={travelers} onChangeText={setTravelers} keyboardType="number-pad" />
-              </View>
-              <View style={styles.halfField}>
-                <KalawInput label="Days" placeholder="3" value={days} onChangeText={setDays} keyboardType="number-pad" />
-              </View>
+            {/* Inputs card */}
+            <View style={[styles.card, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Your trip, your numbers</Text>
+              {FIELDS.map(f => (
+                <View key={f.label} style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>{f.label}</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { color: colors.muted }]}
+                    placeholder={f.placeholder}
+                    placeholderTextColor={colors.muted}
+                    value={f.value}
+                    onChangeText={f.onChange}
+                    keyboardType={['Destination', 'Travel date'].includes(f.label) ? 'default' : 'decimal-pad'}
+                  />
+                </View>
+              ))}
+              <TouchableOpacity
+                style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+                onPress={() => setCalculated(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>Calculate Budget</Text>
+              </TouchableOpacity>
             </View>
 
-            {FIELDS.map(field => (
-              <KalawInput
-                key={field.label}
-                label={field.label}
-                placeholder={field.placeholder}
-                value={field.value}
-                onChangeText={field.onChange}
-                keyboardType="decimal-pad"
-                hint={field.hint}
-              />
-            ))}
-          </View>
-
-          {/* Live summary */}
-          <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.summaryTitle, { color: colors.text }]}>Estimated Total</Text>
-            {[
-              { label: 'Transportation', value: summary.transportation },
-              { label: 'Accommodation', value: summary.accommodation },
-              { label: 'Food', value: summary.food },
-              { label: 'Activities', value: summary.activities },
-              { label: 'Miscellaneous', value: summary.miscellaneous },
-            ].map(row => (
-              <View key={row.label} style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: colors.muted }]}>{row.label}</Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>₱{row.value.toLocaleString()}</Text>
-              </View>
-            ))}
-            <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.summaryRow}>
-              <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
-              <Text style={[styles.totalValue, { color: colors.primary }]}>₱{summary.total.toLocaleString()}</Text>
+            {/* Budget estimate card */}
+            <View style={[styles.card, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.estimateLabel, { color: colors.accent }]}>YOUR ESTIMATED BUDGET</Text>
+              <Text style={[styles.estimateTotal, { color: colors.primary }]}>
+                ₱{summary.total.toLocaleString()}
+              </Text>
+              <Text style={[styles.estimatePerPerson, { color: colors.muted }]}>
+                ₱{summary.perPerson.toLocaleString()} per person · {travelers || 1} travelers
+              </Text>
+              {[
+                { label: 'Transportation', value: summary.transportation },
+                { label: 'Accommodation', value: summary.accommodation },
+                { label: 'Food', value: summary.food },
+                { label: 'Activities', value: summary.activities },
+                { label: 'Other expenses', value: summary.miscellaneous },
+              ].map(row => (
+                <Text key={row.label} style={[styles.breakdownRow, { color: colors.text }]}>
+                  {row.label}{'     '}₱{row.value.toLocaleString()}
+                </Text>
+              ))}
+              <Text style={[styles.disclaimer, { color: colors.muted }]}>
+                Example traveler-entered amounts, not verified prices. Category amounts are totals for the whole trip.
+              </Text>
+              <TouchableOpacity
+                style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>
+                  {saving ? 'Saving…' : 'Save Budget'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => router.push('/(tourist)/(tabs)/trips' as any)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.secondaryBtnText, { color: colors.text }]}>Add to Itinerary</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: colors.muted }]}>Per Person</Text>
-              <Text style={[styles.summaryValue, { color: colors.accent }]}>₱{summary.perPerson.toLocaleString()}</Text>
-            </View>
           </View>
-
-          <KalawButton label="Save Budget Plan" onPress={handleSave} loading={saving} fullWidth size="lg" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -153,23 +164,35 @@ export default function BudgetScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: Spacing.base, gap: Spacing.lg, paddingBottom: Spacing.xxxl },
-  header: { marginBottom: -Spacing.sm },
-  backBtn: { alignSelf: 'flex-start', padding: Spacing.xs },
-  backText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  title: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h4, fontWeight: Typography.weight.bold },
-  subtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  estimateNote: { padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1 },
-  estimateNoteText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, lineHeight: Typography.size.body * Typography.lineHeight },
-  form: { gap: Spacing.base },
-  row: { flexDirection: 'row', gap: Spacing.md },
-  halfField: { flex: 1 },
-  summaryCard: { borderRadius: Radius.md, padding: Spacing.base, gap: Spacing.md },
-  summaryTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.bold },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  summaryLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  summaryValue: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  summaryDivider: { height: 1 },
-  totalLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.bold },
-  totalValue: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
+  navBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 18,
+  },
+  navTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 21, fontWeight: Typography.weight.bold },
+  menuIcon: { fontFamily: Typography.fontFamilyBody, fontSize: 22 },
+  scroll: { paddingBottom: 100 },
+  content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 72, gap: 24 },
+  title: { fontFamily: Typography.fontFamilyBody, fontSize: 28, fontWeight: Typography.weight.bold },
+  subtitle: { fontFamily: Typography.fontFamilyBody, fontSize: 15, marginTop: -16 },
+  card: { borderRadius: 18, padding: 24, gap: 14 },
+  cardTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  field: {
+    borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 16, paddingTop: 18, paddingBottom: 18, gap: 8,
+  },
+  fieldLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  fieldInput: { fontFamily: Typography.fontFamilyBody, fontSize: 12, padding: 0 },
+  primaryBtn: {
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center',
+  },
+  primaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  secondaryBtn: {
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center',
+  },
+  secondaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  estimateLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.bold },
+  estimateTotal: { fontFamily: Typography.fontFamilyBody, fontSize: 44, fontWeight: Typography.weight.bold },
+  estimatePerPerson: { fontFamily: Typography.fontFamilyBody, fontSize: 14, marginTop: -8 },
+  breakdownRow: { fontFamily: Typography.fontFamilyBody, fontSize: 15 },
+  disclaimer: { fontFamily: Typography.fontFamilyBody, fontSize: 12, lineHeight: 18 },
 });

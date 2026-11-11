@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList,
   TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { KalawCard } from '../../../components/cards/KalawCard';
@@ -58,7 +59,7 @@ export default function FavoritesScreen() {
     setBizFavs(bizs);
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
   async function onRefresh() { setRefreshing(true); await load(); setRefreshing(false); }
 
   async function removeFav(favId: string) {

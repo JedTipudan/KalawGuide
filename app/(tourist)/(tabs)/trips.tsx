@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList,
+  View, Text, StyleSheet, ScrollView, Image,
   TouchableOpacity, Alert, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,20 +9,15 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
-import { generateId, now, formatShortDate, getDaysBetween } from '../../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
+import { Typography } from '../../../constants/tokens';
 
 interface ItineraryRow {
-  id: string;
-  title: string;
-  description: string | null;
-  start_date: string;
-  end_date: string;
-  created_at: string;
+  id: string; title: string; description: string | null;
+  start_date: string; end_date: string; created_at: string;
 }
 
 export default function TripsScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
   const [itineraries, setItineraries] = useState<ItineraryRow[]>([]);
@@ -37,132 +32,118 @@ export default function TripsScreen() {
         [user.id]
       );
       setItineraries(rows);
-    } catch (e) {
-      console.error('trips load error:', e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { /* silent */ } finally { setLoading(false); }
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
 
-  async function createNew() {
-    if (!user) return;
-    if (Platform.OS === 'web') {
-      router.push('/(web)/explore?from=trips' as any);
-      return;
-    }
-    const id = generateId();
-    const start = new Date();
-    const end = new Date(start);
-    end.setDate(end.getDate() + 2);
-    const startIso = start.toISOString().split('T')[0];
-    const endIso = end.toISOString().split('T')[0];
-    try {
-      const db = await getDatabase();
-      await db.runAsync(
-        `INSERT INTO itineraries (id, user_id, title, start_date, end_date, created_at, updated_at, sync_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'local_only')`,
-        [id, user.id, 'My Trip to Mati', startIso, endIso, now(), now()]
-      );
-      await load();
-      router.push({ pathname: '/(tourist)/itinerary/[id]', params: { id } } as any);
-    } catch (e) {
-      Alert.alert('Error', 'Could not create itinerary.');
-    }
-  }
-
   async function deleteItinerary(id: string) {
     if (Platform.OS === 'web') {
       if (!window.confirm('Delete this trip?')) return;
-      const db = await getDatabase();
-      await db.runAsync('DELETE FROM itineraries WHERE id = ?', [id]);
-      setItineraries(prev => prev.filter(i => i.id !== id));
     } else {
-      Alert.alert('Delete Trip', 'Are you sure you want to delete this trip?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: async () => {
-          const db = await getDatabase();
-          await db.runAsync('DELETE FROM itineraries WHERE id = ?', [id]);
-          setItineraries(prev => prev.filter(i => i.id !== id));
-        }},
-      ]);
+      await new Promise<void>(resolve =>
+        Alert.alert('Delete Trip', 'Are you sure?', [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve() },
+          { text: 'Delete', style: 'destructive', onPress: async () => {
+            const db = await getDatabase();
+            await db.runAsync('DELETE FROM itineraries WHERE id = ?', [id]);
+            setItineraries(prev => prev.filter(i => i.id !== id));
+            resolve();
+          }},
+        ])
+      );
+      return;
     }
+    const db = await getDatabase();
+    await db.runAsync('DELETE FROM itineraries WHERE id = ?', [id]);
+    setItineraries(prev => prev.filter(i => i.id !== id));
   }
 
-  const shadow = isDark ? Shadows.dark.sm : Shadows.light.sm;
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <View>
-          <Text style={[styles.title, { color: colors.text }]}>My Trips</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>Plan and manage your itineraries</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
-          onPress={createNew}
-          accessibilityLabel="Create new trip"
-        >
-          <Text style={[styles.addBtnText, { color: colors.onPrimary }]}>+ New</Text>
-        </TouchableOpacity>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Nav bar */}
+      <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.navTitle, { color: colors.primary }]}>My Trips</Text>
       </View>
 
-      <FlatList
-        data={itineraries}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>📅</Text>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No trips yet</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
-                Tap "+ New" to plan your first Mati City adventure.
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: colors.text }]}>My trips</Text>
+          <Text style={[styles.subtitle, { color: colors.muted }]}>
+            Your upcoming escapes, saved plans, and favorite memories.
+          </Text>
+
+          {/* Tab buttons */}
+          <TouchableOpacity style={[styles.tabBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.tabBtnText, { color: colors.text }]}>Upcoming trips</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tabBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.tabBtnText, { color: colors.text }]}>Past trips</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tabBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.tabBtnText, { color: colors.text }]}>Saved itineraries</Text>
+          </TouchableOpacity>
+
+          {/* Trip list */}
+          {itineraries.length === 0 && !loading ? (
+            <View style={[styles.savedCard, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.savedTitle, { color: colors.text }]}>Your coastal escape, ready when you are.</Text>
+              <Text style={[styles.savedBody, { color: colors.muted }]}>
+                No trips yet.{'\n'}Keep planning without losing your place.
               </Text>
             </View>
-          ) : <View />
-        }
-        renderItem={({ item }) => {
-          const days = getDaysBetween(item.start_date, item.end_date);
-          return (
-            <TouchableOpacity
-              style={[styles.card, { backgroundColor: colors.surface, ...shadow }]}
-              onPress={() => {
-                if (Platform.OS === 'web') {
-                  router.push(`/(web)/itinerary/${item.id}` as any);
-                } else {
-                  router.push({ pathname: '/(tourist)/itinerary/[id]', params: { id: item.id } } as any);
-                }
-              }}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.cardAccent, { backgroundColor: colors.primary }]} />
-              <View style={styles.cardBody}>
-                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={[styles.cardDates, { color: colors.muted }]}>
-                  {formatShortDate(item.start_date)} – {formatShortDate(item.end_date)} · {days} day{days !== 1 ? 's' : ''}
-                </Text>
-                {item.description ? (
-                  <Text style={[styles.cardDesc, { color: colors.muted }]} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                ) : null}
-              </View>
-              <TouchableOpacity
-                onPress={() => deleteItinerary(item.id)}
-                style={styles.deleteBtn}
-                accessibilityLabel="Delete trip"
-              >
-                <Text style={[styles.deleteIcon, { color: colors.danger }]}>🗑</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          );
-        }}
-      />
+          ) : (
+            itineraries.map(item => {
+              const days = Math.max(1, Math.round((new Date(item.end_date).getTime() - new Date(item.start_date).getTime()) / 86400000));
+              return (
+                <View key={item.id} style={styles.tripBlock}>
+                  <View style={[styles.tripImageBox, { backgroundColor: colors.subtle }]}>
+                    <Text style={styles.tripImageEmoji}>🏖</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.tripCard, { backgroundColor: colors.surface }]}
+                    onPress={() => router.push({ pathname: '/(tourist)/itinerary/[id]', params: { id: item.id } } as any)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.tripBadge, { color: colors.accent }]}>UPCOMING · EXAMPLE</Text>
+                    <Text style={[styles.tripTitle, { color: colors.text }]}>{item.title}</Text>
+                    <Text style={[styles.tripMeta, { color: colors.muted }]}>
+                      {item.start_date} – {item.end_date}{'\n'}
+                      2 travelers · {days} day{days !== 1 ? 's' : ''}{'\n'}
+                      Estimated budget ₱12,000
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.viewBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => router.push({ pathname: '/(tourist)/itinerary/[id]', params: { id: item.id } } as any)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.viewBtnText, { color: colors.onPrimary }]}>View itinerary</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                </View>
+              );
+            })
+          )}
+
+          {/* Create new trip */}
+          <TouchableOpacity
+            style={[styles.createBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/(tourist)/explore-for-trip' as any)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.createBtnText, { color: colors.onPrimary }]}>Create a new trip</Text>
+          </TouchableOpacity>
+
+          {/* Saved itineraries card */}
+          <View style={[styles.savedCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.savedTitle, { color: colors.text }]}>Your coastal escape, ready when you are.</Text>
+            <Text style={[styles.savedBody, { color: colors.muted }]}>
+              Mati coastal weekend · Draft saved{'\n'}Keep planning without losing your place.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
       {Platform.OS !== 'web' && <KalawAssistanceFAB />}
     </SafeAreaView>
   );
@@ -170,30 +151,42 @@ export default function TripsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
+  navBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: Spacing.base, paddingBottom: Spacing.sm,
+    paddingHorizontal: 20, paddingVertical: 18,
   },
-  title: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h4, fontWeight: Typography.weight.bold },
-  subtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  addBtn: {
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-    borderRadius: Radius.lg,
+  navTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 21, fontWeight: Typography.weight.bold },
+  menuIcon: { fontFamily: Typography.fontFamilyBody, fontSize: 22 },
+  scroll: { paddingBottom: 100 },
+  content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 72, gap: 20 },
+  title: { fontFamily: Typography.fontFamilyBody, fontSize: 28, fontWeight: Typography.weight.bold },
+  subtitle: { fontFamily: Typography.fontFamilyBody, fontSize: 15, marginTop: -12 },
+  tabBtn: {
+    borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 13,
   },
-  addBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.semiBold },
-  list: { padding: Spacing.base, gap: Spacing.md, paddingBottom: 100 },
-  card: {
-    flexDirection: 'row', borderRadius: Radius.md, overflow: 'hidden', alignItems: 'center',
+  tabBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  tripBlock: { gap: 0 },
+  tripImageBox: {
+    width: '100%', height: 210, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
   },
-  cardAccent: { width: 4, alignSelf: 'stretch' },
-  cardBody: { flex: 1, padding: Spacing.base, gap: Spacing.xs },
-  cardTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.semiBold },
-  cardDates: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  cardDesc: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  deleteBtn: { padding: Spacing.base },
-  deleteIcon: { fontSize: 18 },
-  empty: { alignItems: 'center', paddingTop: 80, gap: Spacing.md },
-  emptyIcon: { fontSize: 48 },
-  emptyTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.semiBold },
-  emptySubtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, textAlign: 'center', maxWidth: 260 },
+  tripImageEmoji: { fontSize: 64 },
+  tripCard: { borderRadius: 18, padding: 24, gap: 14 },
+  tripBadge: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.bold },
+  tripTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 28, fontWeight: Typography.weight.bold },
+  tripMeta: { fontFamily: Typography.fontFamilyBody, fontSize: 16, lineHeight: 24 },
+  viewBtn: {
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
+    alignItems: 'center',
+  },
+  viewBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  createBtn: {
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
+    alignItems: 'center',
+  },
+  createBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  savedCard: { borderRadius: 18, padding: 24, gap: 14 },
+  savedTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  savedBody: { fontFamily: Typography.fontFamilyBody, fontSize: 14, lineHeight: 20 },
 });

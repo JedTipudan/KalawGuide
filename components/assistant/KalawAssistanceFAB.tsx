@@ -220,11 +220,11 @@ export function KalawAssistanceFAB() {
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 75,
     right: 20,
-    width: TouchTarget.fab,
-    height: TouchTarget.fab,
-    borderRadius: Radius.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 8,

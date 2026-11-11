@@ -128,23 +128,23 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   appBar: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 12,
   },
   appBarTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: '600' },
   slide: { paddingHorizontal: 20, paddingTop: 20, gap: Spacing.base },
-  image: { height: 240, borderRadius: 16 },
+  image: { height: 260, borderRadius: 16 },
   label: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
-  heading: { fontFamily: Typography.fontFamilyBody, fontSize: 26, fontWeight: '700', lineHeight: 26 * 1.4 },
-  body: { fontFamily: Typography.fontFamilyBody, fontSize: 14, lineHeight: 14 * 1.5 },
+  heading: { fontFamily: Typography.fontFamilyBody, fontSize: 28, fontWeight: '700', lineHeight: 40 },
+  body: { fontFamily: Typography.fontFamilyBody, fontSize: 14, lineHeight: 20 },
   dots: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: '600', letterSpacing: 4 },
   buttons: { paddingHorizontal: 20, paddingTop: 12, gap: Spacing.md },
   primaryBtn: {
-    paddingVertical: 14, borderRadius: Radius.lg, alignItems: 'center',
+    paddingVertical: 13, borderRadius: 12, alignItems: 'center',
   },
   secondaryBtn: {
-    paddingVertical: 14, borderRadius: Radius.lg,
-    borderWidth: 1.5, alignItems: 'center',
+    paddingVertical: 13, borderRadius: 12,
+    borderWidth: 1, alignItems: 'center',
   },
-  btnText: { fontFamily: Typography.fontFamilyBody, fontSize: 15, fontWeight: '600' },
+  btnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: '600' },
 });

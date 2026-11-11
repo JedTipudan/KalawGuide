@@ -19,6 +19,7 @@ export default function TouristLayout() {
       <Stack.Screen name="booking/[businessId]" />
       <Stack.Screen name="favorites" />
       <Stack.Screen name="recommendations" />
+      <Stack.Screen name="explore-for-trip" />
     </Stack>
   );
 }

@@ -1,165 +1,153 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView,
+  View, Text, StyleSheet, ScrollView, Image,
   TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { KalawCard } from '../../../components/cards/KalawCard';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
-import { Destination } from '../../../types';
-import { Typography, Spacing, Radius } from '../../../constants/tokens';
+import { Typography, Spacing } from '../../../constants/tokens';
+
+interface DestRow {
+  id: string; name: string; location: string;
+  cover_image_url: string | null; estimated_fee: number | null; fee_verified: number;
+}
+interface ItinRow { id: string; title: string; start_date: string; end_date: string; }
 
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
-  const [featured, setFeatured] = useState<Destination[]>([]);
+  const [featured, setFeatured] = useState<DestRow[]>([]);
+  const [upcomingTrip, setUpcomingTrip] = useState<ItinRow | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  async function loadFeatured() {
+  async function load() {
     try {
       const db = await getDatabase();
-      const rows = await db.getAllAsync<{
-        id: string; name: string; description: string;
-        location: string; cover_image_url: string | null;
-        estimated_fee: number | null; fee_verified: number;
-      }>(
-        'SELECT id, name, description, location, cover_image_url, estimated_fee, fee_verified FROM destinations WHERE is_featured = 1 AND is_active = 1 LIMIT 4'
+      const rows = await db.getAllAsync<DestRow>(
+        'SELECT id, name, location, cover_image_url, estimated_fee, fee_verified FROM destinations WHERE is_featured = 1 AND is_active = 1 LIMIT 2'
       );
-      setFeatured(rows.map(r => ({
-        id: r.id, name: r.name, description: r.description,
-        location: r.location, coverImageUrl: r.cover_image_url ?? undefined,
-        estimatedFee: r.estimated_fee ?? undefined,
-        feeVerified: r.fee_verified === 1,
-        categoryId: '', imageUrls: [], isFeatured: true, isActive: true,
-        createdAt: '', updatedAt: '',
-      })));
-    } catch (e) {
-      console.error('loadFeatured error:', e);
-    }
+      setFeatured(rows);
+      if (user) {
+        const trip = await db.getFirstAsync<ItinRow>(
+          "SELECT id, title, start_date, end_date FROM itineraries WHERE user_id = ? AND start_date >= date('now') ORDER BY start_date ASC LIMIT 1",
+          [user.id]
+        );
+        setUpcomingTrip(trip ?? null);
+      }
+    } catch (e) { /* silent */ }
   }
 
-  useEffect(() => { loadFeatured(); }, []);
+  useEffect(() => { load(); }, [user]);
 
-  async function onRefresh() {
-    setRefreshing(true);
-    await loadFeatured();
-    setRefreshing(false);
-  }
+  async function onRefresh() { setRefreshing(true); await load(); setRefreshing(false); }
 
-  const greeting = getGreeting();
   const firstName = user?.displayName?.split(' ')[0] ?? 'Traveler';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {/* App bar */}
-        <View style={styles.appBar}>
-          <View>
-            <Text style={[styles.greeting, { color: colors.muted }]}>{greeting}</Text>
-            <Text style={[styles.userName, { color: colors.text }]}>{firstName} 👋</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => router.push('/(tourist)/profile')}
-            style={[styles.avatar, { backgroundColor: colors.primary }]}
-            accessibilityLabel="View profile"
-          >
-            <Text style={styles.avatarText}>{firstName[0].toUpperCase()}</Text>
-          </TouchableOpacity>
+        <View style={[styles.appBar, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.appBarTitle, { color: colors.primary }]}>≋ KalawGuide</Text>
         </View>
 
-        {/* Location badge */}
-        <View style={[styles.locationBadge, { backgroundColor: colors.sand }]}>
-          <Text style={[styles.locationText, { color: colors.text }]}>
-            📍 Mati City, Davao Oriental
+        {/* Content */}
+        <View style={styles.content}>
+          {/* Greeting */}
+          <Text style={[styles.greeting, { color: colors.text }]}>
+            Where to next, {firstName}?
           </Text>
-        </View>
 
-        {/* Quick actions */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
-          <View style={styles.quickActions}>
-            {QUICK_ACTIONS.map(action => (
+          {/* Search bar */}
+          <TouchableOpacity
+            style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => router.push('/(tourist)/(tabs)/explore' as any)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.searchPlaceholder, { color: colors.text }]}>
+              Search places, food, or experiences
+            </Text>
+          </TouchableOpacity>
+
+          {/* Category chips */}
+          <View style={styles.categoryRow}>
+            {CATEGORIES.map(cat => (
               <TouchableOpacity
-                key={action.label}
-                style={[styles.quickAction, { backgroundColor: colors.surface }]}
-                onPress={() => router.push(action.route as any)}
+                key={cat}
+                style={[styles.categoryChip, { backgroundColor: colors.subtle }]}
+                onPress={() => router.push('/(tourist)/(tabs)/explore' as any)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.quickActionIcon}>{action.icon}</Text>
-                <Text style={[styles.quickActionLabel, { color: colors.text }]}>{action.label}</Text>
+                <Text style={[styles.categoryChipText, { color: colors.primary }]}>{cat}</Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
 
-        {/* Recommendation banner */}
-        <TouchableOpacity
-          style={[styles.recommendBanner, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '40' }]}
-          onPress={() => router.push('/(tourist)/recommendations' as any)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.recommendIcon}>🌟</Text>
-          <View style={styles.recommendText}>
-            <Text style={[styles.recommendTitle, { color: colors.primary }]}>Find Your Ideal Place</Text>
-            <Text style={[styles.recommendSubtitle, { color: colors.muted }]}>
-              Describe what you’re looking for and we’ll match it
-            </Text>
-          </View>
-          <Text style={[styles.recommendArrow, { color: colors.primary }]}>›</Text>
-        </TouchableOpacity>
-
-        {/* Featured destinations */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured Destinations</Text>
-            <TouchableOpacity onPress={() => router.push('/(tourist)/(tabs)/explore' as any)}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
-            </TouchableOpacity>
-          </View>
-          {featured.length === 0 ? (
-            <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.emptyText, { color: colors.muted }]}>Loading destinations...</Text>
+          {/* Hero banner */}
+          <View style={[styles.heroBanner, { backgroundColor: colors.subtle }]}>
+            <View style={styles.heroOverlay}>
+              <Text style={[styles.heroText, { color: colors.surface }]}>
+                A little further from ordinary.
+              </Text>
             </View>
-          ) : (
-            featured.map(dest => (
-              <KalawCard
+          </View>
+
+          {/* Find your next */}
+          <Text style={[styles.sectionLabel, { color: colors.text }]}>Find your next favorite place</Text>
+
+          {/* Destination cards row */}
+          <View style={styles.destRow}>
+            {featured.map(dest => (
+              <TouchableOpacity
                 key={dest.id}
-                title={dest.name}
-                subtitle={dest.location}
-                imageUrl={dest.coverImageUrl}
-                badge={dest.feeVerified ? `₱${dest.estimatedFee}` : dest.estimatedFee !== undefined ? 'Est. fee' : 'Free'}
-                badgeColor={dest.feeVerified ? colors.success + '30' : colors.subtle}
+                style={[styles.destCard, { backgroundColor: colors.surface }]}
                 onPress={() => router.push({ pathname: '/(tourist)/destination/[id]', params: { id: dest.id } } as any)}
-                style={styles.destinationCard}
-              />
-            ))
+                activeOpacity={0.85}
+              >
+                <View style={styles.destImageBox}>
+                  {dest.cover_image_url ? (
+                    <Image source={{ uri: dest.cover_image_url }} style={styles.destImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.destImagePlaceholder, { backgroundColor: colors.subtle }]}>
+                      <Text style={styles.destImageEmoji}>🏝</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.destInfo}>
+                  <Text style={[styles.destName, { color: colors.text }]} numberOfLines={1}>{dest.name}</Text>
+                  <Text style={[styles.destLocation, { color: colors.primary }]}>
+                    Mati City · Explore ↗
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Upcoming trip */}
+          {upcomingTrip && (
+            <TouchableOpacity
+              style={[styles.tripCard, { backgroundColor: colors.subtle }]}
+              onPress={() => router.push({ pathname: '/(tourist)/itinerary/[id]', params: { id: upcomingTrip.id } } as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.tripTitle, { color: colors.text }]} numberOfLines={1}>
+                {upcomingTrip.title}
+              </Text>
+              <Text style={[styles.tripMeta, { color: colors.muted }]}>
+                {upcomingTrip.start_date} – {upcomingTrip.end_date} · Example trip
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
-
-        {/* Emergency info shortcut */}
-        <TouchableOpacity
-          style={[styles.emergencyBanner, { backgroundColor: colors.danger + '15', borderColor: colors.danger + '40' }]}
-          onPress={() => router.push('/(tourist)/emergency')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.emergencyIcon}>🚨</Text>
-          <View style={styles.emergencyText}>
-            <Text style={[styles.emergencyTitle, { color: colors.danger }]}>Emergency Information</Text>
-            <Text style={[styles.emergencySubtitle, { color: colors.muted }]}>
-              Local emergency contacts for Mati City
-            </Text>
-          </View>
-          <Text style={[styles.emergencyArrow, { color: colors.danger }]}>›</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <KalawAssistanceFAB />
@@ -167,63 +155,84 @@ export default function HomeScreen() {
   );
 }
 
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning,';
-  if (h < 17) return 'Good afternoon,';
-  return 'Good evening,';
-}
-
-const QUICK_ACTIONS = [
-  { icon: '💰', label: 'Budget', route: '/(tourist)/budget' },
-  { icon: '📅', label: 'Trips', route: '/(tourist)/(tabs)/trips' },
-  { icon: '🧾', label: 'Expenses', route: '/(tourist)/expenses' },
-  { icon: '♡', label: 'Favorites', route: '/(tourist)/(tabs)/favorites' },
-];
-
-const RECOMMENDATION_BANNER_VISIBLE = true;
+const CATEGORIES = ['Beaches', 'Nature', 'Food'];
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: Spacing.base, gap: Spacing.lg, paddingBottom: 100 },
-  appBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.sm },
-  greeting: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  userName: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
-  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.bold },
-  locationBadge: { alignSelf: 'flex-start', paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.xl },
-  locationText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  section: { gap: Spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
-  seeAll: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  quickActions: { flexDirection: 'row', gap: Spacing.md },
-  quickAction: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    padding: Spacing.base, borderRadius: Radius.md, gap: Spacing.xs,
-    minHeight: 72,
+  scroll: { paddingBottom: 100 },
+  appBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 12,
   },
-  quickActionIcon: { fontSize: 24 },
-  quickActionLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, fontWeight: Typography.weight.medium, textAlign: 'center' },
-  destinationCard: { marginBottom: 0 },
-  emptyCard: { padding: Spacing.xl, borderRadius: Radius.md, alignItems: 'center' },
-  emptyText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  emergencyBanner: {
-    flexDirection: 'row', alignItems: 'center', padding: Spacing.base,
-    borderRadius: Radius.md, borderWidth: 1, gap: Spacing.md,
+  appBarTitle: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 22,
+    fontWeight: Typography.weight.semiBold,
   },
-  emergencyIcon: { fontSize: 24 },
-  emergencyText: { flex: 1, gap: Spacing.xs },
-  emergencyTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.semiBold },
-  emergencySubtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  emergencyArrow: { fontSize: 22, fontWeight: '600' },
-  recommendBanner: {
-    flexDirection: 'row', alignItems: 'center', padding: Spacing.base,
-    borderRadius: Radius.md, borderWidth: 1, gap: Spacing.md,
+  menuIcon: { fontFamily: Typography.fontFamilyBody, fontSize: 22 },
+  content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 12 },
+  greeting: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 28,
+    fontWeight: Typography.weight.bold,
   },
-  recommendIcon: { fontSize: 24 },
-  recommendText: { flex: 1, gap: Spacing.xs },
-  recommendTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.semiBold },
-  recommendSubtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  recommendArrow: { fontSize: 22, fontWeight: '600' },
+  searchBar: {
+    borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 18,
+  },
+  searchPlaceholder: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 14,
+    fontWeight: Typography.weight.semiBold,
+  },
+  categoryRow: { flexDirection: 'row', gap: 8 },
+  categoryChip: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16,
+  },
+  categoryChipText: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 12,
+    fontWeight: Typography.weight.semiBold, textAlign: 'center',
+  },
+  heroBanner: {
+    height: 130, borderRadius: 20, overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  heroOverlay: {
+    padding: 16, backgroundColor: 'rgba(5,26,38,0.32)',
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+  },
+  heroText: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 22,
+    fontWeight: Typography.weight.semiBold,
+  },
+  sectionLabel: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 16,
+    fontWeight: Typography.weight.regular,
+  },
+  destRow: { flexDirection: 'row', gap: 12 },
+  destCard: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+  destImageBox: { width: '100%', height: 80 },
+  destImage: { width: '100%', height: '100%', borderRadius: 16 },
+  destImagePlaceholder: {
+    width: '100%', height: '100%', borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  destImageEmoji: { fontSize: 28 },
+  destInfo: { paddingHorizontal: 12, paddingBottom: 12, paddingTop: 4, gap: 2 },
+  destName: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 14,
+    fontWeight: Typography.weight.regular,
+  },
+  destLocation: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 12,
+    fontWeight: Typography.weight.semiBold,
+  },
+  tripCard: {
+    borderRadius: 16, padding: 12, gap: 4,
+  },
+  tripTitle: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 14,
+    fontWeight: Typography.weight.regular,
+  },
+  tripMeta: {
+    fontFamily: Typography.fontFamilyBody, fontSize: 12,
+    fontWeight: Typography.weight.semiBold,
+  },
 });

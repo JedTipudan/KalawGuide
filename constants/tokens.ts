@@ -1,12 +1,12 @@
 // KalawGuide Design Tokens
 export const Colors = {
   light: {
-    background: '#E8EFEE',
+    background: '#F7F8F5',
     surface: '#FFFFFF',
-    subtle: '#D4E2E0',
-    text: '#0D2530',
-    muted: '#3D5A65',
-    border: '#B0C8C8',
+    subtle: '#EDF3F2',
+    text: '#122F3C',
+    muted: '#57717A',
+    border: '#DDE7E7',
     primary: '#075C73',
     onPrimary: '#FFFFFF',
     accent: '#087F75',

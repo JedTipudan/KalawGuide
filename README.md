@@ -78,6 +78,7 @@ The root navigator detects `Platform.OS === 'web'` at build time and registers *
 | Web layout | WebNav + WebLayout + AdminShell + BusinessShell components |
 | SVG | react-native-svg 15.16.0 |
 | Web maps | Leaflet (loaded via WebView HTML on native, iframe on web) |
+| Design | Figma (`MZTmx7DKqJlhSyaObMO3Ht`) — Mobile Version canvas |
 
 ---
 
@@ -384,6 +385,65 @@ Public web screens (`landing`, `explore`, `businesses`, `emergency`) are accessi
 **Build errors**
 - Run `npx expo-doctor`
 - Ensure `app.json` asset paths point to existing files
+
+---
+
+## Design System
+
+All mobile screens are implemented to match the Figma design exactly (file `MZTmx7DKqJlhSyaObMO3Ht`, node `3-4` — Mobile Version canvas).
+
+| Token | Value |
+|---|---|
+| Primary | `#075C73` |
+| Accent | `#087F75` |
+| Background | `#F7F8F5` |
+| Surface | `#FFFFFF` |
+| Subtle | `#EDF3F2` |
+| Border | `#DDE7E7` |
+| Text | `#122F3C` |
+| Muted | `#57717A` |
+
+**Patterns:**
+- Nav bar: `‹ Screen name` in primary color + `☰` icon, white bg, `paddingHorizontal: 20`
+- Cards: `borderRadius: 18`, white bg, flat (no shadow)
+- Primary button: `#075C73` bg, white text, `borderRadius: 12`, `paddingVertical: 13`
+- Secondary button: white bg, `#DDE7E7` border, same radius/padding
+- Bottom tab: active item has `#EDF3F2` pill, `borderRadius: 8`, Inter Bold 10px labels
+- FAB: `#075C73`, 56×56, `borderRadius: 28`, `bottom: 90, right: 20`
+
+### Screens implemented from Figma
+
+| Screen | File |
+|---|---|
+| Splash | `app/index.tsx` |
+| Welcome | `app/(auth)/welcome.tsx` |
+| Sign In | `app/(auth)/sign-in.tsx` |
+| Onboarding | `app/(auth)/onboarding.tsx` |
+| Home dashboard | `app/(tourist)/(tabs)/home.tsx` |
+| Explore destinations | `app/(tourist)/(tabs)/explore.tsx` |
+| My Trips | `app/(tourist)/(tabs)/trips.tsx` |
+| Profile | `app/(tourist)/(tabs)/profile.tsx` |
+| Budget planner | `app/(tourist)/budget.tsx` |
+| Destination detail | `app/(tourist)/destination/[id].tsx` |
+| Emergency | `app/(tourist)/emergency.tsx` |
+| Expense tracker | `app/(tourist)/expenses.tsx` |
+| Tab navigator | `app/(tourist)/(tabs)/_layout.tsx` |
+| KalawAssistance FAB | `components/assistant/KalawAssistanceFAB.tsx` |
+
+---
+
+## Changelog
+
+### Figma design implementation
+- Rewrote all major tourist-facing mobile screens to match Figma pixel-for-pixel
+- Updated `constants/tokens.ts` light mode colors to match Figma design tokens
+- Tab navigator updated: active pill `#EDF3F2`, Inter Bold 10px labels, correct padding
+- FAB fixed to exact 56×56 with `borderRadius: 28`
+- Added `app/(tourist)/explore-for-trip.tsx` — destination picker for new trips
+
+### "Add to My Trips" behavior fix
+- Destination detail `Add to My Trips` now directly creates an itinerary (no navigation to picker)
+- `+New` on the Trips screen still navigates to the explore-for-trip destination picker
 
 ---
 

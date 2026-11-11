@@ -1,18 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  TouchableOpacity, KeyboardAvoidingView, Platform,
+  TouchableOpacity, KeyboardAvoidingView, Platform, TextInput,
 } from 'react-native';
-import { TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { KalawButton } from '../../components/common/KalawButton';
-import { KalawInput } from '../../components/common/KalawInput';
-import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
-import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { Typography } from '../../constants/tokens';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -23,36 +19,23 @@ export default function SignInScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-
-  const passwordRef = useRef<React.ElementRef<typeof TextInput>>(null);
-
-  function validate(): boolean {
-    const e: typeof errors = {};
-    if (!email.trim()) e.email = 'Email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Enter a valid email address.';
-    if (!password) e.password = 'Password is required.';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
+  const passwordRef = useRef<TextInput>(null);
 
   async function handleSignIn() {
-    if (!validate()) return;
-    setLoading(true);
-    setErrors({});
+    if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
+    setLoading(true); setError('');
     try {
       await signIn({ email: email.trim(), password });
     } catch (err: unknown) {
-      setErrors({ general: err instanceof Error ? err.message : 'Sign in failed. Please try again.' });
-    } finally {
-      setLoading(false);
-    }
+      setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
+    } finally { setLoading(false); }
   }
 
   async function handleGoogleSignIn() {
-    setGoogleLoading(true);
     try {
       const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
       if (!clientId) {
@@ -67,93 +50,114 @@ export default function SignInScreen() {
         const info = await (await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${result.authentication.accessToken}`)).json();
         const { isNewUser } = await googleSignIn({ id: info.sub, email: info.email, name: info.name, picture: info.picture });
         if (isNewUser) router.replace('/(auth)/role-select');
-      } else if (result.type !== 'cancel') {
-        setErrors({ general: 'Google sign-in failed. Please try again.' });
       }
-    } catch (err: unknown) {
-      setErrors({ general: err instanceof Error ? err.message : 'Google sign-in failed.' });
-    } finally {
-      setGoogleLoading(false);
-    }
+    } catch { /* silent */ }
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Top bar */}
+      <View style={[styles.topBar, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.brandTitle, { color: colors.primary }]}>≋  KalawGuide</Text>
+        <TouchableOpacity style={[styles.themeBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.themeBtnText, { color: colors.text }]}>◐ Theme</Text>
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Text style={[styles.backText, { color: colors.primary }]}>← Back</Text>
-            </TouchableOpacity>
-          </View>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.formWrapper}>
+            <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
+              {/* Header */}
+              <Text style={[styles.welcomeLabel, { color: colors.accent }]}>WELCOME TO KALAWGUIDE</Text>
+              <Text style={[styles.heading, { color: colors.text }]}>Your next adventure{'\n'}starts here.</Text>
+              <Text style={[styles.headingSubtitle, { color: colors.muted }]}>
+                Welcome back. Sign in to your KalawGuide account.
+              </Text>
 
-          <View style={styles.titleSection}>
-            <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>Sign in to continue your journey</Text>
-          </View>
+              {/* Error */}
+              {!!error && (
+                <View style={[styles.errorBanner, { backgroundColor: colors.danger + '20', borderColor: colors.danger }]}>
+                  <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
+                </View>
+              )}
 
-          <GoogleSignInButton onPress={handleGoogleSignIn} loading={googleLoading} />
-
-          <View style={styles.divider}>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.muted }]}>OR CONTINUE WITH EMAIL</Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          </View>
-
-          <View style={styles.form}>
-            {errors.general && (
-              <View style={[styles.errorBanner, { backgroundColor: colors.danger + '20', borderColor: colors.danger }]}>
-                <Text style={[styles.errorBannerText, { color: colors.danger }]}>{errors.general}</Text>
+              {/* Email field */}
+              <View style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Email or username</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.muted }]}
+                  placeholder="you@example.com"
+                  placeholderTextColor={colors.muted}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  blurOnSubmit={false}
+                />
               </View>
-            )}
 
-            <KalawInput
-              label="Email address"
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoComplete="email"
-              returnKeyType="next"
-              onSubmitEditing={() => passwordRef.current?.focus()}
-              blurOnSubmit={false}
-              error={errors.email}
-            />
+              {/* Password field */}
+              <View style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  Password · <Text onPress={() => setShowPassword(v => !v)} style={{ color: colors.primary }}>
+                    {showPassword ? 'Hide' : 'Show'}
+                  </Text>
+                </Text>
+                <TextInput
+                  ref={passwordRef}
+                  style={[styles.fieldInput, { color: colors.muted }]}
+                  placeholder="Enter your password"
+                  placeholderTextColor={colors.muted}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  returnKeyType="go"
+                  onSubmitEditing={handleSignIn}
+                />
+              </View>
 
-            <KalawInput
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-              returnKeyType="go"
-              onSubmitEditing={handleSignIn}
-              blurOnSubmit
-              ref={passwordRef}
-              error={errors.password}
-            />
+              {/* Remember me + forgot */}
+              <Text style={[styles.rememberRow, { color: colors.muted }]}>
+                <Text onPress={() => setRememberMe(v => !v)}>
+                  {rememberMe ? '☑' : '□'}{'  '}Remember me
+                </Text>
+                {'          '}
+                <Text style={{ color: colors.muted }} onPress={() => router.push('/(auth)/forgot-password')}>
+                  Forgot password?
+                </Text>
+              </Text>
 
-            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
-              <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
-            </TouchableOpacity>
+              <Text style={[styles.roleNote, { color: colors.muted }]}>
+                Your account role opens your dedicated workspace.
+              </Text>
 
-            <KalawButton label="Sign In" onPress={handleSignIn} loading={loading} fullWidth size="lg" />
+              {/* Sign In button */}
+              <TouchableOpacity
+                style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+                onPress={handleSignIn}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>
+                  {loading ? 'Signing in…' : 'Sign In'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Create account */}
+              <TouchableOpacity onPress={() => router.push('/(auth)/register-tourist')}>
+                <Text style={[styles.createAccountText, { color: colors.primary }]}>
+                  New to KalawGuide? Create an Account
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <View style={styles.registerSection}>
-            <Text style={[styles.registerText, { color: colors.muted }]}>Don't have an account?{' '}</Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register-tourist')}>
-              <Text style={[styles.registerLink, { color: colors.primary }]}>Register as Tourist</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.registerSection}>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register-business')}>
-              <Text style={[styles.registerLink, { color: colors.primary }]}>Register as Business Owner</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={[styles.legal, { color: colors.muted }]}>KalawGuide · Privacy Policy · Terms and Conditions</Text>
+          <Text style={[styles.legal, { color: colors.muted }]}>
+            KalawGuide · Privacy Policy · Terms and Conditions
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -162,22 +166,39 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl },
-  header: { marginBottom: -Spacing.sm },
-  backButton: { alignSelf: 'flex-start', padding: Spacing.xs },
-  backText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  titleSection: { gap: Spacing.xs },
-  title: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h3, fontWeight: Typography.weight.bold },
-  subtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, fontWeight: Typography.weight.medium },
-  form: { gap: Spacing.base },
-  errorBanner: { padding: Spacing.md, borderRadius: Radius.sm, borderWidth: 1 },
-  errorBannerText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  forgotText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, textAlign: 'right' },
-  registerSection: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },
-  registerText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  registerLink: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.semiBold },
-  legal: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, textAlign: 'center' },
+  topBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 20,
+  },
+  brandTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  themeBtn: {
+    borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 18,
+  },
+  themeBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  scroll: { paddingBottom: 64 },
+  formWrapper: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 64 },
+  formCard: {
+    borderRadius: 24, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 18,
+  },
+  welcomeLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.bold },
+  heading: { fontFamily: Typography.fontFamilyBody, fontSize: 30, fontWeight: Typography.weight.bold, lineHeight: 40 },
+  headingSubtitle: { fontFamily: Typography.fontFamilyBody, fontSize: 15, marginTop: -10 },
+  errorBanner: { padding: 12, borderRadius: 8, borderWidth: 1 },
+  errorText: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
+  field: {
+    borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 16, paddingTop: 18, paddingBottom: 18, gap: 8,
+  },
+  fieldLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  fieldInput: { fontFamily: Typography.fontFamilyBody, fontSize: 12, padding: 0 },
+  rememberRow: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
+  roleNote: { fontFamily: Typography.fontFamilyBody, fontSize: 12, marginTop: -10 },
+  primaryBtn: {
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
+    alignItems: 'center',
+  },
+  primaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  createAccountText: { fontFamily: Typography.fontFamilyBody, fontSize: 13, fontWeight: Typography.weight.bold },
+  legal: { fontFamily: Typography.fontFamilyBody, fontSize: 12, textAlign: 'center', paddingHorizontal: 20 },
 });

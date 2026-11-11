@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
-  TouchableOpacity, Linking, Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { KalawAssistanceFAB } from '../../components/assistant/KalawAssistanceFAB';
+import { Typography } from '../../constants/tokens';
 
 interface ContactRow {
   id: string; name: string; organization: string;
@@ -14,10 +12,9 @@ interface ContactRow {
 }
 
 export default function EmergencyScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
   const [contacts, setContacts] = useState<ContactRow[]>([]);
-  const shadow = isDark ? Shadows.dark.sm : Shadows.light.sm;
 
   useEffect(() => {
     getDatabase().then(db =>
@@ -35,144 +32,131 @@ export default function EmergencyScreen() {
     ]);
   }
 
+  const LOCAL_CATEGORIES = [
+    { title: 'Police', icon: '🚔' },
+    { title: 'Hospital', icon: '🏥' },
+    { title: 'Rescue services', icon: '🚒' },
+  ];
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: colors.primary }]}>← Back</Text>
+      {/* Nav bar */}
+      <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.navTitle, { color: colors.primary }]}>‹ Emergency information</Text>
+        <TouchableOpacity onPress={() => router.push('/(tourist)/settings' as any)}>
+          <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
         </TouchableOpacity>
+      </View>
 
-        <Text style={[styles.title, { color: colors.text }]}>Emergency Information</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>
-          Local emergency contacts for Mati City, Davao Oriental
-        </Text>
-
-        {/* National hotlines — always shown */}
-        <View style={[styles.nationalCard, { backgroundColor: colors.danger + '15', borderColor: colors.danger + '40' }]}>
-          <Text style={[styles.nationalTitle, { color: colors.danger }]}>🚨 National Emergency Hotlines</Text>
-          {[
-            { label: 'National Emergency Hotline', number: '911' },
-            { label: 'Philippine National Police', number: '117' },
-            { label: 'Bureau of Fire Protection', number: '160' },
-          ].map(item => (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.nationalRow}
-              onPress={() => callNumber(item.number, item.label)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.nationalLabel, { color: colors.text }]}>{item.label}</Text>
-              <Text style={[styles.nationalNumber, { color: colors.danger }]}>{item.number}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={[styles.disclaimer, { backgroundColor: colors.warning + '15', borderColor: colors.warning + '40' }]}>
-          <Text style={[styles.disclaimerText, { color: colors.warning }]}>
-            ⚠️ Local contact numbers below are for reference only and may not be current. Always verify numbers locally. In immediate danger, call 911.
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: colors.text }]}>Emergency information</Text>
+          <Text style={[styles.subtitle, { color: colors.muted }]}>
+            Use verified contacts. In immediate danger, contact emergency services.
           </Text>
-        </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Local Contacts — Mati City</Text>
-
-        {contacts.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>📞</Text>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No local contacts available</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
-              Contact information will be added by the administrator.
+          {/* National emergency card */}
+          <View style={[styles.nationalCard, { backgroundColor: colors.subtle }]}>
+            <Text style={[styles.nationalLabel, { color: colors.danger }]}>NATIONAL EMERGENCY</Text>
+            <Text style={[styles.nationalNumber, { color: colors.danger }]}>911</Text>
+            <Text style={[styles.nationalSubtitle, { color: colors.text }]}>
+              Philippines · National emergency hotline
             </Text>
-          </View>
-        ) : (
-          contacts.map(contact => (
             <TouchableOpacity
-              key={contact.id}
-              style={[styles.contactCard, { backgroundColor: colors.surface, ...shadow }]}
-              onPress={() => callNumber(contact.contact_number, contact.name)}
+              style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+              onPress={() => callNumber('911', 'National Emergency')}
               activeOpacity={0.8}
             >
-              <View style={styles.contactLeft}>
-                <View style={styles.contactHeader}>
-                  <Text style={[styles.contactName, { color: colors.text }]} numberOfLines={1}>
-                    {contact.name}
-                  </Text>
-                  {contact.is_verified === 1 ? (
-                    <View style={[styles.verifiedBadge, { backgroundColor: colors.success + '20' }]}>
-                      <Text style={[styles.verifiedText, { color: colors.success }]}>✅ Verified</Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.unverifiedBadge, { backgroundColor: colors.warning + '20' }]}>
-                      <Text style={[styles.unverifiedText, { color: colors.warning }]}>⚠️ Unverified</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.contactOrg, { color: colors.muted }]}>{contact.organization}</Text>
-                {contact.description ? (
-                  <Text style={[styles.contactDesc, { color: colors.muted }]} numberOfLines={2}>
-                    {contact.description}
-                  </Text>
-                ) : null}
-              </View>
-              <View style={styles.contactRight}>
-                <Text style={[styles.contactNumber, { color: colors.primary }]}>
-                  {contact.contact_number}
-                </Text>
-                <Text style={[styles.callHint, { color: colors.muted }]}>Tap to call</Text>
-              </View>
+              <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>Call 911</Text>
             </TouchableOpacity>
-          ))
-        )}
+            <Text style={[styles.sourceText, { color: colors.muted }]}>
+              Official source: Emergency 911 National Office{'\n'}
+              e911.gov.ph · Published official documentation (2022){'\n'}
+              Source reviewed: 03 Nov 2026
+            </Text>
+          </View>
 
-        <View style={[styles.safetyTips, { backgroundColor: colors.subtle }]}>
-          <Text style={[styles.safetyTitle, { color: colors.text }]}>🛡 Safety Tips</Text>
-          {[
-            'Save emergency numbers before your trip.',
-            'Know your accommodation\'s full address.',
-            'Keep a copy of your ID and passport.',
-            'Share your itinerary with someone at home.',
-            'Register with your embassy for extended stays.',
-          ].map((tip, i) => (
-            <Text key={i} style={[styles.safetyTip, { color: colors.muted }]}>• {tip}</Text>
-          ))}
+          {/* Local directory */}
+          <View style={styles.localDir}>
+            {contacts.length > 0 ? contacts.map(contact => (
+              <TouchableOpacity
+                key={contact.id}
+                style={[styles.localCard, { backgroundColor: colors.surface }]}
+                onPress={() => callNumber(contact.contact_number, contact.name)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.localCardTitle, { color: colors.text }]}>{contact.name}</Text>
+                {contact.is_verified ? (
+                  <Text style={[styles.localCardNumber, { color: colors.primary }]}>{contact.contact_number}</Text>
+                ) : (
+                  <>
+                    <Text style={[styles.awaitingText, { color: colors.warning }]}>
+                      Local contact awaiting verification
+                    </Text>
+                    <Text style={[styles.awaitingBody, { color: colors.muted }]}>
+                      No unverified number is displayed. Use the national emergency hotline for urgent help.
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )) : LOCAL_CATEGORIES.map(cat => (
+              <View key={cat.title} style={[styles.localCard, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.localCardTitle, { color: colors.text }]}>{cat.title}</Text>
+                <Text style={[styles.awaitingText, { color: colors.warning }]}>
+                  Local contact awaiting verification
+                </Text>
+                <Text style={[styles.awaitingBody, { color: colors.muted }]}>
+                  No unverified number is displayed. Use the national emergency hotline for urgent help.
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Safety reminders */}
+          <View style={[styles.safetyCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.safetyTitle, { color: colors.text }]}>Share your location clearly.</Text>
+            <Text style={[styles.safetyBody, { color: colors.muted }]}>
+              State your location, the nature of the emergency, and a callback number. Move to a safe place if you can. Do not rely on offline travel content for live emergency conditions.
+            </Text>
+            <Text style={[styles.safetyWarning, { color: colors.warning }]}>
+              Local emergency information: awaiting verified administrator publication.
+            </Text>
+          </View>
         </View>
       </ScrollView>
+
+      <KalawAssistanceFAB />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: Spacing.base, gap: Spacing.lg, paddingBottom: Spacing.xxxl },
-  backBtn: { alignSelf: 'flex-start', padding: Spacing.xs },
-  backText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  title: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h4, fontWeight: Typography.weight.bold },
-  subtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  nationalCard: { borderRadius: Radius.md, padding: Spacing.base, borderWidth: 1, gap: Spacing.md },
-  nationalTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.bold },
-  nationalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.sm },
-  nationalLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, flex: 1 },
-  nationalNumber: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
-  disclaimer: { borderRadius: Radius.md, padding: Spacing.md, borderWidth: 1 },
-  disclaimerText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, lineHeight: Typography.size.body * Typography.lineHeight },
-  sectionTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
-  contactCard: { borderRadius: Radius.md, padding: Spacing.base, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  contactLeft: { flex: 1, gap: Spacing.xs },
-  contactHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
-  contactName: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.semiBold, flex: 1 },
-  verifiedBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
-  verifiedText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, fontWeight: Typography.weight.medium },
-  unverifiedBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
-  unverifiedText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, fontWeight: Typography.weight.medium },
-  contactOrg: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  contactDesc: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  contactRight: { alignItems: 'flex-end', gap: Spacing.xs },
-  contactNumber: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.bold },
-  callHint: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label },
-  empty: { alignItems: 'center', paddingVertical: Spacing.xl, gap: Spacing.md },
-  emptyIcon: { fontSize: 48 },
-  emptyTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.semiBold },
-  emptySubtitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, textAlign: 'center', maxWidth: 280 },
-  safetyTips: { borderRadius: Radius.md, padding: Spacing.base, gap: Spacing.sm },
-  safetyTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.bold },
-  safetyTip: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, lineHeight: Typography.size.body * Typography.lineHeight },
+  navBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 18,
+  },
+  navTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  menuIcon: { fontFamily: Typography.fontFamilyBody, fontSize: 22 },
+  scroll: { paddingBottom: 100 },
+  content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 72, gap: 28 },
+  title: { fontFamily: Typography.fontFamilyBody, fontSize: 28, fontWeight: Typography.weight.bold },
+  subtitle: { fontFamily: Typography.fontFamilyBody, fontSize: 15, marginTop: -20 },
+  nationalCard: { borderRadius: 18, padding: 24, gap: 16 },
+  nationalLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.bold },
+  nationalNumber: { fontFamily: Typography.fontFamilyBody, fontSize: 64, fontWeight: Typography.weight.bold, lineHeight: 72 },
+  nationalSubtitle: { fontFamily: Typography.fontFamilyBody, fontSize: 18, fontWeight: Typography.weight.bold },
+  primaryBtn: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center' },
+  primaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  sourceText: { fontFamily: Typography.fontFamilyBody, fontSize: 12, lineHeight: 18 },
+  localDir: { gap: 20 },
+  localCard: { borderRadius: 18, padding: 24, gap: 16 },
+  localCardTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  localCardNumber: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  awaitingText: { fontFamily: Typography.fontFamilyBody, fontSize: 14 },
+  awaitingBody: { fontFamily: Typography.fontFamilyBody, fontSize: 14 },
+  safetyCard: { borderRadius: 18, padding: 24, gap: 14 },
+  safetyTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  safetyBody: { fontFamily: Typography.fontFamilyBody, fontSize: 15 },
+  safetyWarning: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
 });
