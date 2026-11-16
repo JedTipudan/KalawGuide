@@ -1,547 +1,393 @@
 # KalawGuide
 
-A cross-platform travel discovery and management platform for Mati City, Davao Oriental, Philippines.
+**A little more local. A lot more possibility.**
 
-Built for the ITMSD1 Inter-Class Mobile Hackathon.
+KalawGuide is a travel guide for **Mati City, Davao Oriental, Philippines**. It runs as a mobile app (Android and iOS) and as a website. Tourists use it to discover destinations, plan trips and budgets, track what they spend, and find **local businesses that an administrator has verified as legitimate**.
 
----
+KalawGuide **does not take bookings or payments**. It works like a trusted directory: business owners advertise their business, and administrators check that it's legit before it's shown to tourists. Tourists then contact the business directly.
 
-## Platform Support
-
-KalawGuide runs on two separate platforms that share the same SQLite database and business logic — only the layout differs.
-
-| Platform | Entry point | Layout |
-|---|---|---|
-| Mobile (Expo Go / Android / iOS) | `app/(auth)/`, `app/(tourist)/`, `app/(business)/`, `app/(admin)/` | Tab navigator + mobile screens |
-| Web (browser) | `app/(web)/` | Full-width website with top navbar |
-
-The root navigator detects `Platform.OS === 'web'` at build time and registers **only** the `(web)` screen group on web and **only** the native groups on mobile. This prevents Expo Router from resolving web URLs into mobile screens on hard refresh.
+Built for the **ITMSD1 Inter-Class Mobile Hackathon**. All AI assistance used to build it is documented in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
 ---
 
-## Features
+## Contents
 
-**Tourist**
-- Destination discovery with search and category filters
-- Destination detail page with Leaflet map, entrance fee, and favorites
-- Budget planner with deterministic cost calculations
-- Saved budget plans list
-- Itinerary planner with day-by-day activity management
-- Actual expense tracker with category totals
-- Local business discovery (verified listings only)
-- Booking requests with status tracking
-- Emergency information with tappable phone numbers
-- KalawAssistance — offline-first travel assistant
-- Recommendations page
-- Light / Dark / System theme
-
-**Business Owner**
-- Business profile creation and verification submission
-- Product and service management
-- Price list management
-- Facilities management
-- Booking request approval and rejection
-- Business notifications
-
-**Administrator**
-- Platform-wide statistics dashboard
-- User management with role assignment and status control
-- Business verification (approve / reject / suspend)
-- Destination management with featured toggle
-- Emergency contact management with verification status
-- Activity logs
-- Reports
-
-**Web (all roles)**
-- Public landing page — hero, destination grid, category browser, budget promo, how it works
-- Two-column authentication pages (sign in, register tourist, register business, forgot password, role select)
-- Full-width tourist dashboard, explore, budget, trips, expenses, businesses, emergency, profile, recommendations
-- Full-width business owner portal (dashboard, profile, products, prices, facilities, bookings, notifications, settings)
-- Full-width admin control center (dashboard, users, businesses, destinations, emergency, reports, activity logs, settings)
-- Top navbar with role-based navigation links and theme toggle
-- Hard-refresh safe — web URLs always resolve to the correct web screen
+1. [How it works](#how-it-works)
+2. [Features by role](#features-by-role)
+3. [Kalaw Assistance](#kalaw-assistance)
+4. [Live map](#live-map)
+5. [Tech stack](#tech-stack)
+6. [Getting started](#getting-started)
+7. [Accounts and sign-in](#accounts-and-sign-in)
+8. [Deploying for free](#deploying-for-free)
+9. [Testing and quality checks](#testing-and-quality-checks)
+10. [Data and offline model](#data-and-offline-model)
+11. [Project structure](#project-structure)
+12. [Web architecture and routing](#web-architecture-and-routing)
+13. [Design system](#design-system)
+14. [Troubleshooting](#troubleshooting)
+15. [Changelog](#changelog)
+16. [License](#license)
 
 ---
 
-## Technology Stack
+## How it works
+
+```
+Business owner                     Administrator                         Tourist
+──────────────                     ─────────────                         ───────
+Creates business profile  ──►  Reviews documents & details  ──►  Sees only ✅ verified businesses
+Adds products, services,       Approves / rejects / suspends        Browses prices, photos, facilities
+prices, facilities, photos     Reviews later price changes          Contacts the business directly
+Submits for verification       Manages destinations & contacts      Plans trips, budgets, expenses
+```
+
+- **Verification is the core of the platform.** A business stays hidden from tourists until an administrator approves it. When an approved business changes a price, the change goes to the administrator for review. Tourists keep seeing the current published price until the change is approved.
+- **Prices are labelled honestly.** Values that are confirmed in KalawGuide or published by a verified business show as *verified*. Everything else is marked as an *estimate*.
+- **Emergency numbers carry a verified / unverified badge.** Administrators only mark a number verified after confirming it themselves.
+
+---
+
+## Features by role
+
+### Tourist
+- **Home:** greeting, search, categories, featured destinations, and a **🗺 Live map** shortcut.
+- **Explore:** destinations with search and category filters.
+- **Destination details:**
+  - Description, entrance fee (verified or estimate), and favorites.
+  - A **live map** with your position and how far away you are.
+  - A **Get directions** button that opens Google Maps.
+  - **Add to My Trips**.
+- **Live map page:** every destination on one map, plus your real-time GPS location.
+- **Businesses:** verified local businesses only. Each one shows its prices, products, services, facilities and contact details.
+- **Budget planner:** a deterministic trip estimate (transport, accommodation, food, activities, fees), with saved budgets.
+- **My Trips:** a day-by-day itinerary planner.
+- **Expense tracker:** actual spending against the estimate, with category totals.
+- **Favorites, Recommendations, Emergency information** (tappable phone numbers).
+- **Kalaw Assistance:** an offline travel assistant (see below).
+- **Profile:** account details, Light / Dark / System theme, quick links, sign out.
+
+### Business owner
+- **Business profile:** details, location, operating hours, contact links, photos.
+- **Verification:** upload ownership documents and submit for review, then follow the status (not submitted → pending → approved / rejected / suspended).
+- **Listings:** products, services, a price list (price changes are re-reviewed after approval), and facilities.
+- **Notifications:** verification and listing updates.
+
+### Administrator
+- **Dashboard:** users, verification queue, destinations and price changes awaiting review.
+- **Business verification:** approve, reject (with a reason) or suspend businesses, and review price changes.
+- **User management:** change roles, block or unblock accounts.
+- **Destinations and categories:** add, edit, feature, hide or show.
+- **Emergency contacts:** add, edit, delete, and mark verified.
+- **Reports & analytics:**
+  - Live counts for the **last 7 days, last 30 days or all time**.
+  - Users, verification breakdown, listings, and tourist activity (trips, budgets, expenses and amount tracked, saved places).
+  - The most popular destinations, and verified businesses by category.
+- **Activity logs:** a real audit trail, filterable by **Accounts / Businesses / Content**. It records:
+  - Account events: sign-ins (including failed attempts), sign-ups and sign-outs.
+  - User changes: role changes, blocks and unblocks.
+  - Business events: verification decisions, submissions, and price changes.
+  - Content edits: destinations, categories and emergency contacts.
+- **Settings (mobile):**
+  - Account card and a **Light / Dark / System** theme picker.
+  - Admin tools, with badges for pending reviews and unverified contacts.
+  - About section, and sign out with a confirmation step.
+
+### Website (all roles)
+- **Public pages:** landing page, explore, businesses, emergency and map.
+- **Role-based apps:** the full tourist experience, a business owner portal and an admin control center, each with its own navigation.
+- **Responsive design:** below 1024 px the top navigation collapses into a ☰ menu, and layouts stack into one column on phones. The page never scrolls sideways.
+
+---
+
+## Kalaw Assistance
+
+A rule-based travel assistant that works **fully offline**. It answers only from KalawGuide's own data, never makes up places, prices or phone numbers, and needs **no API key, no server and no paid AI**.
+
+| Ask something like… | You get |
+|---|---|
+| "What are the best places to visit in Mati?" | **3 recommended places**, each with why to go, the category, the entrance fee and a card |
+| "Best beach / nature / free places to visit" | The same, filtered by your preference |
+| "How much for Dahican Beach for 4 people, 3 days?" | An itemized budget estimate |
+| "Plan a 3-day trip for 2 people" | A day-by-day plan with entrance fees totalled |
+| "Where can I stay?" / "Where to eat?" / "How do I get to Mati?" | Verified accommodation, food or transport, with published prices |
+| "How do I book a room?" | An explanation that KalawGuide doesn't take bookings, plus contact details for verified businesses |
+| "Emergency numbers" | Police, hospital, fire, coast guard and disaster office, each marked verified or not |
+
+- **Safety:**
+  - An input guard blocks prompt-injection attempts.
+  - Off-topic questions are politely refused.
+  - The output is validated before it's shown.
+- **Chat history:** saved per signed-in user.
+- **Keyboard:** on web, **Enter sends** and Shift+Enter adds a new line.
+- **Code:** `features/assistant/` (engine, intent detection, guard, budget parser, knowledge queries) with Jest tests.
+
+---
+
+## Live map
+
+- **What it is:** a [Leaflet](https://leafletjs.com) map with **CARTO** tiles built from OpenStreetMap data. It's free, needs no API key, and the attribution stays visible as the tiles' terms require.
+- **Live position:** GPS comes from `expo-location`, and a pulsing blue dot follows the user. The ◎ button centres on you and ⤢ shows all places.
+- **Mobile:** the map runs inside a WebView.
+- **Web:** the map runs in a same-origin `srcdoc` frame. This is required because the COOP/COEP headers that the browser database needs block cross-origin embeds.
+- **Directions:** open in Google Maps through a normal link (free).
+- **Requirements:** location only works in a secure context, meaning `https://` or `http://localhost`. On a phone, test with the deployed link.
+- **Code:** `components/map/` and `features/map/useLiveLocation.ts`.
+
+---
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Mobile framework | React Native 0.88.1 + Expo SDK 58 |
-| Navigation | Expo Router 5 |
-| Language | TypeScript 6 |
-| Local database | Expo SQLite (~58.0.15) |
-| Secure storage | Expo SecureStore (native) / localStorage (web) |
-| Authentication | Email/password + Google OAuth (expo-auth-session) |
-| Fonts | Manrope + Inter (expo-google-fonts) |
-| Theme | React Native useColorScheme + AsyncStorage |
-| Web layout | WebNav + WebLayout + AdminShell + BusinessShell components |
-| SVG | react-native-svg 15.16.0 |
-| Web maps | Leaflet (loaded via WebView HTML on native, iframe on web) |
-| Design | Figma (`MZTmx7DKqJlhSyaObMO3Ht`) — Mobile Version canvas |
+| Framework | Expo SDK 58 · React Native 0.88 · React 19 |
+| Navigation | Expo Router (file-based, typed routes) |
+| Language | TypeScript |
+| Database | `expo-sqlite`: SQLite on device, and SQLite/WebAssembly in the browser |
+| Auth | Email/password + Google (`expo-auth-session`); sessions in SecureStore (native) or localStorage (web) |
+| Location and maps | `expo-location`, Leaflet + CARTO tiles via `react-native-webview` |
+| Theme | Light / Dark / System, persisted |
+| Tests | Jest (runs the real migrations and SQL on Node's built-in SQLite) |
+| Hosting | Vercel (web), EAS Build (Android APK) |
+| Design | Figma file `MZTmx7DKqJlhSyaObMO3Ht` |
 
 ---
 
-## Prerequisites
+## Getting started
 
-- Node.js 18+
-- npm
-- Expo Go app on your device, or Android Studio / Xcode for native builds
-
----
-
-## Installation
+**Requirements:** Node.js 20 or newer (Node 22 recommended), npm, and the Expo Go app on your phone.
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/JedTipudan/KalawGuide.git
 cd KalawGuide
 npm install
+cp .env.example .env      # optional, see "Accounts and sign-in"
+npx expo start
 ```
+
+- **Phone:** scan the QR code with Expo Go. Phone and computer must be on the same Wi-Fi.
+- **Web:** press **w**, or open `http://localhost:8081`.
+- **Emulators:** press **a** (Android) or **i** (iOS).
+
+Always add packages with `npx expo install <package>` so the versions match the SDK.
 
 ---
 
-## Environment Configuration
+## Accounts and sign-in
+
+### Default admin (seeded on first launch)
+
+| Email | Password |
+|---|---|
+| `admin@kalawguide.app` | `admin2024!` |
+
+Tourist and business owner accounts are created from the sign-up screens. Each device or browser has its own database (see [Data and offline model](#data-and-offline-model)), so create test accounts on the device you'll demo on.
+
+### Google Sign-In (optional)
+
+Without a client ID, the Google button signs in a **demo** Google user, which is fine for the hackathon. To use real Google accounts:
+
+1. In [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials), create OAuth clients: a **Web** client, **Android** (`com.kalawguide.app`) and **iOS** (`com.kalawguide.app`).
+2. Put the web client ID in `.env` as `EXPO_PUBLIC_GOOGLE_CLIENT_ID`. Add the Android and iOS IDs too if you build those apps.
+3. For the deployed site, add its URL to the web client's *Authorized JavaScript origins* and *redirect URIs*.
+
+Never commit `.env`. Only `.env.example` belongs in git.
+
+---
+
+## Deploying for free
+
+The full step-by-step checklist is in **[`guide.html`](guide.html)**. Open it in a browser.
+
+### Website: Vercel (Hobby plan)
+`vercel.json` already contains:
+- **Build:** `npx expo export -p web` → `dist`, framework preset "Other".
+- **Headers:** `Cross-Origin-Embedder-Policy: credentialless` and `Cross-Origin-Opener-Policy: same-origin`. `expo-sqlite` needs both to run in the browser.
+- **Rewrite:** every path goes to `/`, so refreshing any page works.
+
+Import the GitHub repo in Vercel (**Add New → Project → Import → Deploy**), and every push to `main` redeploys. Without GitHub, run `npx vercel login` and then `npx vercel --prod`.
+
+### Android APK: EAS Build (free plan)
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest build -p android --profile preview
+```
+The `preview` profile in `eas.json` builds an installable `.apk`. Share the download link or its QR code.
+
+---
+
+## Testing and quality checks
 
 ```bash
-cp .env.example .env
+npx jest              # unit tests (assistant, budget service, reports, activity log)
+npx tsc --noEmit      # type check
+npx expo lint         # lint
+npx expo-doctor       # dependency / config check
 ```
 
-Edit `.env` and fill in your values. The app runs in demo mode without a Google Client ID — Google Sign-In will use a simulated account.
+The tests run the app's real migrations and SQL against Node's built-in SQLite (`testing/fakeSqlite.ts`).
 
 ---
 
-## Google OAuth Setup
+## Data and offline model
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. Create a project
-3. Configure the OAuth consent screen
-4. Create OAuth 2.0 credentials:
-   - **Web** client — for Expo Go and web
-   - **Android** client — package: `com.kalawguide.app`
-   - **iOS** client — bundle ID: `com.kalawguide.app`
-5. Add your Web Client ID to `.env` as `EXPO_PUBLIC_GOOGLE_CLIENT_ID`
-6. For Android builds, add your SHA-1 fingerprint to the Android OAuth client
-
----
-
-## Running the App
-
-```bash
-# Start development server (then press W for web, scan QR for mobile)
-npm start
-
-# Android
-npm run android
-
-# iOS
-npm run ios
-
-# Web
-npm run web
-```
-
-- **Web**: opens at `http://localhost:8081` — full-width website layout
-- **Mobile**: scan the QR code with Expo Go, or press `a` / `i` for emulators
-
----
-
-## Database
-
-The app uses Expo SQLite with automatic migrations on first launch. All 19 tables are created via `CREATE TABLE IF NOT EXISTS` before any `ALTER TABLE` column migrations run — this ensures a fresh database initialises correctly on both web and native.
-
-Seed data (destinations, categories, emergency contacts, default admin account) is inserted automatically on first launch.
-
-Both web and mobile share the same local SQLite database — data entered on web is visible on mobile and vice versa (same device).
-
-To reset the database during development, uninstall and reinstall the app (mobile) or clear site data in the browser (web).
-
-### Database Tables
+- **All data lives in a local SQLite database:** on the device for mobile, and inside the browser for web. The app works without internet, apart from map tiles and Google Sign-In.
+- **The schema migrates itself** on first launch (`database/migrations/init.ts`). Seed data is loaded automatically: categories, destinations, emergency contacts and the admin account.
+- **Each device or browser has its own copy.** On the deployed website, every visitor starts from the same seed data, but their accounts and changes stay on their own device. Shared, cross-device data would need a backend, which is outside the free setup.
+- **To reset:** uninstall the app (mobile), or clear site data in DevTools → Application → Storage (web).
 
 | Table | Purpose |
 |---|---|
-| `users` | Accounts with role and status |
-| `destination_categories` | Category definitions (Beach, Nature, etc.) |
-| `destinations` | Destination listings with geo coordinates |
-| `businesses` | Business listings with verification status |
-| `business_documents` | Uploaded verification documents |
-| `business_services` | Services offered by a business |
-| `business_products` | Products offered by a business |
-| `booking_requests` | Tourist booking requests |
-| `itineraries` | Trip itineraries |
-| `itinerary_items` | Day-by-day itinerary activities |
-| `budget_plans` | Saved budget calculations |
-| `expenses` | Actual expense records |
-| `emergency_contacts` | Emergency numbers with verification |
-| `notifications` | In-app notifications |
-| `sync_queue` | Offline sync queue |
-| `assistant_messages` | KalawAssistance chat history |
-| `listing_prices` | Business price lists |
-| `listing_facilities` | Business facility tags |
-| `listing_revisions` | Business listing change requests |
-| `favorites` | Tourist saved destinations and businesses |
+| `users` | Accounts with role (tourist / business_owner / admin) and status |
+| `destination_categories`, `destinations` | Destinations with coordinates, fee and verification flag |
+| `businesses`, `business_documents` | Business listings and their verification documents |
+| `business_products`, `business_services`, `listing_prices`, `listing_facilities` | What a business advertises |
+| `listing_revisions` | Price changes waiting for admin review |
+| `itineraries`, `itinerary_items` | Trips and day-by-day stops |
+| `budget_plans`, `expenses` | Saved budgets and actual spending |
+| `favorites` | Saved destinations and businesses |
+| `emergency_contacts` | Emergency numbers with verified status |
+| `notifications` | In-app notifications for business owners |
+| `assistant_messages` | Kalaw Assistance chat history |
 | `activity_logs` | Admin audit trail |
+| `sync_queue` | Reserved for future cloud sync |
 
 ---
 
-## Default Admin Account
-
-A default admin account is seeded automatically on first launch:
-
-| Field | Value |
-|---|---|
-| Email | `admin@kalawguide.app` |
-| Password | `admin2024!` |
-
-To promote any other account to admin:
-
-1. Register a normal account via the app
-2. Open the SQLite database and run:
-   ```sql
-   UPDATE users SET role = 'admin' WHERE email = 'your@email.com';
-   ```
-3. Sign out and sign back in
-
----
-
-## Web Deployment (free, Vercel)
-
-Full step-by-step guide: open **`guide.html`** in a browser.
-
-`vercel.json` holds everything Vercel needs:
-- **Build:** `npx expo export -p web`, output directory `dist`, framework preset "Other"
-- **Headers:** `Cross-Origin-Embedder-Policy: credentialless` and `Cross-Origin-Opener-Policy: same-origin`, which expo-sqlite needs on web (SharedArrayBuffer)
-- **Rewrites:** every path goes to `/` (SPA fallback), so refreshing any route works
-
-In Vercel (Hobby plan), choose **Add New → Project → Import** on the GitHub repo, and every push to `main` redeploys. Without GitHub: `npx vercel --prod`. Data is stored in each visitor's browser (local SQLite), so accounts and changes are not shared between devices.
-
----
-
-## Android Build (EAS)
-
-```bash
-npm install -g eas-cli
-eas login
-eas build --platform android --profile preview
-```
-
-For a local APK:
-```bash
-npx expo run:android
-```
-
----
-
-## iOS Build
-
-```bash
-eas build --platform ios --profile preview
-```
-
-Requires an Apple Developer account.
-
----
-
-## Project Structure
+## Project structure
 
 ```
-app/
-  (auth)/          Mobile authentication screens
-                     welcome, onboarding, sign-in, register-tourist,
-                     register-business, role-select, forgot-password,
-                     verification-pending
-  (tourist)/       Mobile tourist tab navigator + screens
-    (tabs)/          home, explore, businesses, trips, favorites, profile
-                   budget, budget-results, my-budgets, expenses, add-expense,
-                   booking-history, booking-submitted, emergency, settings,
-                   recommendations, favorites
-                   destination/[id], business/[id], booking/[businessId],
-                   itinerary/[id]
-  (business)/      Mobile business owner screens
-                     dashboard, profile, products, services, prices,
-                     facilities, bookings, booking-detail, photos,
-                     notifications, account-settings
-  (admin)/         Mobile administrator screens
-                     dashboard, users, businesses, destinations, categories,
-                     bookings, reports, activity-logs, settings
-  (web)/           Web-only screens
-                     landing, sign-in, register-tourist, register-business,
-                     forgot-password, role-select
-                     home, explore, businesses, budget, budget-results,
-                     my-budgets, trips, expenses, add-expense, booking-history,
-                     emergency, profile, settings, recommendations
-                     destination/[id]
-                     business-dashboard, business-profile, business-products,
-                     business-prices, business-facilities, business-bookings,
-                     business-notifications, business-settings
-                     admin-dashboard, admin-users, admin-businesses,
-                     admin-destinations, admin-emergency, admin-reports,
-                     admin-activity-logs, admin-settings
-  _layout.tsx      Root navigator — platform-split Stack registration,
-                   role-based redirect guard, web splash suppression
-  index.tsx        Entry point — redirects web to /(web)/landing,
-                   shows splash on native
+app/                         Expo Router: every file is a screen
+  _layout.tsx                Root navigator, role-based redirect guard
+  index.tsx                  Entry (splash on native, landing on web)
+  (auth)/                    Mobile: welcome, onboarding, sign-in, register (tourist/business),
+                             role-select, forgot-password, verification-pending
+  (tourist)/                 Mobile tourist app
+    (tabs)/                  home, explore, businesses, trips, favorites, profile
+    destination/[id], business/[id], itinerary/[id]
+    map, budget, budget-results, my-budgets, expenses, add-expense,
+    emergency, recommendations, explore-for-trip, settings
+  (business)/                Mobile business owner: dashboard, profile, listings, products,
+                             services, prices, facilities, photos, notifications, account-settings
+  (admin)/                   Mobile admin: dashboard, users, businesses, destinations, categories,
+                             emergency-contacts, reports, activity-logs, settings
+  (web)/                     Website versions (public, tourist, business-*, admin-*)
 
 components/
-  common/          KalawButton, KalawInput, KalawCard, Icon,
-                   GoogleSignInButton, WebAppShell
-  cards/           KalawCard
-  assistant/       KalawAssistanceFAB (floating chat modal)
-  web/             WebNav (top navbar), WebLayout (page wrapper),
-                   AdminShell, BusinessShell
+  admin/                     ReportView, ActivityLogView (shared by mobile + web admin)
+  assistant/                 KalawAssistanceFAB (chat), AssistantCards
+  cards/, common/            KalawCard, KalawButton, KalawInput, Icon, GoogleSignInButton, WebAppShell
+  map/                       LiveMap (native WebView / web srcdoc frame), mapHtml (Leaflet page)
+  web/                       WebNav, WebLayout, AdminShell, BusinessShell
 
-constants/
-  tokens.ts        Design tokens — colors, typography, spacing, radius, shadows
-
-contexts/
-  AuthContext.tsx  Authentication state, session restore, role management
-  ThemeContext.tsx Light / Dark / System theme with AsyncStorage persistence
-
-database/
-  migrations/
-    init.ts        19-table SQLite schema with CREATE TABLE IF NOT EXISTS
-                   followed by ALTER TABLE column migrations for existing DBs
-                   Singleton pattern with web-safe globalThis caching
-  seeds/
-    index.ts       Default admin account + destinations + emergency contacts
-
+constants/tokens.ts          Design tokens (Figma colors, typography, spacing, radius, shadows)
+contexts/                    AuthContext (session + activity logging), ThemeContext
+database/                    migrations/init.ts (schema), seeds/index.ts
 features/
-  assistant/       assistantEngine.ts — deterministic keyword-based responses
-  authentication/
-  bookings/
-  budget/
-  businesses/
-  destinations/
-  emergency/
-  expenses/
-  itineraries/
-
+  assistant/                 Kalaw Assistance engine, intents, guard, budget parser, tests
+  map/useLiveLocation.ts     Live GPS hook, distance and directions helpers
 services/
-  auth/
-    authService.ts   Email + Google sign-in, session restore, SecureStore wrapper
-  budget/
-    budgetService.ts Deterministic budget and expense calculations
-  api/
-  sync/
-
-types/
-  index.ts         All shared TypeScript interfaces and types
-
-utils/
-  helpers.ts       generateId, formatCurrency, safeNumber, date utilities
-  storage.ts       Cross-platform storage (localStorage on web, SecureStore on native)
+  admin/                     activityLog.ts, reportsService.ts (+ tests)
+  auth/authService.ts        Email / Google sign-in, session restore
+  budget/budgetService.ts    Deterministic budget maths (+ tests)
+testing/fakeSqlite.ts        Test database backed by Node's SQLite
+types/index.ts               Shared TypeScript types
+utils/                       helpers, storage, responsive (rw() web breakpoint tags)
+guide.html                   Free deployment checklist
+vercel.json                  Vercel build, headers and rewrites
 ```
 
 ---
 
-## Web Architecture
+## Web architecture and routing
 
-On web, the root layout detects `Platform.OS === 'web'` and:
+- **Separate screen groups.** On web, the root navigator registers only the `(web)` group. On mobile, it registers only the native groups. Refreshing a web URL therefore never opens a mobile screen. `index.ts` maps short paths such as `/explore` and `/map` to their `(web)` routes.
+- **Shared screens.** Web pages wrap shared screens in `WebLayout` (top `WebNav` plus footer), or in `AdminShell` / `BusinessShell` for the portals. Mobile-only pieces, such as the in-screen back bar and the extra assistant button, are hidden on web.
+- **Phone-friendly layouts.** `utils/responsive.ts` (`rw()`) tags layout containers. Media queries in `components/common/WebAppShell.tsx` then restyle them at tablet (≤1023 px) and phone (≤767 px) widths.
 
-1. Registers **only** `<Stack.Screen name="(web)" />` — native groups `(auth)`, `(tourist)`, `(business)`, `(admin)` are never added to the Stack on web. This is the key fix that prevents hard-refresh from resolving into mobile screens.
-2. Routes to `/(web)/landing` for unauthenticated users hitting any protected screen.
-3. Routes authenticated users away from auth screens to their role dashboard.
+**Redirect rules:**
 
-Web screens use:
-- `WebLayout` — wraps every page with `WebNav` + scrollable body + footer
-- `WebNav` — shows role-based nav links (tourist / business / admin / public), theme toggle, sign in/out
-- `AdminShell` / `BusinessShell` — role-specific layout wrappers for admin and business portals
-- Auth screens use a two-column layout: left travel invitation panel + right form card
-- `WebAppShell` — top-level web wrapper applied in `RootLayout`
-
-Mobile screens are completely unaffected — they continue to use tab navigators and `SafeAreaView`.
-
----
-
-## Routing Guard Logic
-
-The `RootNavigator` effect in `app/_layout.tsx` runs after auth loading completes:
-
-| Condition | Action |
+| Situation | Goes to |
 |---|---|
-| Web + unauthenticated + on protected screen | Redirect to `/(web)/landing` |
-| Web + authenticated + on auth screen | Redirect to role dashboard |
-| Web + authenticated + on protected screen | Stay (no redirect) |
-| Native + unauthenticated + not in `(auth)` | Redirect to `/(auth)/welcome` |
-| Native + tourist + not in `(tourist)` | Redirect to `/(tourist)/(tabs)/home` |
-| Native + business_owner + not in `(business)` | Redirect to `/(business)/dashboard` |
-| Native + admin + not in `(admin)` | Redirect to `/(admin)/dashboard` |
-
-Public web screens (`landing`, `explore`, `businesses`, `emergency`) are accessible without authentication.
+| Web, signed out, protected page | `/(web)/landing` |
+| Web, signed in, auth page | That role's dashboard |
+| Mobile, signed out | `/(auth)/welcome` |
+| Mobile, tourist / business owner / admin | `(tourist)/(tabs)/home` / `(business)/dashboard` / `(admin)/dashboard` |
 
 ---
 
-## Troubleshooting
+## Design system
 
-**App crashes on startup**
-- Run `npx expo-doctor` to check for dependency issues
-- Run `npx expo install --fix` to resolve version mismatches
-
-**Web shows mobile layout on refresh**
-- This was fixed by platform-splitting the Stack screen registration in `app/_layout.tsx`
-- Ensure `app.json` has `"web": { "output": "single" }`
-- Clear browser cache and hard reload
-
-**`no such table: users` on first web load**
-- This was fixed by moving all `CREATE TABLE IF NOT EXISTS` statements before `ALTER TABLE` column migrations in `database/migrations/init.ts`
-- If the error persists, clear site data in browser DevTools → Application → Storage
-
-**Google Sign-In not working**
-- Ensure `EXPO_PUBLIC_GOOGLE_CLIENT_ID` is set in `.env`
-- Without it, the app uses demo mode (simulated Google account)
-- For native builds, ensure SHA-1 fingerprint is registered in Google Cloud Console
-
-**Database errors**
-- Uninstall the app to reset the SQLite database (mobile)
-- Clear site data in browser DevTools → Application → Storage (web)
-- Check that `expo-sqlite` version matches the Expo SDK
-
-**Build errors**
-- Run `npx expo-doctor`
-- Ensure `app.json` asset paths point to existing files
-
----
-
-## Design System
-
-All mobile screens are implemented to match the Figma design exactly (file `MZTmx7DKqJlhSyaObMO3Ht`, node `3-4` — Mobile Version canvas).
-
-Colors are taken directly from the Figma variables (Design System › Semantic color palette, nodes `3:27` light / `3:27639` dark) and live in `constants/tokens.ts`.
+Colors come straight from the Figma variables (Design System › Semantic color palette) and live in `constants/tokens.ts`.
 
 | Token | Light | Dark |
 |---|---|---|
 | Background | `#F8FAFC` | `#071B26` |
 | Surface | `#FFFFFF` | `#123747` |
-| Elevated surface | `#FFFFFF` | `#194456` |
-| Subtle / Secondary surface | `#E0F2FE` | `#194456` |
-| Text / Heading | `#1F2937` | `#F8FAFC` |
+| Subtle | `#E0F2FE` | `#194456` |
+| Text | `#1F2937` | `#F8FAFC` |
 | Muted | `#64748B` | `#CBD5E1` |
-| On navigation (inactive tab) | `#64748B` | `#94A3B8` |
 | Border | `#E2E8F0` | `#254656` |
-| Primary (Primary Action / Brand Text) | `#0E7490` | `#22B8C7` |
+| Primary | `#0E7490` | `#22B8C7` |
 | On primary | `#FFFFFF` | `#071B26` |
-| Accent (Secondary Action) | `#22C55E` | `#22B8C7` |
-| Success (Status Approved) | `#22C55E` | `#4ADE80` |
-| Warning (Highlight) | `#F97316` | `#FB923C` |
-| Danger (Input error) | `#F97316` | `#FB923C` |
-| Sand | `#E0F2FE` | `#0B2635` |
+| Success | `#22C55E` | `#4ADE80` |
+| Warning / Danger | `#F97316` | `#FB923C` |
 
-**Status badges** (`StatusColors` + `statusLabel()` in `constants/tokens.ts`, Figma `RequestStatus/*`): solid fills with dark `#171717` or white labels.
-Pending `#FFC83D` · Under review `#3772D4` · Approved `#00B3C7` · Rejected `#FF5700` · Cancelled `#F3E9DF` · Completed `#0755CC` · Suspended `#A83200`.
+- **Status badges** (`StatusColors` + `statusLabel()`): pending `#FFC83D`, under review `#3772D4`, approved `#00B3C7`, rejected `#FF5700`, suspended `#A83200`.
+- **Typography:** Manrope for headings and Inter for body text. Sizes are 48 / 36 / 28 / 22 / 18 / 16 / 14 / 12.
+- **Spacing and radius:** spacing steps of 4, 8, 12, 16, 24, 32, 48 and 64. Cards, buttons and inputs use a 12 px radius.
+- **Components:**
+  - Cards have a 1 px border and the "Soft card" shadow.
+  - Buttons have 13 × 16 padding.
+  - The bottom tab bar fills the active item with a subtle pill.
+  - In light mode, the admin and business portals use white navigation with a primary-filled active item, as in Figma.
 
-**Patterns:**
-- Nav bar: `‹ Screen name` in primary color + `☰` icon, surface bg, `paddingHorizontal: 20`
-- Cards (`KalawCard`): surface bg, 1px border, `borderRadius: 12`, Figma "Soft card" shadow (`#1F2937` @ 6%, y 2, blur 8)
-- Primary button: primary bg, on-primary text, 1px border, `borderRadius: 12`, `paddingVertical: 13`, `paddingHorizontal: 16`, Inter SemiBold 14
-- Secondary button: transparent bg, 1px primary border, same radius/padding
-- Text inputs: surface fill, 1px border (danger color on error), `borderRadius: 12`
-- Bottom tab: active item has subtle pill, `borderRadius: 8`, Inter Bold 10px labels, inactive items use `onNavigation`
-- FAB: primary color, 56×56, `borderRadius: 28`, `bottom: 90, right: 20`
+---
 
-### Screens implemented from Figma
+## Troubleshooting
 
-| Screen | File |
+| Problem | Fix |
 |---|---|
-| Splash | `app/index.tsx` |
-| Welcome | `app/(auth)/welcome.tsx` |
-| Sign In | `app/(auth)/sign-in.tsx` |
-| Onboarding | `app/(auth)/onboarding.tsx` |
-| Home dashboard | `app/(tourist)/(tabs)/home.tsx` |
-| Explore destinations | `app/(tourist)/(tabs)/explore.tsx` |
-| My Trips | `app/(tourist)/(tabs)/trips.tsx` |
-| Profile | `app/(tourist)/(tabs)/profile.tsx` |
-| Budget planner | `app/(tourist)/budget.tsx` |
-| Destination detail | `app/(tourist)/destination/[id].tsx` |
-| Emergency | `app/(tourist)/emergency.tsx` |
-| Expense tracker | `app/(tourist)/expenses.tsx` |
-| Tab navigator | `app/(tourist)/(tabs)/_layout.tsx` |
-| KalawAssistance FAB | `components/assistant/KalawAssistanceFAB.tsx` |
+| Web page blank, or `SharedArrayBuffer is not defined` | The COOP/COEP headers are missing. Locally, use `npx expo start`. When deployed, make sure `vercel.json` is committed and the preset is "Other". |
+| "404" after refreshing a web page | The `rewrites` rule in `vercel.json` must be deployed. |
+| `no such table` errors | Clear site data (web) or reinstall the app (mobile) so the migrations run fresh. |
+| Map is grey | No internet, or the network blocks `basemaps.cartocdn.com` / `unpkg.com`. |
+| Blue location dot missing on the website | Open the site over `https://` or `localhost`, not `http://192.168…`, and allow location. |
+| Google Sign-In fails | Check `EXPO_PUBLIC_GOOGLE_CLIENT_ID` and the authorized origins. Demo mode works without it. |
+| Dependency or build errors | Run `npx expo-doctor`, then `npx expo install --fix`. |
 
 ---
 
 ## Changelog
 
-### Mobile sign-in fixes and "best places" recommendations
-- **Mobile sign-in (`app/(auth)/sign-in.tsx`):**
-  - The Theme button had no tap handler. It now switches between Light, Dark and System, and its label shows the current mode.
-  - The screen now uses `react-native-safe-area-context` `SafeAreaView`, so the top bar no longer sits under the Android status bar.
-  - Tidier layout per the Figma "Sign in / 390" frame: a real "Remember me" checkbox and "Forgot password?" row instead of spacing with typed spaces, typed text in the text color at a readable 15px, and 44–48px touch targets.
-- **Other auth screens** (forgot password, registration, role select, verification pending, welcome): also switched to the safe-area `SafeAreaView`, so nothing hides under the status bar.
-- **Kalaw Assistance place recommendations:** "What are the best places to visit in Mati?" (also *recommend*, *suggest*, *top*, *must see*, *where should we go*) now returns exactly **3 picks** with a reason, category, entrance fee and destination cards.
-  - Ranking uses only stored facts: featured, verified fee, free entry, has a map location.
-  - Preferences narrow the picks: *beach*, *nature*, *adventure*, *culture*, *food*, *free*.
-  - Each answer suggests the next question (budget or 2-day plan), and the greeting now mentions the Live map.
+The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
-### Light mode matched to Figma (admin, business owner, auth)
-- **Admin portal (`AdminShell`):** the top bar and sidebar were hard-coded dark navy in both themes. In light mode they now follow Figma (frame "Admin / Admin dashboard / 1440 / Light"): white navigation, `#1F2937` text, a primary-filled active item with white text, and 1px borders. Dark mode keeps the navy look.
-- **Business owner portal (`BusinessShell`):** the light-mode sidebar is now white, not light blue, and the active item is filled with primary (Figma "Owner / Business Owner Dashboard / 1440 / Light").
-- **Sign-in, registration and forgot-password pages:** the welcome panel no longer stays dark in light mode. It uses the subtle surface, border and theme text colors.
-- **Landing page:** fixed the budget and "Why KalawGuide" headings, which used a dark surface color (`#123747`) instead of the Figma text color `#1F2937`.
-
-### Kalaw Assistance: Enter to send, deploy-safe replies
-- **Enter key on web:** Enter now sends the message, and Shift+Enter adds a new line. `react-native-web` ignores `submitBehavior` on multiline inputs, so the FAB handles the Enter key itself. On phones the keyboard's send/return key already sends (`submitBehavior="submit"`).
-- **Error fallback:** if building a reply fails (for example, the browser database can't open), the chat now shows a friendly message instead of silently stopping.
-- **No setup on deploy:** the assistant is fully on-device (rule-based engine over the local SQLite data), with no API key, server or paid AI. It works on the Vercel site as long as `vercel.json` sends the COOP/COEP headers.
-
-### Live map (mobile and web)
-- **New `components/map/LiveMap`:** a Leaflet map with CARTO tiles (free, no API key). Mobile uses a WebView and web uses a same-origin `srcdoc` frame. The frame is needed because the COOP/COEP headers block the old cross-origin OpenStreetMap embed. The old mobile map also loaded no tiles: `tile.openstreetmap.org` rejects in-app requests because they don't say which site they come from.
-- **New `features/map/useLiveLocation.ts`:** live GPS via `expo-location` (added with `npx expo install expo-location`, plus its `app.json` plugin with permission text), along with distance and directions helpers.
-- **New Map page:**
-  - Files: `app/(tourist)/map.tsx`, plus the web wrapper `app/(web)/map.tsx`.
-  - Shows every destination and the user's live location.
-  - Links: "Live map" button on mobile Home, "Map" in the web nav, `/map` bare path.
-- **Destination details (mobile and web):** live map with your position, distance away, and a free "Get directions" link to Google Maps
-
-### Switched hosting from Netlify to Vercel
-- Replaced `netlify.toml`, `public/_headers` and `public/_redirects` with a single `vercel.json` (build settings, COOP/COEP headers, SPA rewrite)
-- `guide.html` now walks through deploying on Vercel's free Hobby plan (GitHub import or `npx vercel --prod`)
-
-### Free web deployment setup and cleanup
-- Added free web hosting config (first Netlify, since replaced by `vercel.json` — see above)
-- Added `guide.html`, a step-by-step deploy guide (website hosting, optional free Android APK via EAS Build, hackathon tracker checklist)
-- Removed unused files: `App.tsx` (entry is `index.ts` → `expo-router/entry`), `assets/splash-icon.png` and `assets/images/biz-coastal-table.png` (not referenced anywhere), and the empty `hooks/`, `assets/fonts/` and `assets/icons/` folders
-
-### Responsive website for phone browsers
-- **Navigation:** below 1024px wide, the top web nav (`components/web/WebNav.tsx`) collapses to the logo plus a `☰` button. The button opens a dropdown with all page links, the theme switch and sign in/out.
-- **How it works:** new `rw()` helper in `utils/responsive.ts` tags layout containers (`data-r="stack pad …"`). The media queries in `components/common/WebAppShell.tsx` apply tablet (≤1023px) and phone (≤767px) overrides. The page never scrolls sideways.
-- **Phone layouts:**
-  - Landing page: nav links and theme button hidden, smaller headlines, single-column cards, stacked sections.
-  - Sign-in and registration pages: the side panel is hidden and the form uses the full width.
-  - Explore and Recommendations: cards stack in one column (two on tablets).
-  - Destination details: columns stack.
-- **Tourist screens shared with the app** (Budget, Trips, Expenses, Emergency, Profile, etc.): web side padding removed on phones, so they look like the mobile app.
-- **Business and admin portals:** the sidebar becomes a wrapping strip at the top on phones, and page padding shrinks to 16px.
-
-### Mobile-only back bar (Emergency, Expenses, Budget)
-- The `‹ Screen name` top bar (with its `☰` menu) on Emergency, Expenses and Budget now shows only on mobile. On web, the top WebNav bar handles navigation.
-- My Trips: its `My Trips` title bar also shows only on mobile (it is a bottom-tab screen there, so it has no back arrow)
-- On mobile, tapping `‹ Screen name` now goes back (`router.back()`), or to Home if there is no previous screen. Before this it was plain text.
-
-### Scroll and web menu fixes (Emergency, Expenses, Budget)
-- `components/web/WebLayout.tsx`: pages that scroll themselves (`scrollable={false}`) are now held to the browser window height (`100vh`), and every wrapper between the window and the page has `minHeight: 0`, so the page's own ScrollView can scroll on web (Emergency, Expenses, Trips, My Budgets, Booking history, etc.)
-- Emergency, Expenses and Budget: the ScrollView now fills the remaining screen height (`flex: 1`) on mobile and web
-- Emergency, Expenses and Budget: the in-screen `☰` menu icon is hidden on web, because the top web navigation bar already does that job. It still shows on mobile.
-- Emergency: uses `react-native-safe-area-context` `SafeAreaView` like the other tourist screens, and no longer shows a second KalawAssistance button on web
-
-### Figma color system alignment
-- Replaced the whole light and dark palette in `constants/tokens.ts` with the exact Figma variable values (see Design System above)
-- Added `elevated`, `onNavigation`, `StatusColors` and `statusLabel()` tokens from Figma
-- Removed hardcoded old-palette hex values from 32 screens/components (admin, business owner, tourist, web portals) in favor of theme tokens
-- Booking and verification status badges now use Figma's solid `RequestStatus` fills
-- `KalawButton`, `KalawCard` and `KalawInput` aligned with the Figma component specs (radius 12, 1px borders, Soft card shadow)
-
-### Figma design implementation
-- Rewrote all major tourist-facing mobile screens to match Figma pixel-for-pixel
-- Updated `constants/tokens.ts` light mode colors to match Figma design tokens
-- Tab navigator updated: active pill `#EDF3F2`, Inter Bold 10px labels, correct padding
-- FAB fixed to exact 56×56 with `borderRadius: 28`
-- Added `app/(tourist)/explore-for-trip.tsx` — destination picker for new trips
-
-### "Add to My Trips" behavior fix
-- Destination detail `Add to My Trips` now directly creates an itinerary (no navigation to picker)
-- `+New` on the Trips screen still navigates to the explore-for-trip destination picker
+- **Bookings removed.**
+  - KalawGuide now advertises and verifies businesses, and tourists contact them directly.
+  - The booking screens, routes, dashboard stats and report sections are gone, and the `booking_requests` table is dropped.
+  - Kalaw Assistance now explains how to contact a verified business instead.
+- **Reports and activity logs now work.**
+  - Reports use a live report service with 7-day, 30-day and all-time periods, popular destinations and verified-business categories.
+  - Sign-ins, sign-ups, verification decisions, price changes and admin edits are now logged, with a filterable feed.
+  - Both are shared by the mobile and web admin.
+- **Mobile admin Settings redesigned.**
+  - Account card and Light / Dark / System theme picker.
+  - Admin tools with badges, and emergency contacts moved to their own screen.
+  - Sign out now asks for confirmation.
+- **Mobile sign-in fixed.** The Theme button works, nothing hides under the status bar on any auth screen, and the layout matches Figma.
+- **Kalaw Assistance:**
+  - "Best places to visit" returns 3 picks, with preference filters.
+  - Enter sends on web.
+  - An error fallback replaces silent failures.
+- **Live map** on mobile and web, with GPS, distance and directions.
+- **Light mode matched to Figma** for the admin, business owner and auth pages.
+- **Responsive website** for phone browsers, with a ☰ navigation menu.
+- **Free deployment:** Vercel (`vercel.json`), with the step-by-step `guide.html`.
+- **Scroll fixes** on web pages that scroll themselves. The mobile-only back bar is hidden on web.
+- **Figma colors** applied app-wide through design tokens.
 
 ---
 
 ## License
 
-MIT — see LICENSE file.
+MIT. See [`LICENSE`](LICENSE).

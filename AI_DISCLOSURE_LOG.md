@@ -281,6 +281,61 @@ AI tool: Claude Code (Anthropic). The user reported three things on mobile sign-
 
 ---
 
+## Admin Settings, Working Reports & Activity Logs, Bookings Removed, README Rewrite (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user asked for five things:
+- Improve mobile admin Settings: the theme switch was missing, and it only held emergency contacts and logout.
+- Remove bookings: KalawGuide advertises businesses and verifies that they are legit, but doesn't book them.
+- Make Reports and Activity Logs actually work.
+- Rewrite `README.md` in detail.
+
+**What the AI changed**
+- **Admin Settings** (`app/(admin)/settings.tsx`), modelled on the tourist Profile screen:
+  - Account card.
+  - Light / Dark / System theme picker.
+  - Admin tools list with badges for pending verifications and unverified contacts.
+  - About section.
+  - Sign out with a confirmation step.
+- **Emergency contacts** moved to their own screen: `app/(admin)/emergency-contacts.tsx`.
+- **Activity logs:** before, only 3 actions ever wrote a log, so the screen was almost always empty.
+  - New `services/admin/activityLog.ts` with `logActivity` (never throws), filtered queries, and readable labels.
+  - Now logged:
+    - Sign-in, failed sign-in, sign-up, Google sign-in, sign-out and role selection (`contexts/AuthContext.tsx`).
+    - Admin role changes and block/unblock (mobile and web).
+    - Destination create, edit, hide and show.
+    - Category save and delete.
+    - Emergency contact save and delete (mobile and web).
+    - Business submission for verification and price add/remove (mobile and web).
+  - The existing verification logs are unchanged.
+- **Reports:** before, the "period" control was static text, half the metrics were bookings, and on mobile one failed query left the page blank.
+  - New `services/admin/reportsService.ts` with live counts for 7 days, 30 days and all time.
+  - Covers users, business verification, listings, tourist activity (including the amount tracked), popular destinations, and verified businesses by category.
+- **Shared views:** new `components/admin/ReportView.tsx` and `ActivityLogView.tsx`, with period and category chips, loading, empty and error states. The mobile and web admin screens now all use them.
+- **Bookings removed:**
+  - Deleted 8 screens: `(admin)/bookings`, `(business)/bookings`, `(business)/booking-detail`, `(tourist)/booking/[businessId]`, `(tourist)/booking-history`, `(tourist)/booking-submitted`, `(web)/booking-history`, `(web)/business-bookings`.
+  - Removed their routes and redirects, along with the empty `features/bookings/` folder.
+  - Dashboards now show "price changes to review" and "logged events" (admin) and published prices, products and services (business) instead of booking counts.
+  - Updated sign-up and notification wording.
+  - Removed the booking types and `getMyBookings`.
+  - The migration now drops `booking_requests`.
+  - Kalaw Assistance's booking topic became `business_contact`: it explains there are no bookings and lists contact details of verified businesses only.
+- **`README.md` rewritten:**
+  - How verification works, features by role, assistant examples, the live map.
+  - Tech stack, setup, accounts, free deployment, testing.
+  - Data model (without bookings), project structure, routing, design tokens, troubleshooting.
+  - A condensed changelog.
+
+**Tests:** new `services/admin/admin.test.ts` (6 tests: report counts and period filter, empty database, log ordering and filters, never-throwing writes, labels). Assistant tests were updated for the `business_contact` topic.
+
+**Verification:**
+- `npx jest` passes 127/127 tests.
+- `npx tsc --noEmit` shows 8 errors, all pre-existing in untouched files.
+- ESLint shows no errors in the new or changed admin, service and component files. The setState-in-effect errors already present in older screens are unchanged.
+- `npx expo export -p web` builds.
+- The new screens were not tested on a device during this session.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -294,3 +349,4 @@ Live map for mobile and web (2026-11-16).
 Kalaw Assistance Enter-to-send and error fallback (2026-11-16).
 Light mode check against Figma: admin/business shells, auth panels (2026-11-16).
 Mobile sign-in fixes and assistant place recommendations (2026-11-16).
+Admin settings redesign, working reports & activity logs, bookings removed, README rewrite (2026-11-16).
