@@ -2,11 +2,11 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { getDatabase } from '../../database/migrations/init';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
-import { ThemeMode } from '../../types';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getDatabase } from '../../../database/migrations/init';
+import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
+import { ThemeMode } from '../../../types';
 
 const THEME_OPTIONS: { label: string; value: ThemeMode; icon: string }[] = [
   { label: 'Light', value: 'light', icon: '☀️' },
@@ -54,7 +54,7 @@ export default function AdminSettingsScreen() {
   }
 
   const TOOLS: { icon: string; label: string; hint?: string; route: string; badge?: number; warn?: boolean }[] = [
-    { icon: '🏪', label: 'Business verification', hint: 'Check that listings are legit', route: '/(admin)/businesses', badge: counts?.pendingBusinesses, warn: !!counts?.pendingBusinesses },
+    { icon: '🏪', label: 'Business verification', hint: 'Check that listings are legit', route: '/(admin)/(tabs)/businesses', badge: counts?.pendingBusinesses, warn: !!counts?.pendingBusinesses },
     { icon: '☎️', label: 'Emergency contacts', hint: counts ? `${counts.contacts} contacts · ${counts.unverifiedContacts} unverified` : undefined, route: '/(admin)/emergency-contacts', warn: !!counts?.unverifiedContacts },
     { icon: '🏷', label: 'Destination categories', hint: counts ? `${counts.categories} categories` : undefined, route: '/(admin)/categories' },
     { icon: '📊', label: 'Reports & analytics', hint: 'Users, verification and tourist activity', route: '/(admin)/reports' },

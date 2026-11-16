@@ -15,7 +15,7 @@ export default function AdminActivityLogsScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.bar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/settings' as any))} accessibilityRole="button" accessibilityLabel="Go back">
+        <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/settings' as any))} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={[styles.barTitle, { color: colors.primary }]}>‹ Activity logs</Text>
         </TouchableOpacity>
       </View>

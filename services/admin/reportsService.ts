@@ -28,6 +28,16 @@ function cutoff(period: ReportPeriod): string | null {
   return new Date(Date.now() - days * 86_400_000).toISOString();
 }
 
+/**
+ * Runs the queries one after another. Firing ~20 queries at once is fine for the browser's
+ * SQLite (it queues them) but is fragile on the native expo-sqlite driver, which shares one connection.
+ */
+async function inOrder(tasks: (() => Promise<number>)[]): Promise<number[]> {
+  const out: number[] = [];
+  for (const t of tasks) out.push(await t());
+  return out;
+}
+
 const peso = (n: number) => `₱${Math.round(n).toLocaleString('en-PH')}`;
 
 export async function getReport(period: ReportPeriod): Promise<Report> {
@@ -49,30 +59,30 @@ export async function getReport(period: ReportPeriod): Promise<Report> {
     prices, products, services,
     trips, budgets, expenses, favorites,
     events,
-  ] = await Promise.all([
-    count("SELECT COUNT(*) AS n FROM users WHERE role <> 'admin'"),
-    count("SELECT COUNT(*) AS n FROM users WHERE role = 'tourist'"),
-    count("SELECT COUNT(*) AS n FROM users WHERE role = 'business_owner'"),
-    inPeriod('users', "role <> 'admin'"),
-    count("SELECT COUNT(*) AS n FROM users WHERE status = 'blocked'"),
-    count('SELECT COUNT(*) AS n FROM businesses'),
-    count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'approved'"),
-    count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'pending'"),
-    count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'rejected'"),
-    count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'suspended'"),
-    inPeriod('businesses'),
-    count('SELECT COUNT(*) AS n FROM destinations'),
-    count('SELECT COUNT(*) AS n FROM destinations WHERE is_active = 1'),
-    count('SELECT COUNT(*) AS n FROM destinations WHERE is_featured = 1'),
-    inPeriod('destinations'),
-    count('SELECT COUNT(*) AS n FROM listing_prices WHERE is_active = 1'),
-    count('SELECT COUNT(*) AS n FROM business_products'),
-    count('SELECT COUNT(*) AS n FROM business_services'),
-    inPeriod('itineraries'),
-    inPeriod('budget_plans'),
-    inPeriod('expenses'),
-    inPeriod('favorites'),
-    inPeriod('activity_logs'),
+  ] = await inOrder([
+    () => count("SELECT COUNT(*) AS n FROM users WHERE role <> 'admin'"),
+    () => count("SELECT COUNT(*) AS n FROM users WHERE role = 'tourist'"),
+    () => count("SELECT COUNT(*) AS n FROM users WHERE role = 'business_owner'"),
+    () => inPeriod('users', "role <> 'admin'"),
+    () => count("SELECT COUNT(*) AS n FROM users WHERE status = 'blocked'"),
+    () => count('SELECT COUNT(*) AS n FROM businesses'),
+    () => count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'approved'"),
+    () => count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'pending'"),
+    () => count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'rejected'"),
+    () => count("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'suspended'"),
+    () => inPeriod('businesses'),
+    () => count('SELECT COUNT(*) AS n FROM destinations'),
+    () => count('SELECT COUNT(*) AS n FROM destinations WHERE is_active = 1'),
+    () => count('SELECT COUNT(*) AS n FROM destinations WHERE is_featured = 1'),
+    () => inPeriod('destinations'),
+    () => count('SELECT COUNT(*) AS n FROM listing_prices WHERE is_active = 1'),
+    () => count('SELECT COUNT(*) AS n FROM business_products'),
+    () => count('SELECT COUNT(*) AS n FROM business_services'),
+    () => inPeriod('itineraries'),
+    () => inPeriod('budget_plans'),
+    () => inPeriod('expenses'),
+    () => inPeriod('favorites'),
+    () => inPeriod('activity_logs'),
   ]);
 
   const spend = since

@@ -4,11 +4,11 @@ import {
   TouchableOpacity, Alert, RefreshControl, TextInput, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
-import { getDatabase } from '../../database/migrations/init';
-import { now, generateId } from '../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../constants/tokens';
-import { BusinessVerificationStatus } from '../../types';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { getDatabase } from '../../../database/migrations/init';
+import { now, generateId } from '../../../utils/helpers';
+import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../../constants/tokens';
+import { BusinessVerificationStatus } from '../../../types';
 
 interface BizRow {
   id: string; name: string; category: string; address: string;

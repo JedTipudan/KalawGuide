@@ -36,12 +36,13 @@ export function ReportView({ refreshKey = 0 }: { refreshKey?: number }) {
   const [report, setReport] = useState<Report | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloads, setReloads] = useState(0);
+  const [errMsg, setErrMsg] = useState('');
 
   useEffect(() => {
     let live = true;
     getReport(period)
       .then(r => { if (live) { setReport(r); setState('ready'); } })
-      .catch(() => { if (live) setState('error'); });
+      .catch((e: unknown) => { if (live) { setErrMsg(e instanceof Error ? e.message : String(e)); setState('error'); } });
     return () => { live = false; };
   }, [period, refreshKey, reloads]);
 
@@ -74,6 +75,7 @@ export function ReportView({ refreshKey = 0 }: { refreshKey?: number }) {
       {state === 'error' && (
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, alignItems: 'center' }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{"Couldn't build the report"}</Text>
+          {!!errMsg && <Text style={{ color: colors.muted, fontSize: 12, textAlign: 'center' }}>{errMsg}</Text>}
           <TouchableOpacity onPress={load}><Text style={[styles.chipText, { color: colors.primary }]}>Try again</Text></TouchableOpacity>
         </View>
       )}

@@ -269,8 +269,9 @@ app/                         Expo Router: every file is a screen
     emergency, recommendations, explore-for-trip, settings
   (business)/                Mobile business owner: dashboard, profile, listings, products,
                              services, prices, facilities, photos, notifications, account-settings
-  (admin)/                   Mobile admin: dashboard, users, businesses, destinations, categories,
-                             emergency-contacts, reports, activity-logs, settings
+  (admin)/                   Mobile admin: a Stack (like the tourist app)
+    (tabs)/                  dashboard, users, businesses, destinations, settings
+    categories, emergency-contacts, reports, activity-logs   (pushed on top, with Back)
   (web)/                     Website versions (public, tourist, business-*, admin-*)
 
 components/
@@ -314,7 +315,7 @@ vercel.json                  Vercel build, headers and rewrites
 | Web, signed out, protected page | `/(web)/landing` |
 | Web, signed in, auth page | That role's dashboard |
 | Mobile, signed out | `/(auth)/welcome` |
-| Mobile, tourist / business owner / admin | `(tourist)/(tabs)/home` / `(business)/dashboard` / `(admin)/dashboard` |
+| Mobile, tourist / business owner / admin | `(tourist)/(tabs)/home` / `(business)/dashboard` / `(admin)/(tabs)/dashboard` |
 
 ---
 
@@ -384,6 +385,7 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
+- **Mobile admin screens fixed.** Categories, Reports, Activity logs and Emergency contacts used to be hidden tabs (Categories had no Back button). They now open as proper screens on top of the admin tabs, with Back. Reports run their queries one at a time, which is safer on the phone's SQLite, and errors show their real message.
 - **Google sign-in on the mobile login.** "Continue with Google" now appears on mobile sign-in, not only on registration. Mobile register now uses real Google sign-in instead of the demo-only version. All screens share `services/auth/googlePrompt.ts`.
 - **Kiko the mascot and a new app icon.** Kiko now appears on the app icon, favicon, logo, assistant, welcome screen, Home banner, landing page, auth panels and empty states.
 - **Bookings removed.**

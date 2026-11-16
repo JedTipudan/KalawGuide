@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, FlatList,
+  View, Text, StyleSheet, FlatList,
   TouchableOpacity, Alert, Modal, RefreshControl, ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { KalawInput } from '../../components/common/KalawInput';
@@ -20,6 +22,7 @@ const PRESET_ICONS = ['🏖','🌿','🏔','🌊','🏛','🍽','🛍','🎭','�
 export default function AdminCategoryManagementScreen() {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const router = useRouter();
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -87,9 +90,11 @@ export default function AdminCategoryManagementScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.commandBar, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.commandBarTitle, { color: colors.primary }]}>☰ Control Center</Text>
+        <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(admin)/(tabs)/settings' as any))} accessibilityRole="button" accessibilityLabel="Go back">
+          <Text style={[styles.commandBarTitle, { color: colors.primary }]}>‹ Destination categories</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList

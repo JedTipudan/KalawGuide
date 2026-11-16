@@ -5,11 +5,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { KalawButton } from '../../components/common/KalawButton';
-import { getDatabase } from '../../database/migrations/init';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { KalawButton } from '../../../components/common/KalawButton';
+import { getDatabase } from '../../../database/migrations/init';
+import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
 
 interface Stats {
   tourists: number;
@@ -63,14 +63,14 @@ export default function AdminDashboard() {
   ];
 
   const QUICK_ACTIONS = [
-    { icon: '⏳', label: 'Verify Businesses', desc: 'Review pending business submissions', route: '/(admin)/businesses' },
-    { icon: '👥', label: 'Manage Users', desc: 'View and manage user accounts', route: '/(admin)/users' },
-    { icon: '🗺', label: 'Manage Destinations', desc: 'Add and edit destination listings', route: '/(admin)/destinations' },
+    { icon: '⏳', label: 'Verify Businesses', desc: 'Review pending business submissions', route: '/(admin)/(tabs)/businesses' },
+    { icon: '👥', label: 'Manage Users', desc: 'View and manage user accounts', route: '/(admin)/(tabs)/users' },
+    { icon: '🗺', label: 'Manage Destinations', desc: 'Add and edit destination listings', route: '/(admin)/(tabs)/destinations' },
     { icon: '📂', label: 'Categories', desc: 'Manage destination categories', route: '/(admin)/categories' },
     { icon: '📊', label: 'Reports', desc: 'Analytics and platform metrics', route: '/(admin)/reports' },
     { icon: '📝', label: 'Activity Logs', desc: 'Platform-wide activity history', route: '/(admin)/activity-logs' },
     { icon: '☎️', label: 'Emergency Contacts', desc: 'Keep tourist emergency numbers verified', route: '/(admin)/emergency-contacts' },
-    { icon: '⚙️', label: 'Settings', desc: 'Theme, admin tools and sign out', route: '/(admin)/settings' },
+    { icon: '⚙️', label: 'Settings', desc: 'Theme, admin tools and sign out', route: '/(admin)/(tabs)/settings' },
   ];
 
   return (
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
         {stats.pendingBusinesses > 0 && (
           <TouchableOpacity
             style={[styles.alertBanner, { backgroundColor: colors.warning + '15', borderColor: colors.warning + '40' }]}
-            onPress={() => router.push('/(admin)/businesses' as any)}
+            onPress={() => router.push('/(admin)/(tabs)/businesses' as any)}
           >
             <Text style={styles.alertIcon}>⏳</Text>
             <Text style={[styles.alertText, { color: colors.warning }]}>

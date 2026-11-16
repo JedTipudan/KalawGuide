@@ -61,7 +61,7 @@ function RootNavigator() {
     }
     if (role === 'tourist' && seg0 !== '(tourist)') router.replace('/(tourist)/(tabs)/home');
     else if (role === 'business_owner' && seg0 !== '(business)') router.replace('/(business)/dashboard');
-    else if (role === 'admin' && seg0 !== '(admin)') router.replace('/(admin)/dashboard');
+    else if (role === 'admin' && seg0 !== '(admin)') router.replace('/(admin)/(tabs)/dashboard');
   }, [user, isLoading, segments]);
 
   return (

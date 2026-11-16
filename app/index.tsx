@@ -19,7 +19,7 @@ export default function IndexScreen() {
     if (!user) router.replace('/(auth)/welcome');
     else if (user.role === 'tourist') router.replace('/(tourist)/(tabs)/home');
     else if (user.role === 'business_owner') router.replace('/(business)/dashboard');
-    else if (user.role === 'admin') router.replace('/(admin)/dashboard');
+    else if (user.role === 'admin') router.replace('/(admin)/(tabs)/dashboard');
     else router.replace('/(auth)/welcome');
   }, [isLoading, user]);
 

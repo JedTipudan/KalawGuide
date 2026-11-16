@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { AdminShell } from '../../components/web/AdminShell';
-import AdminDestinationsScreen from '../(admin)/destinations';
+import AdminDestinationsScreen from '../(admin)/(tabs)/destinations';
 import { rw } from '../../utils/responsive';
 
 export default function WebAdminDestinationsScreen() {

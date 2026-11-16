@@ -403,6 +403,38 @@ AI tool: Claude Code (Anthropic). The user reported that on mobile, Google sign-
 
 ---
 
+## Mobile Admin: Reports, Activity Logs, Emergency Contacts, Categories (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user reported that the admin Reports, Activity logs, Emergency contacts and Categories screens worked on web but not on mobile.
+
+**Findings** (no Android/iOS device or emulator image was available, so these come from reading the code and building the native bundle)
+- **Hidden tabs:** on mobile these four screens were registered as hidden tabs (`href: null`) inside the admin bottom-tab navigator.
+  - Back always went to the first tab (Dashboard).
+  - The screens stayed mounted between visits.
+  - **Categories had no back button at all**, only a "☰ Control Center" title, so it was a dead end.
+- **Status bar:** Categories still used React Native's `SafeAreaView`, which doesn't pad for the Android status bar.
+- **Concurrent queries:** the report service fired ~20 SQL queries at once with `Promise.all`. The browser SQLite queues them, but this is fragile on the native expo-sqlite driver, which shares one connection.
+
+**What the AI changed**
+- **Restructured mobile admin like the tourist app:**
+  - `app/(admin)/_layout.tsx` is now a Stack.
+  - The five tab screens moved to `app/(admin)/(tabs)/` (with their own Tabs layout and updated imports).
+  - Categories, Reports, Activity logs and Emergency contacts are Stack screens pushed over the tabs, so Back returns to the screen they came from.
+  - Route strings were updated (`/(admin)/(tabs)/…`), as was the web Destinations wrapper import.
+- **Categories:** "‹ Destination categories" back bar, plus a safe-area-context `SafeAreaView`.
+- **`services/admin/reportsService.ts`:** queries now run one at a time (`inOrder`).
+- **`ReportView` / `ActivityLogView`:** the error state now shows the real error message, so any remaining device-specific problem is visible.
+
+**Verification:**
+- `npx tsc --noEmit` shows the 8 pre-existing errors only, after regenerating typed routes with a short `expo start`.
+- `npx jest` passes 127/127 tests.
+- ESLint shows only the existing setState-in-effect pattern.
+- `npx expo export -p android` compiles the native Hermes bundle.
+- `npx expo export -p web` builds.
+- **Not run on a phone during this session.** The user needs to confirm on Expo Go.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -419,3 +451,4 @@ Mobile sign-in fixes and assistant place recommendations (2026-11-16).
 Admin settings redesign, working reports & activity logs, bookings removed, README rewrite (2026-11-16).
 Mascot (Kiko) and app icon added (2026-11-16).
 Google sign-in placement fix (2026-11-16).
+Mobile admin navigation and reports fix (2026-11-16).

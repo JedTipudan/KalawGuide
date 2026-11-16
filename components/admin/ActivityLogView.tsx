@@ -30,12 +30,13 @@ export function ActivityLogView({ refreshKey = 0 }: { refreshKey?: number }) {
   const [logs, setLogs] = useState<ActivityEntry[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloads, setReloads] = useState(0);
+  const [errMsg, setErrMsg] = useState('');
 
   useEffect(() => {
     let live = true;
     getActivityLogs({ category: filter, limit: 200 })
       .then(rows => { if (live) { setLogs(rows); setState('ready'); } })
-      .catch(() => { if (live) setState('error'); });
+      .catch((e: unknown) => { if (live) { setErrMsg(e instanceof Error ? e.message : String(e)); setState('error'); } });
     return () => { live = false; };
   }, [filter, refreshKey, reloads]);
 
@@ -70,6 +71,7 @@ export function ActivityLogView({ refreshKey = 0 }: { refreshKey?: number }) {
       {state === 'error' && (
         <View style={[styles.empty, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>{"Couldn't load activity"}</Text>
+          {!!errMsg && <Text style={{ color: colors.muted, fontSize: 12, textAlign: 'center' }}>{errMsg}</Text>}
           <TouchableOpacity onPress={load}><Text style={[styles.refreshText, { color: colors.primary }]}>Try again</Text></TouchableOpacity>
         </View>
       )}
