@@ -79,19 +79,19 @@ export default function WebSignInScreen() {
       <View {...rw('stack pad vpad')} style={[styles.authLayout, { backgroundColor: colors.background }]}>
         {/* Left — travel invitation */}
         <View {...rw('hide-sm')} style={styles.invitation}>
-          <View style={[styles.invitationInner, { backgroundColor: '#123747' }]}>
+          <View style={[styles.invitationInner, { backgroundColor: colors.subtle, borderWidth: 1, borderColor: colors.border }]}>
             <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
               <Text style={styles.logoText}>K</Text>
             </View>
-            <Text style={styles.inviteTitle}>Welcome back to{'\n'}KalawGuide</Text>
-            <Text style={styles.inviteDesc}>
+            <Text style={[styles.inviteTitle, { color: colors.text }]}>Welcome back to{'\n'}KalawGuide</Text>
+            <Text style={[styles.inviteDesc, { color: colors.muted }]}>
               Your travel companion for Mati City, Davao Oriental. Discover destinations, plan budgets, and explore local businesses.
             </Text>
             <View style={styles.inviteFeatures}>
               {FEATURES.map(f => (
                 <View key={f} style={styles.inviteFeatureRow}>
-                  <Text style={styles.inviteFeatureDot}>✦</Text>
-                  <Text style={styles.inviteFeatureText}>{f}</Text>
+                  <Text style={[styles.inviteFeatureDot, { color: colors.primary }]}>✦</Text>
+                  <Text style={[styles.inviteFeatureText, { color: colors.text }]}>{f}</Text>
                 </View>
               ))}
             </View>

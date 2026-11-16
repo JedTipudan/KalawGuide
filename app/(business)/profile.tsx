@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { KalawButton } from '../../components/common/KalawButton';
 import { KalawInput } from '../../components/common/KalawInput';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
@@ -195,6 +196,7 @@ export default function BusinessProfileScreen() {
         "UPDATE businesses SET verification_status='pending', verification_note=NULL, updated_at=? WHERE id=?",
         [now(), bizId]
       );
+      await logActivity({ userId: user?.id ?? null, action: 'submitted_for_approval', entityType: 'business', entityId: bizId, details: 'Submitted for admin review' });
       setVerificationStatus('pending');
       setVerificationNote(null);
       Alert.alert('Submitted', 'Your business has been submitted for administrator review. You will be notified once reviewed.');

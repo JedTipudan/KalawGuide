@@ -34,9 +34,6 @@ async function seed() {
   await db.runAsync(price, ['p1', 'b1', 'Standard room', 1500, 'per room per night', 'room_rate', ts, ts]);
   await db.runAsync(price, ['p2', 'b2', 'Room', 100, 'per night', 'room_rate', ts, ts]);
   await db.runAsync(price, ['p3', 'b3', 'Davao to Mati van', 3000, 'per van', 'other', ts, ts]);
-  const booking = `INSERT INTO booking_requests (id,tourist_id,business_id,status,created_at,updated_at) VALUES (?,?,?,?,?,?)`;
-  await db.runAsync(booking, ['r1', 'u1', 'b1', 'approved', ts, ts]);
-  await db.runAsync(booking, ['r2', 'u2', 'b1', 'pending', ts, ts]);
 }
 
 beforeEach(() => {
@@ -110,17 +107,76 @@ describe('answers from the database', () => {
     expect(r.content).toContain('₱2,000.00');
   });
 
-  it("shows only the signed-in tourist's own bookings", async () => {
-    const r = await ask('What is the status of my booking?');
-    expect(r.content).toContain('approved');
-    expect(r.content).not.toContain('pending');
-    const guest = await ask('What is the status of my booking?', null);
-    expect(guest.content).toMatch(/sign in/i);
+  it('explains there are no bookings and points to contacting a verified business', async () => {
+    const r = await ask('How do I book a room?');
+    expect(r.meta.intent).toBe('business_contact');
+    expect(r.content).toMatch(/doesn't take bookings/);
+    expect(r.content).not.toContain('Shady Inn'); // unverified businesses are never suggested
+    const named = await ask('How do I reserve at Sunrise Resort?');
+    expect(named.content).toContain('Sunrise Resort');
+    expect(named.meta.sources).toEqual(['businesses:b1']);
   });
 
   it('passes the offline flag through and uses the deterministic engine', async () => {
     const r = await ask('What are the top destinations?', tourist, true);
     expect(r.meta).toMatchObject({ offline: true, model: 'deterministic' });
     expect(r.meta.sources).toContain('destinations:d1');
+  });
+});
+
+describe('place recommendations', () => {
+  async function seedMore() {
+    await seed();
+    const db = await getDatabase();
+    const dest = `INSERT INTO destinations (id,name,description,category_id,location,latitude,longitude,estimated_fee,fee_verified,is_featured,is_active,created_at,updated_at)
+                  VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?)`;
+    await db.runAsync("INSERT INTO destination_categories VALUES ('c2','Nature','tree','#22C55E')");
+    await db.runAsync(dest, ['d3', 'Mount Hamiguitan', 'UNESCO World Heritage mountain range. Great for guided hikes.', 'c2', 'San Isidro', 7.08, 126.16, 500, 1, 1, ts, ts]);
+    await db.runAsync(dest, ['d4', 'Mati Baywalk', 'Seaside promenade with sunset views.', 'c1', 'Mati City', 6.95, 126.22, 0, 1, 0, ts, ts]);
+  }
+  const destIds = (r: Awaited<ReturnType<typeof ask>>) =>
+    (r.meta.cards ?? []).filter(c => c.type === 'destination').map(c => (c.data as { id: string }).id);
+
+  it('"best places to visit in Mati" gives exactly 3 picks, featured first', async () => {
+    await seedMore();
+    const r = await ask('what best places to visit in mati');
+    expect(r.content).toMatch(/Top 3 places/);
+    const ids = destIds(r);
+    expect(ids).toHaveLength(3);
+    expect(ids.slice(0, 2).sort()).toEqual(['d1', 'd3']); // the two featured places lead
+    expect(r.content).toMatch(/1\. \*\*/);
+    expect(r.content).toMatch(/3\. \*\*/);
+  });
+
+  it('recommend / suggest phrasing is understood instead of refused', async () => {
+    await seedMore();
+    for (const q of ['Can you recommend where to go?', 'suggest places for us', 'where should we go in Mati?']) {
+      const r = await ask(q);
+      expect(r.content).not.toBe(REFUSAL);
+      expect(destIds(r).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('preferences narrow the picks (beach, free)', async () => {
+    await seedMore();
+    const beach = await ask('best beach to visit');
+    expect(destIds(beach)).not.toContain('d3');
+    const free = await ask('recommend free places to visit');
+    expect(destIds(free)).toEqual(['d4']);
+    expect(free.content).toMatch(/Only 1 place matches/);
+  });
+
+  it('matches whole words only ("seafood" is not a beach)', async () => {
+    await seedMore();
+    const db = await getDatabase();
+    await db.runAsync(`INSERT INTO destinations (id,name,description,category_id,location,latitude,longitude,estimated_fee,fee_verified,is_featured,is_active,created_at,updated_at)
+                       VALUES ('d5','Public Market','Fresh seafood and produce.','c2','Mati City',null,null,0,1,1,1,?,?)`, [ts, ts]);
+    expect(destIds(await ask('best beach to visit'))).not.toContain('d5');
+  });
+
+  it('never invents places when none are registered', async () => {
+    const r = await ask('best places to visit in Mati');
+    expect(destIds(r)).toHaveLength(0);
+    expect(r.content).toMatch(/doesn't have/);
   });
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,7 +32,7 @@ export default function RoleSelectScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.text }]}>How will you use KalawGuide?</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>
@@ -93,13 +94,13 @@ const ROLES = [
     value: 'tourist',
     icon: '🧳',
     title: 'Tourist',
-    description: 'Discover destinations, plan trips, track expenses, and book local services.',
+    description: 'Discover destinations, plan trips, track expenses, and find verified local businesses.',
   },
   {
     value: 'business_owner',
     icon: '🏪',
     title: 'Business Owner',
-    description: 'List your business, manage products and services, and receive booking requests.',
+    description: 'List your business, show your products, services and prices, and get verified so tourists can trust you.',
   },
 ];
 

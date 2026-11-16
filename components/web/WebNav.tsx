@@ -175,6 +175,7 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
 const TOURIST_LINKS = [
   { label: 'Home', route: '/(web)/home' },
   { label: 'Explore', route: '/(web)/explore' },
+  { label: 'Map', route: '/(web)/map' },
   { label: 'Recommendations', route: '/(web)/recommendations' },
   { label: 'Budget', route: '/(web)/budget' },
   { label: 'Trips', route: '/(web)/trips' },

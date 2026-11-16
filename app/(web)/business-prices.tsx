@@ -4,6 +4,7 @@ import { BusinessShell } from '../../components/web/BusinessShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now, formatCurrency } from '../../utils/helpers';
 import { rw } from '../../utils/responsive';
 
@@ -104,6 +105,7 @@ export default function WebBusinessPricesScreen() {
           `INSERT INTO listing_prices (id, business_id, title, amount, unit, category, description, conditions, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
           [generateId(), bizId, title.trim(), Number(amount), unit, category, description.trim() || null, conditions.trim() || null, now(), now()]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'price_added', entityType: 'price', entityId: bizId, details: `${title.trim()}: ₱${amount}` });
       }
       setShowForm(false);
       await load();
@@ -115,6 +117,7 @@ export default function WebBusinessPricesScreen() {
     if (!window.confirm('Remove this price entry?')) return;
     const db = await getDatabase();
     await db.runAsync('UPDATE listing_prices SET is_active=0, updated_at=? WHERE id=?', [now(), id]);
+    await logActivity({ userId: user?.id ?? null, action: 'price_removed', entityType: 'price', entityId: id });
     setPrices(prev => prev.filter(p => p.id !== id));
   }
 

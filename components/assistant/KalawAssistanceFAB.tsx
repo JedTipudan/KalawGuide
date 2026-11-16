@@ -94,11 +94,30 @@ export function KalawAssistanceFAB() {
     try {
       const reply = await getAssistantReply(trimmed, user, { offline });
       append({ id: generateId(), role: 'assistant', content: reply.content, timestamp: now(), metadata: reply.meta });
+    } catch {
+      // Never leave the user without an answer (e.g. the browser database failed to open).
+      append({
+        id: generateId(),
+        role: 'assistant',
+        content: "Sorry, I couldn't answer that just now. Please reload the page and try again.",
+        timestamp: now(),
+      });
     } finally {
       setIsTyping(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [user, offline, isTyping, append]);
+
+  // Web: Enter sends, Shift+Enter adds a new line. (react-native-web ignores submitBehavior on
+  // multiline inputs, so Enter would otherwise just insert a newline.) Native uses submitBehavior="submit".
+  const handleWebEnter = useCallback((e: unknown) => {
+    if (Platform.OS !== 'web') return;
+    const ev = e as { key?: string; shiftKey?: boolean; preventDefault?: () => void; nativeEvent?: { isComposing?: boolean } };
+    if (ev.key === 'Enter' && !ev.shiftKey && !ev.nativeEvent?.isComposing) {
+      ev.preventDefault?.();
+      sendMessage(input);
+    }
+  }, [input, sendMessage]);
 
   const clearConversation = useCallback(() => {
     const doClear = () => {
@@ -271,6 +290,7 @@ export function KalawAssistanceFAB() {
                     returnKeyType="send"
                     submitBehavior="submit"
                     onSubmitEditing={() => sendMessage(input)}
+                    onKeyPress={handleWebEnter}
                     accessibilityLabel="Message Kalaw Assistance"
                   />
                   <TouchableOpacity

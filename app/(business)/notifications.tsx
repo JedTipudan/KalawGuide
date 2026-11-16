@@ -15,7 +15,7 @@ interface NotifRow {
 }
 
 const TYPE_ICONS: Record<string, string> = {
-  booking: '📋', verification: '✅', listing: '🏪', general: '🔔',
+  verification: '✅', listing: '🏪', general: '🔔',
 };
 
 export default function OwnerNotificationsScreen() {
@@ -60,7 +60,7 @@ export default function OwnerNotificationsScreen() {
           <View style={styles.listHeader}>
             <Text style={[styles.pageTitle, { color: colors.text }]}>Owner notifications</Text>
             <Text style={[styles.pageSubtitle, { color: colors.muted }]}>
-              Booking, verification, and listing updates for your business.
+              Verification and listing updates for your business.
             </Text>
           </View>
         }
@@ -69,7 +69,7 @@ export default function OwnerNotificationsScreen() {
             <Text style={styles.emptyIcon}>🔔</Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No notifications yet</Text>
             <Text style={[styles.emptyBody, { color: colors.muted }]}>
-              Booking requests and verification updates will appear here.
+              Verification and listing updates will appear here.
             </Text>
           </View>
         }

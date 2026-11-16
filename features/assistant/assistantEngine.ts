@@ -8,7 +8,7 @@ import { BudgetRequest, matchDestination, parseBudgetRequest } from './budgetPar
 import { getLocalModel } from './localModel';
 import {
   BusinessInfo, DestinationInfo, PriceInfo, getApprovedBusinesses, getDestinations,
-  getEmergencyContacts, getFacilities, getMyBookings, getPrices,
+  getEmergencyContacts, getFacilities, getPrices,
 } from './knowledge';
 
 /**
@@ -236,6 +236,72 @@ function affordable(req: BudgetRequest, ctx: Context): Answer {
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
+// ─── Recommendations ("best places to visit in Mati") ─────────────────────────
+
+const RECOMMEND = /\b(best|top|recommend|suggest|must[- ](see|visit|go)|worth (a )?visit|popular|famous|where (should|to|can) (i |we )?go)/;
+
+// Preference words → terms matched against a place's name, category and description.
+const PREFERENCES: { label: string; when: RegExp; terms: string[] }[] = [
+  { label: 'beach', when: /\b(beach|beaches|swim|surf|sea|island|snorkel)/, terms: ['beach', 'surf', 'surfing', 'bay', 'sea', 'island', 'swim', 'swimming', 'coast', 'snorkeling'] },
+  { label: 'nature', when: /\b(nature|hike|hiking|trek|mountain|falls|waterfall|forest|park)/, terms: ['nature', 'mountain', 'falls', 'waterfall', 'range', 'forest', 'heritage', 'park', 'hike'] },
+  { label: 'adventure', when: /\b(adventure|adventurous|extreme|thrill)/, terms: ['adventure', 'hike', 'surf', 'mountain', 'falls', 'trek'] },
+  { label: 'culture', when: /\b(culture|cultural|history|historical|heritage|museum|church)/, terms: ['cultural', 'history', 'historical', 'heritage', 'museum', 'church', 'shrine'] },
+  { label: 'food', when: /\b(food|market|eat|seafood)/, terms: ['food', 'market', 'seafood', 'restaurant'] },
+];
+
+const firstSentence = (text: string) => {
+  const t = text.trim();
+  const m = t.match(/^.*?[.!?](\s|$)/);
+  return (m ? m[0] : t).trim();
+};
+
+/** Picks the 3 best places from KalawGuide data. Ranking uses only stored facts: featured, verified fee, free entry, has a map location. */
+function recommendPlaces(ctx: Context): Answer {
+  const prefs = PREFERENCES.filter(p => p.when.test(ctx.lower));
+  const wantsFree = /\bfree\b|\bno (entrance )?fee\b/.test(ctx.lower);
+
+  let pool = ctx.destinations;
+  if (prefs.length) {
+    // Whole words only (plural allowed), so "sea" doesn't match "seafood".
+    const terms = prefs.flatMap(p => p.terms).map(t => new RegExp(`\\b${t}(s|es)?\\b`));
+    pool = pool.filter(d => {
+      const hay = `${d.name} ${d.category ?? ''} ${d.description}`.toLowerCase();
+      return terms.some(t => t.test(hay));
+    });
+  }
+  if (wantsFree) pool = pool.filter(d => d.fee === 0);
+
+  const what = [wantsFree ? 'free' : '', ...prefs.map(p => p.label)].filter(Boolean).join(', ');
+  if (pool.length === 0) {
+    return ctx.destinations.length === 0
+      ? { content: NO_DATA('any destinations registered') }
+      : { content: `KalawGuide doesn't have any ${what} places registered yet, so I can't recommend one. Try "best places to visit in Mati" to see all my top picks.` };
+  }
+
+  const score = (d: DestinationInfo) =>
+    (d.isFeatured ? 3 : 0) + (d.feeVerified ? 1 : 0) + (d.fee === 0 ? 1 : 0) + (d.latitude !== null && d.longitude !== null ? 0.5 : 0);
+  const picks = [...pool].sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name)).slice(0, 3);
+
+  const lines = picks.map((d, i) => {
+    const why = d.description ? firstSentence(d.description) : '';
+    const tags = [d.category, d.isFeatured ? '⭐ Featured in KalawGuide' : ''].filter(Boolean).join(' · ');
+    return `${i + 1}. **${d.name}** — ${d.location}${tags ? `\n   ${tags}` : ''}${why ? `\n   Why go: ${why}` : ''}\n   ${feeText(d)}`;
+  });
+
+  const label = what ? ` (${what})` : '';
+  const heading = picks.length === 3
+    ? `🌟 **Top 3 places to visit${label}**`
+    : `🌟 **Places to visit${label}**\nOnly ${picks.length} place${picks.length > 1 ? 's match' : ' matches'} in KalawGuide right now.`;
+  const next = `\n\nTap a card to open the place, see it on the 🗺 live map and get directions.\nNext, try: "How much for ${picks[0].name} for 2 people, 2 days?" or "Plan a 2-day trip".`;
+
+  return {
+    content: `${heading}\n\n${lines.join('\n\n')}${next}`,
+    sources: picks.map(d => `destinations:${d.id}`),
+    cards: picks.map(destCard),
+    hasEstimates: picks.some(d => !d.feeVerified),
+  };
+}
+
 const HANDLERS: Record<Exclude<AssistantIntent, 'unrelated' | 'malicious_or_override_attempt'>, (ctx: Context) => Promise<Answer>> = {
   async travel_budget(ctx) {
     const req = parseBudgetRequest(ctx.query, ctx.destinations.map(d => d.name));
@@ -246,6 +312,7 @@ const HANDLERS: Record<Exclude<AssistantIntent, 'unrelated' | 'malicious_or_over
   async destination_search(ctx) {
     const req = parseBudgetRequest(ctx.query, ctx.destinations.map(d => d.name));
     if (req.budgetCap !== undefined || /\b(cheap|afford|budget)/.test(ctx.lower)) return affordable(req, ctx);
+    if (RECOMMEND.test(ctx.lower)) return recommendPlaces(ctx);
     if (ctx.destinations.length === 0) return { content: NO_DATA('any destinations registered') };
     const top = ctx.destinations.slice(0, 6);
     return {
@@ -392,15 +459,19 @@ const HANDLERS: Record<Exclude<AssistantIntent, 'unrelated' | 'malicious_or_over
     return { content, sources: [`businesses:${b.id}`], hasEstimates: prices.some(p => !p.verified) };
   },
 
-  async booking_information(ctx) {
-    const how = 'To request a booking, open a verified business and tap **Book**. The owner reviews your request, and you can follow it in **Booking History**.';
-    if (!ctx.user || ctx.user.role !== 'tourist') {
-      return { content: `${how}\n\nSign in with a tourist account to see your own booking requests.` };
+  async business_contact(ctx) {
+    const intro = "KalawGuide doesn't take bookings or payments. It's a guide to **verified local businesses**: an administrator checks each one is legit before it appears. To reserve or ask about availability, contact the business directly.";
+    const named = ctx.businesses.find(b => ctx.lower.includes(b.name.toLowerCase()));
+    const contactLine = (b: BusinessInfo) =>
+      `• **${b.name}** — ${b.address}${b.contact ? `\n  📞 ${b.contact}` : '\n  No contact number published yet'}${b.hours ? `\n  🕒 ${b.hours}` : ''}`;
+    if (named) {
+      return { content: `${intro}\n\n${contactLine(named)}\n\nOpen it in **Businesses** for its prices, photos and directions.`, sources: [`businesses:${named.id}`] };
     }
-    const bookings = await getMyBookings(ctx.user.id);
-    if (bookings.length === 0) return { content: `You have no booking requests yet.\n\n${how}` };
+    const withContact = ctx.businesses.filter(b => b.contact).slice(0, 3);
+    const list = withContact.length ? `\n\nSome verified businesses you can contact:\n${withContact.map(contactLine).join('\n')}` : '';
     return {
-      content: `📋 **Your recent booking requests**\n\n${bookings.map(b => `• ${b.businessName} — ${b.status}${b.requestedDate ? ` · ${b.requestedDate}` : ''}${b.guestCount ? ` · ${b.guestCount} guest(s)` : ''}`).join('\n')}\n\n${how}`,
+      content: `${intro}\n\nOpen **Businesses**, pick a ✅ verified listing, and use the phone, email or Facebook shown on its page.${list}`,
+      sources: withContact.map(b => `businesses:${b.id}`),
     };
   },
 
@@ -416,7 +487,8 @@ const HANDLERS: Record<Exclude<AssistantIntent, 'unrelated' | 'malicious_or_over
   async app_help(ctx) {
     const name = ctx.user ? ` ${ctx.user.displayName.split(' ')[0]}` : '';
     return {
-      content: `Hi${name}! I'm Kalaw Assistance, the official KalawGuide tourism assistant. I work offline using KalawGuide's own data.\n\nI can help with:\n• Destinations, entrance fees and details\n• Verified accommodations, food, transport and activities\n• Trip budgets (e.g. "How much for Dahican Beach for 4 people, 3 days?")\n• Itineraries (e.g. "Plan a 3-day trip for 4 people")\n• Your booking requests and emergency contacts\n\nIn the app: save places with ♥ **Favorites**, plan trips in **Trips**, and track spending in **Budget** and **Expenses**.`,
+      content: `Hi${name}! I'm Kalaw Assistance, the official KalawGuide tourism assistant. I work offline using KalawGuide's own data.\n\nI can help with:\n• Top places to visit (e.g. "What are the best places to visit in Mati?")
+• Destinations, entrance fees and details\n• Verified accommodations, food, transport and activities\n• Trip budgets (e.g. "How much for Dahican Beach for 4 people, 3 days?")\n• Itineraries (e.g. "Plan a 3-day trip for 4 people")\n• Contacting verified local businesses and emergency contacts\n\nIn the app: see places and where you are on the 🗺 **Live map**, save places with ♥ **Favorites**, plan trips in **Trips**, and track spending in **Budget** and **Expenses**.`,
     };
   },
 };

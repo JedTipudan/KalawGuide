@@ -460,6 +460,37 @@ Pending `#FFC83D` · Under review `#3772D4` · Approved `#00B3C7` · Rejected `#
 
 ## Changelog
 
+### Mobile sign-in fixes and "best places" recommendations
+- **Mobile sign-in (`app/(auth)/sign-in.tsx`):**
+  - The Theme button had no tap handler. It now switches between Light, Dark and System, and its label shows the current mode.
+  - The screen now uses `react-native-safe-area-context` `SafeAreaView`, so the top bar no longer sits under the Android status bar.
+  - Tidier layout per the Figma "Sign in / 390" frame: a real "Remember me" checkbox and "Forgot password?" row instead of spacing with typed spaces, typed text in the text color at a readable 15px, and 44–48px touch targets.
+- **Other auth screens** (forgot password, registration, role select, verification pending, welcome): also switched to the safe-area `SafeAreaView`, so nothing hides under the status bar.
+- **Kalaw Assistance place recommendations:** "What are the best places to visit in Mati?" (also *recommend*, *suggest*, *top*, *must see*, *where should we go*) now returns exactly **3 picks** with a reason, category, entrance fee and destination cards.
+  - Ranking uses only stored facts: featured, verified fee, free entry, has a map location.
+  - Preferences narrow the picks: *beach*, *nature*, *adventure*, *culture*, *food*, *free*.
+  - Each answer suggests the next question (budget or 2-day plan), and the greeting now mentions the Live map.
+
+### Light mode matched to Figma (admin, business owner, auth)
+- **Admin portal (`AdminShell`):** the top bar and sidebar were hard-coded dark navy in both themes. In light mode they now follow Figma (frame "Admin / Admin dashboard / 1440 / Light"): white navigation, `#1F2937` text, a primary-filled active item with white text, and 1px borders. Dark mode keeps the navy look.
+- **Business owner portal (`BusinessShell`):** the light-mode sidebar is now white, not light blue, and the active item is filled with primary (Figma "Owner / Business Owner Dashboard / 1440 / Light").
+- **Sign-in, registration and forgot-password pages:** the welcome panel no longer stays dark in light mode. It uses the subtle surface, border and theme text colors.
+- **Landing page:** fixed the budget and "Why KalawGuide" headings, which used a dark surface color (`#123747`) instead of the Figma text color `#1F2937`.
+
+### Kalaw Assistance: Enter to send, deploy-safe replies
+- **Enter key on web:** Enter now sends the message, and Shift+Enter adds a new line. `react-native-web` ignores `submitBehavior` on multiline inputs, so the FAB handles the Enter key itself. On phones the keyboard's send/return key already sends (`submitBehavior="submit"`).
+- **Error fallback:** if building a reply fails (for example, the browser database can't open), the chat now shows a friendly message instead of silently stopping.
+- **No setup on deploy:** the assistant is fully on-device (rule-based engine over the local SQLite data), with no API key, server or paid AI. It works on the Vercel site as long as `vercel.json` sends the COOP/COEP headers.
+
+### Live map (mobile and web)
+- **New `components/map/LiveMap`:** a Leaflet map with CARTO tiles (free, no API key). Mobile uses a WebView and web uses a same-origin `srcdoc` frame. The frame is needed because the COOP/COEP headers block the old cross-origin OpenStreetMap embed. The old mobile map also loaded no tiles: `tile.openstreetmap.org` rejects in-app requests because they don't say which site they come from.
+- **New `features/map/useLiveLocation.ts`:** live GPS via `expo-location` (added with `npx expo install expo-location`, plus its `app.json` plugin with permission text), along with distance and directions helpers.
+- **New Map page:**
+  - Files: `app/(tourist)/map.tsx`, plus the web wrapper `app/(web)/map.tsx`.
+  - Shows every destination and the user's live location.
+  - Links: "Live map" button on mobile Home, "Map" in the web nav, `/map` bare path.
+- **Destination details (mobile and web):** live map with your position, distance away, and a free "Get directions" link to Google Maps
+
 ### Switched hosting from Netlify to Vercel
 - Replaced `netlify.toml`, `public/_headers` and `public/_redirects` with a single `vercel.json` (build settings, COOP/COEP headers, SPA rewrite)
 - `guide.html` now walks through deploying on Vercel's free Hobby plan (GitHub import or `npx vercel --prod`)

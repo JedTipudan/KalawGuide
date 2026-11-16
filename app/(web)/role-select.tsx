@@ -63,7 +63,7 @@ export default function WebRoleSelectScreen() {
 
 const ROLES = [
   { value: 'tourist', icon: '🗺', title: 'Tourist', desc: 'Discover destinations, plan budgets, and build itineraries.' },
-  { value: 'business_owner', icon: '🏪', title: 'Business Owner', desc: 'List and manage your business, handle booking requests.' },
+  { value: 'business_owner', icon: '🏪', title: 'Business Owner', desc: 'Advertise your business and get it verified.' },
 ];
 
 const styles = StyleSheet.create({

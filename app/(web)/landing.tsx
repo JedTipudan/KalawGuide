@@ -43,11 +43,11 @@ export default function WebLandingScreen() {
 
   const budgetBg      = isDark ? colors.surface : '#E0F2FE';
   const budgetCardBg  = isDark ? colors.subtle  : '#FFFFFF';
-  const budgetTitle   = isDark ? colors.text    : '#123747';
+  const budgetTitle   = colors.text;
   const budgetMuted   = isDark ? colors.muted   : '#64748B';
   const budgetDivider = isDark ? colors.border  : '#E2E8F0';
   const whyBg         = isDark ? colors.subtle  : '#E0F2FE';
-  const whyTitle      = isDark ? colors.text    : '#123747';
+  const whyTitle      = colors.text;
   const whyMuted      = isDark ? colors.muted   : '#64748B';
 
   return (

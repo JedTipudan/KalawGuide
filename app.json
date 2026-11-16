@@ -37,7 +37,13 @@
       "expo-notifications",
       "expo-font",
       "expo-sqlite",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "KalawGuide uses your location to show where you are on the map and how far you are from destinations."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

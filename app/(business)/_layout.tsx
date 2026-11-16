@@ -40,8 +40,6 @@ export default function BusinessLayout() {
       {/* Legacy screens kept for DB compat but hidden */}
       <Tabs.Screen name="products" options={{ href: null }} />
       <Tabs.Screen name="services" options={{ href: null }} />
-      <Tabs.Screen name="bookings" options={{ href: null }} />
-      <Tabs.Screen name="booking-detail" options={{ href: null }} />
     </Tabs>
   );
 }

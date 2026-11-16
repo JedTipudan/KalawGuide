@@ -8,29 +8,30 @@ import { rw } from '../../utils/responsive';
 
 interface Stats {
   users: number; businesses: number; pendingVerifications: number;
-  destinations: number; bookings: number;
+  destinations: number; priceReviews: number; events: number;
 }
 
 export default function WebAdminDashboardScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const [stats, setStats] = useState<Stats>({ users: 0, businesses: 0, pendingVerifications: 0, destinations: 0, bookings: 0 });
+  const [stats, setStats] = useState<Stats>({ users: 0, businesses: 0, pendingVerifications: 0, destinations: 0, priceReviews: 0, events: 0 });
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const db = await getDatabase();
-      const [users, biz, pending, dests, bookings] = await Promise.all([
-        db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM users'),
+      const [users, biz, pending, dests, revs, events] = await Promise.all([
+        db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM users WHERE role <> 'admin'"),
         db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM businesses'),
         db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM businesses WHERE verification_status='pending'"),
         db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM destinations WHERE is_active=1'),
-        db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM booking_requests'),
+        db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM listing_revisions WHERE status='pending'"),
+        db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM activity_logs'),
       ]);
       setStats({
         users: users?.count ?? 0, businesses: biz?.count ?? 0,
         pendingVerifications: pending?.count ?? 0,
-        destinations: dests?.count ?? 0, bookings: bookings?.count ?? 0,
+        destinations: dests?.count ?? 0, priceReviews: revs?.count ?? 0, events: events?.count ?? 0,
       });
     } catch (e) { console.error(e); }
   }, []);
@@ -43,8 +44,8 @@ export default function WebAdminDashboardScreen() {
     { label: 'Registered businesses', value: stats.businesses },
     { label: 'Pending verifications', value: stats.pendingVerifications },
     { label: 'Destinations', value: stats.destinations },
-    { label: 'Booking requests', value: stats.bookings },
-    { label: 'Platform activity', value: 0 },
+    { label: 'Price changes to review', value: stats.priceReviews },
+    { label: 'Logged activity events', value: stats.events },
   ];
 
   return (

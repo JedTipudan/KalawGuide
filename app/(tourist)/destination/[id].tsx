@@ -1,37 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Image, Platform,
+  TouchableOpacity, Image, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import { useRouter, useLocalSearchParams, Redirect } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getDatabase } from '../../../database/migrations/init';
 import { generateId, now } from '../../../utils/helpers';
 import { Typography } from '../../../constants/tokens';
+import { LiveMap } from '../../../components/map/LiveMap';
+import { useLiveLocation, distanceKm, formatDistance, directionsUrl } from '../../../features/map/useLiveLocation';
 
 interface DestinationDetail {
   id: string; name: string; description: string; location: string;
   cover_image_url: string | null; estimated_fee: number | null;
   fee_verified: number; latitude: number | null; longitude: number | null;
   category_name: string; category_icon: string; category_color: string;
-}
-
-function buildMapHtml(lat: number, lng: number, name: string): string {
-  return `<!DOCTYPE html><html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>html,body,#map{margin:0;padding:0;width:100%;height:100%;}.leaflet-control-attribution{display:none;}</style>
-</head><body>
-<div id="map"></div>
-<script>
-var map=L.map('map',{zoomControl:true,dragging:true,scrollWheelZoom:false,tap:false}).setView([${lat},${lng}],14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-L.marker([${lat},${lng}]).addTo(map).bindPopup(${JSON.stringify(name)}).openPopup();
-</script></body></html>`;
 }
 
 export default function DestinationDetailScreen() {
@@ -43,6 +29,7 @@ export default function DestinationDetailScreen() {
   const [adding, setAdding] = useState(false);
   const [favId, setFavId] = useState<string | null>(null);
   const [favLoading, setFavLoading] = useState(false);
+  const { coords, retry } = useLiveLocation(Platform.OS !== 'web');
 
   useEffect(() => {
     if (!id || Platform.OS === 'web') return;
@@ -205,15 +192,25 @@ export default function DestinationDetailScreen() {
               <View style={styles.locationHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>📍 Location</Text>
               </View>
-              <View style={styles.mapContainer}>
-                <WebView
-                  style={styles.map}
-                  originWhitelist={['*']}
-                  source={{ html: buildMapHtml(dest.latitude, dest.longitude, dest.name) }}
-                  scrollEnabled={false}
-                  javaScriptEnabled
-                />
-              </View>
+              <LiveMap
+                style={styles.mapContainer}
+                markers={[{ id: dest.id, name: dest.name, lat: dest.latitude, lng: dest.longitude }]}
+                focusId={dest.id}
+                user={coords}
+                onRequestLocate={retry}
+              />
+              {coords && (
+                <Text style={[styles.coordText, { color: colors.primary }]}>
+                  🧭 {formatDistance(distanceKm(coords.lat, coords.lng, dest.latitude, dest.longitude))} (straight line)
+                </Text>
+              )}
+              <TouchableOpacity
+                onPress={() => Linking.openURL(directionsUrl(dest.latitude!, dest.longitude!))}
+                style={[styles.directionsBtn, { backgroundColor: colors.primary }]}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.directionsText, { color: colors.onPrimary }]}>Get directions</Text>
+              </TouchableOpacity>
               <View style={[styles.coordPill, { backgroundColor: colors.subtle }]}>
                 <Text style={[styles.coordText, { color: colors.muted }]}>
                   📍 {dest.latitude.toFixed(4)}°N, {dest.longitude.toFixed(4)}°E
@@ -310,8 +307,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: 'Manrope', fontSize: 17, fontWeight: Typography.weight.bold },
   sectionBody: { fontFamily: Typography.fontFamilyBody, fontSize: 14, lineHeight: 22 },
   locationHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  mapContainer: { height: 220, borderRadius: 12, overflow: 'hidden' },
-  map: { flex: 1 },
+  mapContainer: { height: 260, borderRadius: 12, overflow: 'hidden' },
+  directionsBtn: { borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, alignItems: 'center' },
+  directionsText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
   coordPill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 24, alignSelf: 'flex-start',

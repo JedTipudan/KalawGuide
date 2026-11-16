@@ -11,7 +11,7 @@ type Scored = Exclude<AssistantIntent, 'unrelated' | 'malicious_or_override_atte
 // Array order = tie-break priority.
 const KEYWORDS: [Scored, RegExp[]][] = [
   ['emergency_information', [/\bemergenc/, /\bpolice\b/, /\bhospital/, /\bambulance\b/, /\bfire\b/, /\brescue\b/, /\bcoast ?guard\b/, /\bhotline/, /\b911\b/, /\baccident/, /\binjur/]],
-  ['booking_information', [/\bbook(ing|ings|ed)?\b/, /\breserv/]],
+  ['business_contact', [/\bbook(ing|ings|ed)?\b/, /\breserv/, /\bcontact (the |a )?(business|owner|resort|hotel)/, /\bphone number of\b/]],
   ['travel_budget', [/\bbudget\b/, /\bhow much\b/, /\bcost/, /\bprepare\b/, /\bspend/, /\bafford/, /\bcheap/, /₱\s?\d|\bphp\b|\bpesos?\b/]],
   ['itinerary_planning', [/\bitinerar/, /\bplan (a|my|our)\b/, /\bschedule\b/, /\b\d+[- ]?days?\b/, /\b(day|weekend) trip\b/]],
   ['accommodation', [/\baccommodation/, /\bhotels?\b/, /\bresorts?\b/, /\bstay\b/, /\brooms?\b/, /\blodg/, /\binns?\b/, /\bhomestay/, /\bcottages?\b/, /\bovernight\b/]],
@@ -20,7 +20,7 @@ const KEYWORDS: [Scored, RegExp[]][] = [
   ['activity_search', [/\bactivit/, /\bthings to do\b/, /\bsurf/, /\bswim/, /\bsnorkel/, /\bdiv(e|ing)\b/, /\bhik(e|ing)\b/, /\btrek/, /\bisland hopping\b/, /\btours?\b/, /\bkayak/]],
   ['business_information', [/\bbusiness/, /\bshops?\b/, /\bstores?\b/, /\bestablishment/, /\boperators?\b/, /\bopening hours\b/, /\bservices\b/, /\bproducts?\b/, /\bprices?\b/]],
   ['destination_details', [/\btell me about\b/, /\bentrance fee/, /\bwhere is\b/, /\bdetails?\b/]],
-  ['destination_search', [/\bdestinations?\b/, /\bplaces?\b/, /\bspots?\b/, /\bbeach(es)?\b/, /\bfalls\b/, /\bwaterfall/, /\battraction/, /\bvisit/, /\btourist/, /\bmati\b/, /\bdavao oriental\b/]],
+  ['destination_search', [/\brecommend/, /\bsuggest/, /\bbest\b/, /\bmust[- ](see|visit|go)\b/, /\bwhere (should|to|can) (i |we )?go\b/, /\bdestinations?\b/, /\bplaces?\b/, /\bspots?\b/, /\bbeach(es)?\b/, /\bfalls\b/, /\bwaterfall/, /\battraction/, /\bvisit/, /\btourist/, /\bmati\b/, /\bdavao oriental\b/]],
   ['app_help', [/\bapp\b/, /\bkalaw ?guide\b/, /\bhow do i (use|save|add|create|sign)\b/, /\bfavou?rites?\b/, /\bsign ?in\b/, /\baccount\b/, /\bprofile\b/, /^(hi|hello|hey|good (morning|afternoon|evening)|thanks?|thank you)\b/]],
 ];
 

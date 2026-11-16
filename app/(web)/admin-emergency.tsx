@@ -2,7 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, ActivityIndicator } from 'react-native';
 import { AdminShell } from '../../components/web/AdminShell';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now } from '../../utils/helpers';
 import { rw } from '../../utils/responsive';
 
@@ -15,6 +17,7 @@ const EMPTY = { name: '', org: '', number: '', desc: '', verified: false };
 
 export default function WebAdminEmergencyScreen() {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY);
@@ -64,12 +67,14 @@ export default function WebAdminEmergencyScreen() {
           'UPDATE emergency_contacts SET name=?, organization=?, contact_number=?, description=?, is_verified=?, last_verified_at=?, updated_at=? WHERE id=?',
           [form.name.trim(), form.org.trim(), form.number.trim(), form.desc.trim() || null, form.verified ? 1 : 0, form.verified ? now() : null, now(), editingId]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'contact_saved', entityType: 'emergency_contact', entityId: editingId, entityName: form.name.trim() });
       } else {
         await db.runAsync(
           `INSERT INTO emergency_contacts (id, name, organization, contact_number, description, is_verified, last_verified_at, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [generateId(), form.name.trim(), form.org.trim(), form.number.trim(), form.desc.trim() || null, form.verified ? 1 : 0, form.verified ? now() : null, now(), now()]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'contact_saved', entityType: 'emergency_contact', entityId: 'new', entityName: form.name.trim() });
       }
       setShowForm(false);
       await load();
@@ -81,6 +86,7 @@ export default function WebAdminEmergencyScreen() {
     if (!window.confirm('Remove this emergency contact?')) return;
     const db = await getDatabase();
     await db.runAsync('DELETE FROM emergency_contacts WHERE id = ?', [id]);
+    await logActivity({ userId: user?.id ?? null, action: 'contact_deleted', entityType: 'emergency_contact', entityId: id, entityName: contacts.find(c => c.id === id)?.name ?? null });
     setContacts(prev => prev.filter(c => c.id !== id));
   }
 

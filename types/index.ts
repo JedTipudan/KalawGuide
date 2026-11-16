@@ -127,15 +127,6 @@ export interface BusinessService {
   updatedAt: string;
 }
 
-// ─── Bookings (kept for DB compatibility but UI removed) ────────────────────
-
-export type BookingStatus =
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'cancelled'
-  | 'completed';
-
 // ─── Listing Prices ───────────────────────────────────────────────────────────
 
 export type PriceCategory =
@@ -314,7 +305,6 @@ export interface EmergencyContact {
 // ─── Notifications ────────────────────────────────────────────────────────────
 
 export type NotificationType =
-  | 'booking_update'
   | 'verification_update'
   | 'system'
   | 'reminder';
@@ -362,7 +352,7 @@ export type AssistantIntent =
   | 'activity_search'
   | 'itinerary_planning'
   | 'business_information'
-  | 'booking_information'
+  | 'business_contact'
   | 'emergency_information'
   | 'app_help'
   | 'unrelated'

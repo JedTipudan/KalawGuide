@@ -9,7 +9,7 @@ import { rw } from '../../utils/responsive';
 
 interface NotifRow { id: string; type: string; title: string; body: string; is_read: number; created_at: string; }
 
-const TYPE_ICONS: Record<string, string> = { booking: '📋', verification: '✅', listing: '🏪', general: '🔔' };
+const TYPE_ICONS: Record<string, string> = { verification: '✅', listing: '🏪', general: '🔔' };
 
 export default function WebBusinessNotificationsScreen() {
   const { colors } = useTheme();
@@ -57,7 +57,7 @@ export default function WebBusinessNotificationsScreen() {
         <View style={s.pageHeader}>
           <View>
             <Text style={[s.pageTitle, { color: colors.text }]}>Notifications</Text>
-            <Text style={[s.pageSub, { color: colors.muted }]}>Booking, verification, and listing updates.</Text>
+            <Text style={[s.pageSub, { color: colors.muted }]}>Verification and listing updates.</Text>
           </View>
           {unreadCount > 0 && (
             <TouchableOpacity style={[s.markAllBtn, { borderColor: colors.border }]} onPress={markAllRead}>

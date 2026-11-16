@@ -8,6 +8,7 @@ import {
   signOut as authSignOut,
   updateUserRole,
 } from '../services/auth/authService';
+import { logActivity } from '../services/admin/activityLog';
 
 interface AuthContextValue {
   user: User | null;
@@ -72,13 +73,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (credentials: SignInCredentials) => {
-    const session = await signInWithEmail(credentials);
+    let session: AuthSession;
+    try {
+      session = await signInWithEmail(credentials);
+    } catch (e) {
+      logActivity({ userId: null, action: 'sign_in_failed', entityType: 'system', entityId: 'auth', entityName: credentials.email });
+      throw e;
+    }
     setUser(session.user);
+    logActivity({ userId: session.user.id, action: 'signed_in', entityType: 'user', entityId: session.user.id, entityName: session.user.displayName });
   }, []);
 
   const register = useCallback(async (credentials: RegisterCredentials) => {
     const session = await registerWithEmail(credentials);
     setUser(session.user);
+    logActivity({ userId: session.user.id, action: 'registered', entityType: 'user', entityId: session.user.id, entityName: session.user.displayName, details: session.user.role });
   }, []);
 
   const googleSignIn = useCallback(async (googleUser: {
@@ -86,18 +95,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     const { session, isNewUser } = await signInWithGoogle(googleUser);
     setUser(session.user);
+    logActivity({ userId: session.user.id, action: isNewUser ? 'registered' : 'signed_in_google', entityType: 'user', entityId: session.user.id, entityName: session.user.displayName, details: 'Google' });
     return { isNewUser };
   }, []);
 
   const signOut = useCallback(async () => {
+    if (user) await logActivity({ userId: user.id, action: 'signed_out', entityType: 'user', entityId: user.id, entityName: user.displayName });
     await authSignOut();
     setUser(null);
-  }, []);
+  }, [user]);
 
   const setRole = useCallback(async (role: User['role']) => {
     if (!user) return;
     await updateUserRole(user.id, role);
     setUser(prev => prev ? { ...prev, role } : null);
+    logActivity({ userId: user.id, action: 'role_set', entityType: 'user', entityId: user.id, entityName: user.displayName, details: role });
   }, [user]);
 
   return (

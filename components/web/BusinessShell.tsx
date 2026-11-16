@@ -20,7 +20,7 @@ const SIDEBAR_LINKS = [
 interface Props { children: React.ReactNode; activeLabel?: string; }
 
 export function BusinessShell({ children, activeLabel }: Props) {
-  const { colors, mode, setMode } = useTheme();
+  const { colors, isDark, mode, setMode } = useTheme();
   const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -76,11 +76,11 @@ export function BusinessShell({ children, activeLabel }: Props) {
 
       <View {...rw('stack')} style={s.shell}>
         {/* Sidebar */}
-        <View {...rw('sidebar')} style={[s.sidebar, { backgroundColor: colors.subtle, borderRightColor: colors.border, overflow: 'auto' as any }]}>
+        <View {...rw('sidebar')} style={[s.sidebar, { backgroundColor: isDark ? colors.subtle : colors.surface, borderRightColor: colors.border, overflow: 'auto' as any }]}>
           <Text {...rw('hide-sm')} style={[s.sidebarRole, { color: colors.accent }]}>BUSINESS OWNER</Text>
 
           {bizName && (
-            <View style={[s.bizCard, { backgroundColor: colors.surface }]}>
+            <View style={[s.bizCard, { backgroundColor: isDark ? colors.surface : colors.background }]}>
               <Text style={[s.bizCardName, { color: colors.text }]} numberOfLines={2}>{bizName}</Text>
               <Text style={[s.bizCardStatus, { color: STATUS_COLOR[bizStatus] }]}>
                 {STATUS_DOT[bizStatus]} {bizStatus.replace('_', ' ')}
@@ -91,14 +91,14 @@ export function BusinessShell({ children, activeLabel }: Props) {
           {SIDEBAR_LINKS.map(link => (
             <TouchableOpacity
               key={link.label}
-              style={[s.item, isActive(link) && { backgroundColor: colors.border }]}
+              style={[s.item, isActive(link) && { backgroundColor: isDark ? colors.border : colors.primary }]}
               onPress={() => {
                 if (!link.route) { signOut(); return; }
                 setSelected(link.label);
                 router.push(link.route as any);
               }}
             >
-              <Text style={[s.itemText, { color: isActive(link) ? colors.primary : colors.text }, isActive(link) && s.itemTextActive]}>
+              <Text style={[s.itemText, { color: isActive(link) ? (isDark ? colors.primary : colors.onPrimary) : colors.text }, isActive(link) && s.itemTextActive]}>
                 {link.label}
               </Text>
             </TouchableOpacity>

@@ -146,21 +146,3 @@ export async function getEmergencyContacts(): Promise<EmergencyInfo[]> {
   }));
 }
 
-export interface BookingInfo { businessName: string; status: string; requestedDate: string | null; guestCount: number | null }
-
-/** Only the requesting tourist's own bookings. */
-export async function getMyBookings(userId: string): Promise<BookingInfo[]> {
-  const db = await getDatabase();
-  const rows = await db.getAllAsync<{ business_name: string | null; status: string; requested_date: string | null; guest_count: number | null }>(
-    `SELECT b.name AS business_name, r.status, r.requested_date, r.guest_count
-     FROM booking_requests r LEFT JOIN businesses b ON b.id = r.business_id
-     WHERE r.tourist_id = ? ORDER BY r.created_at DESC LIMIT 5`,
-    [userId]
-  );
-  return rows.map(r => ({
-    businessName: sanitizeRetrieved(r.business_name, 80) || 'a business',
-    status: r.status,
-    requestedDate: r.requested_date,
-    guestCount: r.guest_count,
-  }));
-}

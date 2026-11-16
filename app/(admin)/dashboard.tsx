@@ -17,14 +17,14 @@ interface Stats {
   pendingBusinesses: number;
   approvedBusinesses: number;
   destinations: number;
-  pendingBookings: number;
+  pendingPriceReviews: number;
 }
 
 export default function AdminDashboard() {
   const { colors, isDark } = useTheme();
   const { user, signOut } = useAuth();
   const router = useRouter();
-  const [stats, setStats] = useState<Stats>({ tourists: 0, businessOwners: 0, pendingBusinesses: 0, approvedBusinesses: 0, destinations: 0, pendingBookings: 0 });
+  const [stats, setStats] = useState<Stats>({ tourists: 0, businessOwners: 0, pendingBusinesses: 0, approvedBusinesses: 0, destinations: 0, pendingPriceReviews: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const shadow = isDark ? Shadows.dark.sm : Shadows.light.sm;
 
@@ -36,14 +36,14 @@ export default function AdminDashboard() {
       const pendingBiz = await db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM businesses WHERE verification_status='pending'");
       const approvedBiz = await db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM businesses WHERE verification_status='approved'");
       const dests = await db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM destinations WHERE is_active=1");
-      const pendingBook = await db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM booking_requests WHERE status='pending'");
+      const pendingRev = await db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM listing_revisions WHERE status='pending'");
       setStats({
         tourists: tourists?.count ?? 0,
         businessOwners: owners?.count ?? 0,
         pendingBusinesses: pendingBiz?.count ?? 0,
         approvedBusinesses: approvedBiz?.count ?? 0,
         destinations: dests?.count ?? 0,
-        pendingBookings: pendingBook?.count ?? 0,
+        pendingPriceReviews: pendingRev?.count ?? 0,
       });
     } catch (e) {
       console.error('admin dashboard load error:', e);
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     { label: 'Pending Verification', value: stats.pendingBusinesses, icon: '⏳', color: colors.warning },
     { label: 'Approved Businesses', value: stats.approvedBusinesses, icon: '✅', color: colors.success },
     { label: 'Destinations', value: stats.destinations, icon: '🗺', color: colors.primary },
-    { label: 'Pending Bookings', value: stats.pendingBookings, icon: '📋', color: colors.warning },
+    { label: 'Price Changes to Review', value: stats.pendingPriceReviews, icon: '💰', color: colors.warning },
   ];
 
   const QUICK_ACTIONS = [
@@ -67,10 +67,10 @@ export default function AdminDashboard() {
     { icon: '👥', label: 'Manage Users', desc: 'View and manage user accounts', route: '/(admin)/users' },
     { icon: '🗺', label: 'Manage Destinations', desc: 'Add and edit destination listings', route: '/(admin)/destinations' },
     { icon: '📂', label: 'Categories', desc: 'Manage destination categories', route: '/(admin)/categories' },
-    { icon: '📋', label: 'Bookings', desc: 'View all platform bookings', route: '/(admin)/bookings' },
     { icon: '📊', label: 'Reports', desc: 'Analytics and platform metrics', route: '/(admin)/reports' },
     { icon: '📝', label: 'Activity Logs', desc: 'Platform-wide activity history', route: '/(admin)/activity-logs' },
-    { icon: '⚙️', label: 'Settings', desc: 'Emergency contacts and config', route: '/(admin)/settings' },
+    { icon: '☎️', label: 'Emergency Contacts', desc: 'Keep tourist emergency numbers verified', route: '/(admin)/emergency-contacts' },
+    { icon: '⚙️', label: 'Settings', desc: 'Theme, admin tools and sign out', route: '/(admin)/settings' },
   ];
 
   return (

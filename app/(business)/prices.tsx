@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { KalawButton } from '../../components/common/KalawButton';
 import { KalawInput } from '../../components/common/KalawInput';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now, formatCurrency } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
@@ -100,6 +101,7 @@ export default function BusinessPricesScreen() {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
           [generateId(), bizId, title.trim(), Number(amount), unit, category, description.trim() || null, conditions.trim() || null, now(), now()]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'price_added', entityType: 'price', entityId: bizId, details: `${title.trim()}: ₱${amount}` });
       }
       // If listing is approved, create a revision for admin review
       if (bizStatus === 'approved' && editing) {
@@ -122,6 +124,7 @@ export default function BusinessPricesScreen() {
       { text: 'Remove', style: 'destructive', onPress: async () => {
         const db = await getDatabase();
         await db.runAsync('UPDATE listing_prices SET is_active=0, updated_at=? WHERE id=?', [now(), id]);
+        await logActivity({ userId: user?.id ?? null, action: 'price_removed', entityType: 'price', entityId: id });
         await load();
       }},
     ]);

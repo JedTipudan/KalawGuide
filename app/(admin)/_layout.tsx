@@ -37,7 +37,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="categories" options={{ href: null }} />
       <Tabs.Screen name="reports" options={{ href: null }} />
       <Tabs.Screen name="activity-logs" options={{ href: null }} />
-      <Tabs.Screen name="bookings" options={{ href: null }} />
+      <Tabs.Screen name="emergency-contacts" options={{ href: null }} />
     </Tabs>
   );
 }

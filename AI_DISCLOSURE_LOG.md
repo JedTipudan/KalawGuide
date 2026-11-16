@@ -176,6 +176,111 @@ AI tool: Claude Code (Anthropic). The user asked to use Vercel instead of Netlif
 
 ---
 
+## Live Map for Mobile and Web (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user reported that the map wasn't showing, and asked for a free real-time map on mobile and web that works in the demo.
+
+**Problems the AI found**
+- **Web:** the map was a cross-origin OpenStreetMap `<iframe>`. The COOP/COEP headers needed by expo-sqlite block it.
+- **Mobile:** the WebView map loaded tiles from `tile.openstreetmap.org`, which rejects requests that don't say which site they come from. The map's attribution was also hidden.
+- **No live location:** the map only showed a fixed pin. Nothing tracked the user's position.
+
+**What the AI changed**
+- Installed `expo-location` (`npx expo install`) and added its `app.json` plugin with a permission message. The SDK 58 docs were checked first.
+- Added `components/map/mapHtml.ts`: a Leaflet page with CARTO tiles, visible attribution, a pulsing live-position dot, and "locate me" / "show all" buttons.
+- Added `components/map/LiveMap.tsx` (WebView) and `LiveMap.web.tsx` (same-origin `srcdoc` frame).
+- Added `features/map/useLiveLocation.ts`: foreground `watchPositionAsync`, haversine distance, and a Google Maps directions link.
+- Added the Map page (`app/(tourist)/map.tsx`, `app/(web)/map.tsx`) and registered its routes. Links: mobile Home button, web nav "Map", and `/map` in `index.ts`.
+- Replaced the static maps on both destination detail pages with the live map, plus distance and a "Get directions" button.
+- Added a "Live map" section and troubleshooting rows to `guide.html`.
+
+**Verification:**
+- `npx tsc --noEmit` shows no new errors.
+- ESLint is clean on the new map files.
+- `npx jest` passes 116/116 tests.
+- `npx expo export -p web` builds.
+- The map and GPS were not tested on a device or in a browser during this session. The team needs to test them (see `guide.html` section 7).
+
+---
+
+## Kalaw Assistance — Enter to Send and Deploy Check (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user asked that the assistant work fully when deployed, and that pressing Enter sends the message.
+
+**Findings**
+- The assistant (`features/assistant/`) is a rule-based engine over the local SQLite data. It has no external AI API, so it needs no keys or server when deployed. It depends only on the browser database, which needs the COOP/COEP headers already set in `vercel.json`.
+- A temporary test (deleted afterwards) confirmed that "how much budget need" returns a budget answer.
+- On web, the message box is multiline, and `react-native-web` ignores `submitBehavior`, so Enter only inserted a new line.
+
+**What the AI changed** (`components/assistant/KalawAssistanceFAB.tsx`)
+- Added a web `onKeyPress` handler: Enter sends, Shift+Enter adds a new line, and IME composition is respected. Mobile behaviour is unchanged (`submitBehavior="submit"`).
+- Added a `catch` in `sendMessage`, so a failed reply shows a friendly message instead of no response.
+
+**Verification:**
+- `npx tsc --noEmit` shows no new errors.
+- ESLint is clean on the changed file.
+- `npx jest` passes 116/116 tests.
+- The keypress behaviour was not clicked through in a browser during this session.
+
+---
+
+## Light Mode Check Against Figma (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user reported that parts of the admin area were not light in light mode.
+
+**How it was checked:** the AI read the Figma light frames and their variables:
+- Admin dashboard (10:10614)
+- Business owner dashboard (64:29938)
+- Sign in (10:17098)
+
+It then searched the web code for dark colors hard-coded outside the theme.
+
+**Fixed**
+- `components/web/AdminShell.tsx`: the top bar and sidebar always used dark navy (`#0B2635`). They now use theme colors:
+  - Light mode matches Figma: white navigation, `#1F2937` text, primary-filled active item, borders.
+  - Dark mode is unchanged.
+- `components/web/BusinessShell.tsx`: the light-mode sidebar is now white with a primary-filled active item, as in Figma.
+- `app/(web)/sign-in.tsx`, `register-tourist.tsx`, `register-business.tsx`, `forgot-password.tsx`: the welcome panel was always dark. It now uses the theme's subtle surface and text colors.
+- `app/(web)/landing.tsx`: two headings used `#123747`, a mapping error from the earlier color sweep (AI mistake). They now use the Figma text color.
+
+**Remaining differences (not changed)**
+- **Auth pages:** Figma's sign-in shows a beach photo with a heading on the left, not a text panel.
+- **Admin sidebar:** Figma lists extra items (Listing Reviews, Category Management, Price Monitoring, Pending Listings, Media Moderation) that have no screens in the app.
+
+**Verification:** `npx tsc --noEmit` shows no new errors. ESLint on the changed files shows only a pre-existing unescaped-apostrophe error in `sign-in.tsx`. Not viewed in a browser during this session.
+
+---
+
+## Mobile Sign-in Fixes and Assistant Recommendations (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user reported three things on mobile sign-in: the Theme button did nothing on tap, the layout hid under the status bar, and the design needed fixing. They also asked that Kalaw Assistance answer "best places to visit in Mati" with 3 suggestions.
+
+**What the AI changed**
+- **`app/(auth)/sign-in.tsx`** (checked against Figma frame 10:17178):
+  - Theme button wired to Light → Dark → System.
+  - Safe-area `SafeAreaView` (top edges).
+  - Real checkbox row for "Remember me" / "Forgot password?".
+  - Typed text uses the text color at 15px.
+  - Larger touch targets.
+  - Fixed the existing `TextInput` ref type error.
+- **Other auth screens** (forgot password, registration, role select, verification pending, welcome): swapped React Native's `SafeAreaView`, which ignores the Android status bar, for the safe-area-context version.
+- **Assistant** (`features/assistant/intent.ts`, `assistantEngine.ts`):
+  - New `recommendPlaces`, which returns 3 ranked picks from the database: featured, verified fee, free, has coordinates.
+  - Optional preference filters (beach / nature / adventure / culture / food / free), matched on whole words.
+  - Suggested follow-up questions.
+  - "recommend / suggest / best / must see / where should we go" are now understood instead of refused.
+  - The greeting mentions the Live map.
+- **Tests:** 5 new tests in `assistantEngine.test.ts`, covering 3 picks with featured first, recommend/suggest phrasing, preference and free filters, whole-word matching, and no invented places when the database is empty.
+
+**Verification:**
+- `npx jest` passes 121/121 tests.
+- `npx tsc --noEmit` errors went from 10 to 8. The two fixed were in sign-in, and the rest were already there.
+- ESLint on the changed folders shows only a pre-existing unescaped-apostrophe error in `app/(auth)/forgot-password.tsx`.
+- A temporary test (deleted) printed the real answer for the seeded Mati destinations.
+- The sign-in screen was not viewed on a device during this session.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -185,3 +290,7 @@ UI fix — mobile-only back bar on Emergency, Expenses and Budget (2026-11-16).
 Responsive website for phone browsers (2026-11-16).
 Deployment setup (Netlify) and unused-file cleanup (2026-11-16).
 Hosting switched from Netlify to Vercel (2026-11-16).
+Live map for mobile and web (2026-11-16).
+Kalaw Assistance Enter-to-send and error fallback (2026-11-16).
+Light mode check against Figma: admin/business shells, auth panels (2026-11-16).
+Mobile sign-in fixes and assistant place recommendations (2026-11-16).

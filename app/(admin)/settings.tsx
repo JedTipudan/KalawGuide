@@ -1,195 +1,198 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Alert, Modal, KeyboardAvoidingView, Platform, Switch,
-} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { KalawButton } from '../../components/common/KalawButton';
-import { KalawInput } from '../../components/common/KalawInput';
 import { getDatabase } from '../../database/migrations/init';
-import { generateId, now } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { ThemeMode } from '../../types';
 
-interface ContactRow { id: string; name: string; organization: string; contact_number: string; description: string | null; is_verified: number; }
+const THEME_OPTIONS: { label: string; value: ThemeMode; icon: string }[] = [
+  { label: 'Light', value: 'light', icon: '☀️' },
+  { label: 'Dark', value: 'dark', icon: '🌙' },
+  { label: 'System', value: 'system', icon: '⚙️' },
+];
+
+interface Counts { contacts: number; unverifiedContacts: number; categories: number; pendingBusinesses: number }
 
 export default function AdminSettingsScreen() {
-  const { colors, isDark } = useTheme();
-  const { signOut } = useAuth();
-  const [contacts, setContacts] = useState<ContactRow[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editing, setEditing] = useState<ContactRow | null>(null);
-  const [cName, setCName] = useState('');
-  const [cOrg, setCOrg] = useState('');
-  const [cNumber, setCNumber] = useState('');
-  const [cDesc, setCDesc] = useState('');
-  const [cVerified, setCVerified] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
+  const { colors, isDark, mode, setMode } = useTheme();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
   const shadow = isDark ? Shadows.dark.sm : Shadows.light.sm;
+  const [counts, setCounts] = useState<Counts | null>(null);
 
-  const load = useCallback(async () => {
-    const db = await getDatabase();
-    const rows = await db.getAllAsync<ContactRow>(
-      'SELECT id, name, organization, contact_number, description, is_verified FROM emergency_contacts ORDER BY name'
-    );
-    setContacts(rows);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  function openAdd() { setEditing(null); setCName(''); setCOrg(''); setCNumber(''); setCDesc(''); setCVerified(false); setErrors({}); setModalVisible(true); }
-  function openEdit(c: ContactRow) { setEditing(c); setCName(c.name); setCOrg(c.organization); setCNumber(c.contact_number); setCDesc(c.description ?? ''); setCVerified(c.is_verified === 1); setErrors({}); setModalVisible(true); }
-
-  async function handleSave() {
-    const e: Record<string, string> = {};
-    if (!cName.trim()) e.name = 'Name is required.';
-    if (!cOrg.trim()) e.org = 'Organization is required.';
-    if (!cNumber.trim()) e.number = 'Contact number is required.';
-    setErrors(e);
-    if (Object.keys(e).length > 0) return;
-    setSaving(true);
-    try {
-      const db = await getDatabase();
-      if (editing) {
-        await db.runAsync(
-          'UPDATE emergency_contacts SET name=?, organization=?, contact_number=?, description=?, is_verified=?, last_verified_at=?, updated_at=? WHERE id=?',
-          [cName.trim(), cOrg.trim(), cNumber.trim(), cDesc.trim() || null, cVerified ? 1 : 0, cVerified ? now() : null, now(), editing.id]
-        );
-      } else {
-        await db.runAsync(
-          `INSERT INTO emergency_contacts (id, name, organization, contact_number, description, is_verified, last_verified_at, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [generateId(), cName.trim(), cOrg.trim(), cNumber.trim(), cDesc.trim() || null, cVerified ? 1 : 0, cVerified ? now() : null, now(), now()]
-        );
-      }
-      setModalVisible(false);
-      await load();
-    } catch { Alert.alert('Error', 'Could not save contact.'); }
-    finally { setSaving(false); }
-  }
-
-  async function handleDelete(id: string) {
-    Alert.alert('Delete Contact', 'Remove this emergency contact?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
+  // Refresh the badges every time the tab comes back into focus.
+  useFocusEffect(useCallback(() => {
+    let live = true;
+    (async () => {
+      try {
         const db = await getDatabase();
-        await db.runAsync('DELETE FROM emergency_contacts WHERE id = ?', [id]);
-        setContacts(prev => prev.filter(c => c.id !== id));
-      }},
+        const n = async (sql: string) => (await db.getFirstAsync<{ n: number }>(sql))?.n ?? 0;
+        const next = {
+          contacts: await n('SELECT COUNT(*) AS n FROM emergency_contacts'),
+          unverifiedContacts: await n('SELECT COUNT(*) AS n FROM emergency_contacts WHERE is_verified = 0'),
+          categories: await n('SELECT COUNT(*) AS n FROM destination_categories'),
+          pendingBusinesses: await n("SELECT COUNT(*) AS n FROM businesses WHERE verification_status = 'pending'"),
+        };
+        if (live) setCounts(next);
+      } catch { /* badges are optional */ }
+    })();
+    return () => { live = false; };
+  }, []));
+
+  function confirmSignOut() {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Sign out of the admin account?')) signOut();
+      return;
+    }
+    Alert.alert('Sign out?', 'You will need to sign in again to manage KalawGuide.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: signOut },
     ]);
   }
 
+  const TOOLS: { icon: string; label: string; hint?: string; route: string; badge?: number; warn?: boolean }[] = [
+    { icon: '🏪', label: 'Business verification', hint: 'Check that listings are legit', route: '/(admin)/businesses', badge: counts?.pendingBusinesses, warn: !!counts?.pendingBusinesses },
+    { icon: '☎️', label: 'Emergency contacts', hint: counts ? `${counts.contacts} contacts · ${counts.unverifiedContacts} unverified` : undefined, route: '/(admin)/emergency-contacts', warn: !!counts?.unverifiedContacts },
+    { icon: '🏷', label: 'Destination categories', hint: counts ? `${counts.categories} categories` : undefined, route: '/(admin)/categories' },
+    { icon: '📊', label: 'Reports & analytics', hint: 'Users, verification and tourist activity', route: '/(admin)/reports' },
+    { icon: '📋', label: 'Activity logs', hint: 'Sign-ins, approvals and edits', route: '/(admin)/activity-logs' },
+  ];
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.appBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text style={[styles.appBarTitle, { color: colors.primary }]}>Settings</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Emergency Contacts</Text>
-          <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openAdd}>
-            <Text style={[styles.addBtnText, { color: colors.onPrimary }]}>+ Add</Text>
-          </TouchableOpacity>
-        </View>
-
-        {contacts.map(contact => (
-          <View key={contact.id} style={[styles.contactCard, { backgroundColor: colors.surface, ...shadow }]}>
-            <View style={styles.contactInfo}>
-              <View style={styles.contactTop}>
-                <Text style={[styles.contactName, { color: colors.text }]}>{contact.name}</Text>
-                {contact.is_verified === 1 ? (
-                  <View style={[styles.verifiedBadge, { backgroundColor: colors.success + '20' }]}>
-                    <Text style={[styles.verifiedText, { color: colors.success }]}>✅ Verified</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.unverifiedBadge, { backgroundColor: colors.warning + '20' }]}>
-                    <Text style={[styles.unverifiedText, { color: colors.warning }]}>⚠️ Unverified</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.contactOrg, { color: colors.muted }]}>{contact.organization}</Text>
-              <Text style={[styles.contactNumber, { color: colors.primary }]}>{contact.contact_number}</Text>
-            </View>
-            <View style={styles.contactActions}>
-              <TouchableOpacity onPress={() => openEdit(contact)} style={styles.actionBtn}>
-                <Text style={[styles.actionText, { color: colors.primary }]}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDelete(contact.id)} style={styles.actionBtn}>
-                <Text style={[styles.actionText, { color: colors.danger }]}>Delete</Text>
-              </TouchableOpacity>
+        {/* Account */}
+        <View style={[styles.card, styles.accountCard, { backgroundColor: colors.surface, ...shadow }]}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.avatarText, { color: colors.onPrimary }]}>{(user?.displayName ?? 'A').charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{user?.displayName ?? 'Administrator'}</Text>
+            <Text style={[styles.muted, { color: colors.muted }]} numberOfLines={1}>{user?.email}</Text>
+            <View style={[styles.roleBadge, { backgroundColor: colors.subtle }]}>
+              <Text style={[styles.roleText, { color: colors.primary }]}>🛡 Administrator</Text>
             </View>
           </View>
-        ))}
-
-        <View style={[styles.warningBanner, { backgroundColor: colors.warning + '15', borderColor: colors.warning + '40' }]}>
-          <Text style={[styles.warningText, { color: colors.warning }]}>
-            ⚠️ Only mark contacts as verified after personally confirming the number is correct and active.
-          </Text>
         </View>
 
-        <KalawButton label="Sign Out" onPress={signOut} variant="ghost" fullWidth />
-      </ScrollView>
-
-      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalVisible(false)}>
-        <SafeAreaView style={[styles.modal, { backgroundColor: colors.background }]}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>{editing ? 'Edit Contact' : 'Add Emergency Contact'}</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <Text style={[styles.closeBtn, { color: colors.muted }]}>✕</Text>
+        {/* Appearance */}
+        <View style={[styles.card, { backgroundColor: colors.surface, ...shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
+          <Text style={[styles.muted, { color: colors.muted }]}>
+            Currently {mode === 'system' ? `following your phone (${isDark ? 'dark' : 'light'})` : mode}.
+          </Text>
+          <View style={styles.themeRow}>
+            {THEME_OPTIONS.map(opt => {
+              const active = mode === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.themeOption, { backgroundColor: active ? colors.primary : colors.subtle, borderColor: active ? colors.primary : colors.border }]}
+                  onPress={() => setMode(opt.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${opt.label} theme`}
+                >
+                  <Text style={styles.themeIcon}>{opt.icon}</Text>
+                  <Text style={[styles.themeLabel, { color: active ? colors.onPrimary : colors.text }]}>{opt.label}</Text>
                 </TouchableOpacity>
-              </View>
-              <KalawInput label="Name *" placeholder="e.g. Mati City Police Station" value={cName} onChangeText={setCName} error={errors.name} />
-              <KalawInput label="Organization *" placeholder="e.g. Philippine National Police" value={cOrg} onChangeText={setCOrg} error={errors.org} />
-              <KalawInput label="Contact Number *" placeholder="(087) 000-0000" value={cNumber} onChangeText={setCNumber} keyboardType="phone-pad" error={errors.number} />
-              <KalawInput label="Description" placeholder="Optional description" value={cDesc} onChangeText={setCDesc} multiline numberOfLines={2} />
-              <View style={styles.toggleRow}>
-                <View>
-                  <Text style={[styles.toggleLabel, { color: colors.text }]}>Mark as Verified</Text>
-                  <Text style={[styles.toggleHint, { color: colors.muted }]}>Only check if you have confirmed this number is correct.</Text>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Admin tools */}
+        <View style={[styles.card, { backgroundColor: colors.surface, ...shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Admin tools</Text>
+          {TOOLS.map((t, i) => (
+            <View key={t.route}>
+              {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+              <TouchableOpacity style={styles.menuRow} onPress={() => router.push(t.route as any)} accessibilityRole="button">
+                <Text style={styles.menuIcon}>{t.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>{t.label}</Text>
+                  {!!t.hint && <Text style={[styles.menuHint, { color: t.warn ? colors.warning : colors.muted }]}>{t.hint}</Text>}
                 </View>
-                <Switch value={cVerified} onValueChange={setCVerified} trackColor={{ false: colors.border, true: colors.success + '80' }} thumbColor={cVerified ? colors.success : colors.muted} />
+                {!!t.badge && (
+                  <View style={[styles.badge, { backgroundColor: colors.warning }]}>
+                    <Text style={[styles.badgeText, { color: '#FFFFFF' }]}>{t.badge}</Text>
+                  </View>
+                )}
+                <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+
+        {/* About */}
+        <View style={[styles.card, { backgroundColor: colors.surface, ...shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>About</Text>
+          {[
+            ['App version', '1.0.0'],
+            ['Coverage', 'Mati City, Davao Oriental'],
+            ['Data', 'Stored on this device (offline-first)'],
+          ].map(([k, v], i) => (
+            <View key={k}>
+              {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+              <View style={styles.infoRow}>
+                <Text style={[styles.muted, { color: colors.muted }]}>{k}</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{v}</Text>
               </View>
-              <KalawButton label={editing ? 'Save Changes' : 'Add Contact'} onPress={handleSave} loading={saving} fullWidth size="lg" />
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </Modal>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.signOutBtn, { backgroundColor: colors.surface, borderColor: colors.danger }]}
+          onPress={confirmSignOut}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.signOutText, { color: colors.danger }]}>Sign Out</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.legal, { color: colors.muted }]}>KalawGuide · Administrator workspace</Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: Spacing.base, gap: Spacing.lg, paddingBottom: Spacing.xxxl },
-  title: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h4, fontWeight: Typography.weight.bold },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
-  addBtn: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, borderRadius: Radius.lg },
-  addBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.semiBold },
-  contactCard: { borderRadius: Radius.md, padding: Spacing.base, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  contactInfo: { flex: 1, gap: Spacing.xs },
-  contactTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
-  contactName: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.semiBold, flex: 1 },
-  verifiedBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
-  verifiedText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, fontWeight: Typography.weight.medium },
-  unverifiedBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
-  unverifiedText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.label, fontWeight: Typography.weight.medium },
-  contactOrg: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
-  contactNumber: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.semiBold },
-  contactActions: { gap: Spacing.sm },
-  actionBtn: { padding: Spacing.sm },
-  actionText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
-  warningBanner: { padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1 },
-  warningText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, lineHeight: Typography.size.body * Typography.lineHeight },
-  modal: { flex: 1 },
-  modalContent: { padding: Spacing.base, gap: Spacing.base, paddingBottom: Spacing.xxxl },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
-  modalTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
-  closeBtn: { fontSize: 20, padding: Spacing.sm },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.sm, gap: Spacing.md },
-  toggleLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.medium },
-  toggleHint: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
+  appBar: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  appBarTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.semiBold },
+  content: { padding: 16, gap: 16, paddingBottom: 48 },
+  card: { borderRadius: Radius.md, padding: 16, gap: 10 },
+  accountCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
+  name: { fontFamily: Typography.fontFamilyBody, fontSize: 18, fontWeight: Typography.weight.semiBold },
+  roleBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.sm, marginTop: 4 },
+  roleText: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.semiBold },
+  muted: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
+  sectionTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 15, fontWeight: Typography.weight.semiBold },
+  themeRow: { flexDirection: 'row', gap: Spacing.sm },
+  themeOption: { flex: 1, alignItems: 'center', paddingVertical: Spacing.md, borderRadius: Radius.md, borderWidth: 1.5, gap: Spacing.xs, minHeight: 64 },
+  themeIcon: { fontSize: 20 },
+  themeLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 13, fontWeight: Typography.weight.semiBold },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, minHeight: 48 },
+  menuIcon: { fontSize: 20, width: 26, textAlign: 'center' },
+  menuLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 15, fontWeight: Typography.weight.medium },
+  menuHint: { fontFamily: Typography.fontFamilyBody, fontSize: 12 },
+  chevron: { fontFamily: Typography.fontFamilyBody, fontSize: 20 },
+  badge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.bold },
+  divider: { height: 1 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, gap: 12 },
+  infoValue: { fontFamily: Typography.fontFamilyBody, fontSize: 13, fontWeight: Typography.weight.medium, textAlign: 'right', flex: 1 },
+  signOutBtn: { borderWidth: 1, borderRadius: Radius.md, paddingVertical: 13, alignItems: 'center', minHeight: 48, justifyContent: 'center' },
+  signOutText: { fontFamily: Typography.fontFamilyBody, fontSize: 15, fontWeight: Typography.weight.semiBold },
+  legal: { fontFamily: Typography.fontFamilyBody, fontSize: 11, textAlign: 'center' },
 });

@@ -70,13 +70,7 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       is_available INTEGER NOT NULL DEFAULT 1, image_url TEXT,
       created_at TEXT NOT NULL, updated_at TEXT NOT NULL
     );
-    CREATE TABLE IF NOT EXISTS booking_requests (
-      id TEXT PRIMARY KEY, tourist_id TEXT NOT NULL, business_id TEXT NOT NULL,
-      service_id TEXT, requested_date TEXT, guest_count INTEGER, notes TEXT,
-      status TEXT NOT NULL DEFAULT 'pending', owner_note TEXT,
-      created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-      sync_status TEXT NOT NULL DEFAULT 'local_only'
-    );
+    DROP TABLE IF EXISTS booking_requests; -- bookings were removed: KalawGuide advertises and verifies businesses
     CREATE TABLE IF NOT EXISTS itineraries (
       id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL,
       description TEXT, start_date TEXT NOT NULL, end_date TEXT NOT NULL,

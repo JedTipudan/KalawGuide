@@ -4,6 +4,7 @@ import { BusinessShell } from '../../components/web/BusinessShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now } from '../../utils/helpers';
 import { rw } from '../../utils/responsive';
 
@@ -199,6 +200,7 @@ export default function WebBusinessProfileScreen() {
     try {
       const db = await getDatabase();
       await db.runAsync("UPDATE businesses SET verification_status='pending', updated_at=? WHERE id=?", [now(), bizId]);
+      await logActivity({ userId: user?.id ?? null, action: 'submitted_for_approval', entityType: 'business', entityId: bizId, details: 'Submitted for admin review' });
       setVerificationStatus('pending');
       window.alert('Your business has been submitted for administrator review.');
     } catch { window.alert('Could not submit for verification.'); }

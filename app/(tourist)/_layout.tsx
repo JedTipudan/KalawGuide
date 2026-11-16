@@ -12,11 +12,9 @@ export default function TouristLayout() {
       <Stack.Screen name="add-expense" />
       <Stack.Screen name="itinerary/[id]" />
       <Stack.Screen name="emergency" />
+      <Stack.Screen name="map" />
       <Stack.Screen name="my-budgets" />
       <Stack.Screen name="settings" />
-      <Stack.Screen name="booking-history" />
-      <Stack.Screen name="booking-submitted" />
-      <Stack.Screen name="booking/[businessId]" />
       <Stack.Screen name="favorites" />
       <Stack.Screen name="recommendations" />
       <Stack.Screen name="explore-for-trip" />

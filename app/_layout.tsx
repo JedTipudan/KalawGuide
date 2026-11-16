@@ -30,10 +30,10 @@ function RootNavigator() {
       const AUTH_SCREENS = ['sign-in', 'register-tourist', 'register-business', 'forgot-password', 'role-select', 'landing'];
       const PROTECTED_SCREENS = [
         'home', 'budget', 'budget-results', 'trips', 'expenses', 'add-expense',
-        'my-budgets', 'booking-history', 'recommendations',
+        'my-budgets', 'recommendations',
         'profile', 'settings',
         'business-dashboard', 'business-profile', 'business-products', 'business-prices',
-        'business-facilities', 'business-bookings', 'business-notifications', 'business-settings',
+        'business-facilities', 'business-notifications', 'business-settings',
         'admin-dashboard', 'admin-users', 'admin-businesses', 'admin-destinations',
         'admin-emergency', 'admin-reports', 'admin-activity-logs', 'admin-settings',
       ];

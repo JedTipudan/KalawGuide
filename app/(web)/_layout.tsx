@@ -21,8 +21,8 @@ export default function WebGroupLayout() {
       <Stack.Screen name="expenses" options={hidden} />
       <Stack.Screen name="add-expense" options={hidden} />
       <Stack.Screen name="my-budgets" options={hidden} />
-      <Stack.Screen name="booking-history" options={hidden} />
       <Stack.Screen name="emergency" options={hidden} />
+      <Stack.Screen name="map" options={hidden} />
       <Stack.Screen name="profile" options={hidden} />
       <Stack.Screen name="settings" options={hidden} />
       <Stack.Screen name="recommendations" options={hidden} />
@@ -31,7 +31,6 @@ export default function WebGroupLayout() {
       <Stack.Screen name="business-products" options={hidden} />
       <Stack.Screen name="business-prices" options={hidden} />
       <Stack.Screen name="business-facilities" options={hidden} />
-      <Stack.Screen name="business-bookings" options={hidden} />
       <Stack.Screen name="business-notifications" options={hidden} />
       <Stack.Screen name="business-settings" options={hidden} />
       <Stack.Screen name="admin-dashboard" options={hidden} />

@@ -78,6 +78,18 @@ export default function HomeScreen() {
             </Text>
           </TouchableOpacity>
 
+          {/* Live map entry */}
+          <TouchableOpacity
+            style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => router.push('/(tourist)/map' as any)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.searchPlaceholder, { color: colors.primary }]}>
+              🗺  Live map — see where you are
+            </Text>
+          </TouchableOpacity>
+
           {/* Category chips */}
           <View style={styles.categoryRow}>
             {CATEGORIES.map(cat => (

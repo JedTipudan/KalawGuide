@@ -12,7 +12,7 @@ interface BusinessRow {
   id: string; name: string; category: string;
   verification_status: BusinessVerificationStatus; verification_note: string | null;
 }
-interface BookingCount { pending: number; approved: number; total: number; }
+interface ListingCount { prices: number; products: number; services: number; }
 
 const STATUS_CONFIG: Record<BusinessVerificationStatus, { label: string; color: string }> = {
   not_submitted: { label: 'Not submitted', color: '#64748B' },
@@ -27,7 +27,7 @@ export default function WebBusinessDashboardScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [business, setBusiness] = useState<BusinessRow | null>(null);
-  const [bookings, setBookings] = useState<BookingCount>({ pending: 0, approved: 0, total: 0 });
+  const [listing, setListing] = useState<ListingCount>({ prices: 0, products: 0, services: 0 });
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -40,12 +40,12 @@ export default function WebBusinessDashboardScreen() {
       );
       setBusiness(biz ?? null);
       if (biz) {
-        const [pending, approved, total] = await Promise.all([
-          db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM booking_requests WHERE business_id=? AND status='pending'", [biz.id]),
-          db.getFirstAsync<{ count: number }>("SELECT COUNT(*) as count FROM booking_requests WHERE business_id=? AND status='approved'", [biz.id]),
-          db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM booking_requests WHERE business_id=?', [biz.id]),
+        const [prices, products, services] = await Promise.all([
+          db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM listing_prices WHERE business_id=? AND is_active=1', [biz.id]),
+          db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM business_products WHERE business_id=?', [biz.id]),
+          db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM business_services WHERE business_id=?', [biz.id]),
         ]);
-        setBookings({ pending: pending?.count ?? 0, approved: approved?.count ?? 0, total: total?.count ?? 0 });
+        setListing({ prices: prices?.count ?? 0, products: products?.count ?? 0, services: services?.count ?? 0 });
       }
     } catch (e) { console.error(e); }
   }, [user]);
@@ -81,7 +81,7 @@ export default function WebBusinessDashboardScreen() {
         {!business ? (
           <View style={[s.setupCard, { backgroundColor: colors.surface }]}>
             <Text style={[s.setupTitle, { color: colors.text }]}>Set Up Your Business</Text>
-            <Text style={[s.setupSub, { color: colors.muted }]}>Create your business profile to start receiving bookings.</Text>
+            <Text style={[s.setupSub, { color: colors.muted }]}>Create your business profile, get it verified, and start reaching tourists.</Text>
             <TouchableOpacity style={[s.primaryBtn, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/business-profile' as any)}>
               <Text style={[s.primaryBtnText, { color: colors.onPrimary }]}>Create Business Profile</Text>
             </TouchableOpacity>
@@ -91,9 +91,9 @@ export default function WebBusinessDashboardScreen() {
             {/* Stats */}
             <View style={s.statsRow}>
               {[
-                { label: 'Total requests', value: bookings.total },
-                { label: 'Pending requests', value: bookings.pending },
-                { label: 'Approved bookings', value: bookings.approved },
+                { label: 'Published prices', value: listing.prices },
+                { label: 'Products', value: listing.products },
+                { label: 'Services', value: listing.services },
               ].map(stat => (
                 <View key={stat.label} style={[s.statCard, { backgroundColor: colors.surface }]}>
                   <Text style={[s.statLabel, { color: colors.muted }]}>{stat.label}</Text>
@@ -137,7 +137,7 @@ export default function WebBusinessDashboardScreen() {
             <View style={[s.activityCard, { backgroundColor: colors.surface }]}>
               <Text style={[s.cardTitle, { color: colors.text }]}>Recent activity</Text>
               <Text style={[s.activitySub, { color: colors.muted }]}>
-                Your listing changes and booking updates will appear here.
+                Your listing changes and verification updates will appear here.
               </Text>
             </View>
           </>

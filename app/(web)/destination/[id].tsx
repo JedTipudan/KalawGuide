@@ -8,6 +8,8 @@ import { getDatabase } from '../../../database/migrations/init';
 import { generateId, now } from '../../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
 import { rw } from '../../../utils/responsive';
+import { LiveMap } from '../../../components/map/LiveMap';
+import { useLiveLocation, distanceKm, formatDistance, directionsUrl } from '../../../features/map/useLiveLocation';
 
 interface DestinationDetail {
   id: string; name: string; description: string; location: string;
@@ -22,6 +24,7 @@ export default function WebDestinationDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [dest, setDest] = useState<DestinationDetail | null>(null);
+  const { coords, retry } = useLiveLocation();
   const [adding, setAdding] = useState(false);
   const shadow = isDark ? Shadows.dark.md : Shadows.light.md;
 
@@ -114,21 +117,31 @@ export default function WebDestinationDetailScreen() {
               {dest.latitude && dest.longitude && (
                 <View style={[styles.mapCard, { backgroundColor: colors.surface, ...shadow }]}>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
-                  <View style={styles.mapIframeWrapper}>
-                    <iframe
-                      title="map"
-                      height="300"
-                      style={{ border: 0, borderRadius: 10, width: '100%', display: 'block' }}
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${dest.longitude - 0.02}%2C${dest.latitude - 0.02}%2C${dest.longitude + 0.02}%2C${dest.latitude + 0.02}&layer=mapnik&marker=${dest.latitude}%2C${dest.longitude}`}
-                      allowFullScreen
-                    />
-                  </View>
+                  <LiveMap
+                    style={styles.mapIframeWrapper}
+                    markers={[{ id: dest.id, name: dest.name, lat: dest.latitude, lng: dest.longitude }]}
+                    focusId={dest.id}
+                    user={coords}
+                    onRequestLocate={retry}
+                  />
                   <View style={[styles.coordCard, { backgroundColor: colors.subtle }]}>
                     <Text style={[styles.coordLabel, { color: colors.muted }]}>Coordinates</Text>
                     <Text style={[styles.coordValue, { color: colors.text }]}>
                       {dest.latitude.toFixed(4)}°N, {dest.longitude.toFixed(4)}°E
                     </Text>
                   </View>
+                  {coords && (
+                    <Text style={[styles.coordLabel, { color: colors.primary }]}>
+                      🧭 {formatDistance(distanceKm(coords.lat, coords.lng, dest.latitude, dest.longitude))} (straight line)
+                    </Text>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => window.open(directionsUrl(dest.latitude!, dest.longitude!), '_blank', 'noopener')}
+                    style={[styles.directionsBtn, { backgroundColor: colors.primary }]}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.directionsText, { color: colors.onPrimary }]}>Get directions</Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
@@ -186,7 +199,9 @@ const styles = StyleSheet.create({
   feeLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
   feeValue: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h5, fontWeight: Typography.weight.bold },
   mapCard: { borderRadius: Radius.lg, padding: Spacing.xl, gap: Spacing.md },
-  mapIframeWrapper: { alignSelf: 'stretch' as any, borderRadius: 10, overflow: 'hidden' as any },
+  mapIframeWrapper: { height: 320, borderRadius: 10, overflow: 'hidden' },
+  directionsBtn: { borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, alignItems: 'center' },
+  directionsText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
   coordCard: { borderRadius: Radius.md, padding: Spacing.base, gap: Spacing.xs },
   coordLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
   coordValue: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },

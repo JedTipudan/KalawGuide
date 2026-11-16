@@ -55,19 +55,19 @@ export default function WebRegisterTouristScreen() {
     <WebLayout navVariant="public">
       <View {...rw('stack pad vpad')} style={[styles.authLayout, { backgroundColor: colors.background }]}>
         <View {...rw('hide-sm')} style={styles.invitation}>
-          <View style={[styles.invitationInner, { backgroundColor: '#123747' }]}>
+          <View style={[styles.invitationInner, { backgroundColor: colors.subtle, borderWidth: 1, borderColor: colors.border }]}>
             <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
               <Text style={styles.logoText}>K</Text>
             </View>
-            <Text style={styles.inviteTitle}>Start your journey{'\n'}in Mati City</Text>
-            <Text style={styles.inviteDesc}>
+            <Text style={[styles.inviteTitle, { color: colors.text }]}>Start your journey{'\n'}in Mati City</Text>
+            <Text style={[styles.inviteDesc, { color: colors.muted }]}>
               Create a free tourist account and unlock destination discovery, budget planning, itinerary building, and more.
             </Text>
             <View style={styles.inviteFeatures}>
               {FEATURES.map(f => (
                 <View key={f} style={styles.inviteFeatureRow}>
-                  <Text style={styles.inviteFeatureDot}>✦</Text>
-                  <Text style={styles.inviteFeatureText}>{f}</Text>
+                  <Text style={[styles.inviteFeatureDot, { color: colors.primary }]}>✦</Text>
+                  <Text style={[styles.inviteFeatureText, { color: colors.text }]}>{f}</Text>
                 </View>
               ))}
             </View>

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { now } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
@@ -52,6 +53,7 @@ export default function AdminUsersScreen() {
         onPress: async () => {
           const db = await getDatabase();
           await db.runAsync('UPDATE users SET role=?, updated_at=? WHERE id=?', [role, now(), userId]);
+          await logActivity({ userId: currentUser?.id ?? null, action: 'role_changed', entityType: 'user', entityId: userId, details: role });
           await load();
         },
       })),
@@ -73,6 +75,7 @@ export default function AdminUsersScreen() {
           onPress: async () => {
             const db = await getDatabase();
             await db.runAsync('UPDATE users SET status=?, updated_at=? WHERE id=?', [isBlocking ? 'blocked' : 'active', now(), userId]);
+            await logActivity({ userId: currentUser?.id ?? null, action: isBlocking ? 'user_blocked' : 'user_unblocked', entityType: 'user', entityId: userId });
             await load();
           },
         },

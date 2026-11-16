@@ -75,6 +75,7 @@
     <li><a href="#check">Check the live site</a></li>
     <li><a href="#google">Google Sign-In on the live site</a></li>
     <li><a href="#apk">Optional: free Android APK</a></li>
+    <li><a href="#map">Live map (mobile and web)</a></li>
     <li><a href="#hackathon">Hackathon tracker checklist</a></li>
     <li><a href="#trouble">Troubleshooting</a></li>
   </ol>
@@ -152,7 +153,26 @@ git push origin main</code></pre></li>
     <li><label class="check"><input type="checkbox" data-k="a4"><span>When the build finishes (on the free plan it can wait in a queue), open the link it prints. Download the APK or show its QR code to install it on Android phones.</span></label></li>
   </ol>
 
-  <h2 id="hackathon">7. Hackathon tracker checklist</h2>
+  <h2 id="map">7. Live map (mobile and web)</h2>
+  <p>KalawGuide has a free live map that works the same in the app and on the website. It doesn't need an API key or a paid account.</p>
+  <table>
+    <tr><th>Where</th><th>What you see</th></tr>
+    <tr><td><strong>Map page</strong><br>Mobile: Home → <em>🗺 Live map</em><br>Web: top menu → <em>Map</em> (or <code>/map</code>)</td><td>Every destination as a pin, plus a pulsing blue dot that follows your real GPS position. Tap a pin → <em>View details</em>. <code>◎</code> centres on you, <code>⤢</code> shows all places.</td></tr>
+    <tr><td><strong>Destination page</strong></td><td>A map of that place with your live position, "X km away", and a <em>Get directions</em> button. The button opens Google Maps turn-by-turn directions for free (the app if installed, otherwise the website).</td></tr>
+  </table>
+  <div class="card note">
+    <strong>What it's built from (all free):</strong> Leaflet (map library) + CARTO map tiles (OpenStreetMap data, free for non-commercial use as long as the credit in the corner stays visible) + <code>expo-location</code> for GPS. The map's code lives in <code>components/map/</code> and <code>features/map/useLiveLocation.ts</code>.
+  </div>
+  <h3>Test it before Demo Day</h3>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="m1"><span><strong>Phone (Expo Go):</strong> run <code>npx expo start</code> and scan the QR code. Open the map and tap <strong>Allow</strong> when asked for location. Turn on the phone's Location/GPS.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="m2"><span><strong>Website:</strong> the browser only shares location over <strong>https://</strong> (your Vercel link) or <code>http://localhost</code>. An address like <code>http://192.168.x.x:8081</code> on your phone will <em>not</em> show your position, so test phones on the Vercel link.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="m3"><span>When the browser asks "Allow location?", choose <strong>Allow</strong>. If you blocked it before, click the lock icon next to the address bar → Location → Allow, then reload.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="m4"><span><strong>Android APK:</strong> the map needs a fresh build, because <code>expo-location</code> was added. Run the build command from section 6 again.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="m5"><span><strong>Demo tip:</strong> the destinations are in Mati City. If you present somewhere else, your blue dot will be far from the pins and the distance will be large. That's correct. Tap <code>⤢</code> to show the destinations and <code>◎</code> to show yourself.</span></label></li>
+  </ol>
+
+  <h2 id="hackathon">8. Hackathon tracker checklist</h2>
   <ol class="steps">
     <li><label class="check"><input type="checkbox" data-k="h1"><span><strong>Figma URL (Col I):</strong> in Figma, <em>Share → Anyone with the link → can view</em>, then paste the link.</span></label></li>
     <li><label class="check"><input type="checkbox" data-k="h2"><span><strong>GitHub Repo URL (Col J):</strong> paste <code>https://github.com/JedTipudan/KalawGuide</code> after making it public.</span></label></li>
@@ -160,13 +180,16 @@ git push origin main</code></pre></li>
     <li><label class="check"><input type="checkbox" data-k="h4"><span>Put the live website URL and APK link in your pitch deck for Demo Day.</span></label></li>
   </ol>
 
-  <h2 id="trouble">8. Troubleshooting</h2>
+  <h2 id="trouble">9. Troubleshooting</h2>
   <table>
     <tr><th>Problem</th><th>Fix</th></tr>
     <tr><td>Blank page, or the console says <code>SharedArrayBuffer is not defined</code></td><td>The headers aren't being sent. Check that <code>vercel.json</code> is committed at the project root, and that <em>Framework Preset</em> is <strong>Other</strong>. Redeploy.</td></tr>
     <tr><td>"404: NOT_FOUND" after refreshing a page</td><td>The <code>rewrites</code> rule in <code>vercel.json</code> is missing. Commit it and redeploy.</td></tr>
     <tr><td>Build fails during install</td><td>Commit <code>package-lock.json</code> together with <code>package.json</code>. Under <em>Settings → General → Node.js Version</em>, choose 22.x.</td></tr>
     <tr><td>Changes don't show up</td><td>Check <em>Deployments</em> for a failed build. Hard-refresh the browser (Ctrl+Shift+R).</td></tr>
+    <tr><td>Map is grey or has no streets</td><td>The device is offline, or a school network is blocking <code>basemaps.cartocdn.com</code> / <code>unpkg.com</code>. Try mobile data.</td></tr>
+    <tr><td>Map shows "Location permission is off"</td><td>Allow location for Expo Go or the browser in your phone settings, then tap the message to retry.</td></tr>
+    <tr><td>Blue dot never appears on the website</td><td>Open the site over <code>https://</code> (Vercel) or <code>localhost</code>, not a <code>http://192.168…</code> address.</td></tr>
     <tr><td>My data disappeared</td><td>Data lives in each browser. Clearing site data, private windows, or a different device each start fresh from the demo seed data.</td></tr>
   </table>
 </main>

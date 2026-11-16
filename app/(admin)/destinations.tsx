@@ -6,9 +6,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { KalawButton } from '../../components/common/KalawButton';
 import { KalawInput } from '../../components/common/KalawInput';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
@@ -17,6 +19,7 @@ interface CatRow { id: string; name: string; icon: string; }
 
 export default function AdminDestinationsScreen() {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const [destinations, setDestinations] = useState<DestRow[]>([]);
   const [categories, setCategories] = useState<CatRow[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -72,14 +75,17 @@ export default function AdminDestinationsScreen() {
           [name.trim(), description.trim(), location.trim(), categoryId,
            fee, feeVerified ? 1 : 0, isFeatured ? 1 : 0, now(), editing.id]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'destination_updated', entityType: 'destination', entityId: editing.id, entityName: name.trim() });
       } else {
+        const newId = generateId();
         await db.runAsync(
           `INSERT INTO destinations (id, name, description, category_id, location, estimated_fee,
            fee_verified, is_featured, is_active, image_urls, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, '[]', ?, ?)`,
-          [generateId(), name.trim(), description.trim(), categoryId, location.trim(),
+          [newId, name.trim(), description.trim(), categoryId, location.trim(),
            fee, feeVerified ? 1 : 0, isFeatured ? 1 : 0, now(), now()]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'destination_created', entityType: 'destination', entityId: newId, entityName: name.trim() });
       }
       setModalVisible(false);
       await load();
@@ -90,6 +96,7 @@ export default function AdminDestinationsScreen() {
   async function toggleActive(id: string, current: number) {
     const db = await getDatabase();
     await db.runAsync('UPDATE destinations SET is_active=?, updated_at=? WHERE id=?', [current ? 0 : 1, now(), id]);
+    await logActivity({ userId: user?.id ?? null, action: current ? 'destination_hidden' : 'destination_shown', entityType: 'destination', entityId: id, entityName: destinations.find(d => d.id === id)?.name ?? null });
     await load();
   }
 

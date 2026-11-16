@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  View, Text, StyleSheet, ScrollView,
   TouchableOpacity, KeyboardAvoidingView, Platform, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -13,7 +14,9 @@ import { Typography } from '../../constants/tokens';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
-  const { colors } = useTheme();
+  const { colors, mode, setMode } = useTheme();
+  const themeLabel = mode === 'light' ? '☀ Light' : mode === 'dark' ? '☾ Dark' : '◐ System';
+  const cycleTheme = () => setMode(mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light');
   const { signIn, googleSignIn } = useAuth();
   const router = useRouter();
 
@@ -23,7 +26,7 @@ export default function SignInScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   async function handleSignIn() {
     if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
@@ -55,16 +58,22 @@ export default function SignInScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Top bar */}
-      <View style={[styles.topBar, { backgroundColor: colors.surface }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.surface }]}>
+      {/* Top bar — sits below the status bar (safe-area-context handles Android + iOS) */}
+      <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[styles.brandTitle, { color: colors.primary }]}>≋  KalawGuide</Text>
-        <TouchableOpacity style={[styles.themeBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.themeBtnText, { color: colors.text }]}>◐ Theme</Text>
+        <TouchableOpacity
+          onPress={cycleTheme}
+          style={[styles.themeBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Theme: ${mode}. Tap to change.`}
+          hitSlop={8}
+        >
+          <Text style={[styles.themeBtnText, { color: colors.text }]}>{themeLabel}</Text>
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.background }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.formWrapper}>
             <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
@@ -86,7 +95,7 @@ export default function SignInScreen() {
               <View style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>Email or username</Text>
                 <TextInput
-                  style={[styles.fieldInput, { color: colors.muted }]}
+                  style={[styles.fieldInput, { color: colors.text }]}
                   placeholder="you@example.com"
                   placeholderTextColor={colors.muted}
                   value={email}
@@ -108,7 +117,7 @@ export default function SignInScreen() {
                 </Text>
                 <TextInput
                   ref={passwordRef}
-                  style={[styles.fieldInput, { color: colors.muted }]}
+                  style={[styles.fieldInput, { color: colors.text }]}
                   placeholder="Enter your password"
                   placeholderTextColor={colors.muted}
                   value={password}
@@ -120,15 +129,22 @@ export default function SignInScreen() {
               </View>
 
               {/* Remember me + forgot */}
-              <Text style={[styles.rememberRow, { color: colors.muted }]}>
-                <Text onPress={() => setRememberMe(v => !v)}>
-                  {rememberMe ? '☑' : '□'}{'  '}Remember me
-                </Text>
-                {'          '}
-                <Text style={{ color: colors.muted }} onPress={() => router.push('/(auth)/forgot-password')}>
-                  Forgot password?
-                </Text>
-              </Text>
+              <View style={styles.rememberRow}>
+                <TouchableOpacity
+                  onPress={() => setRememberMe(v => !v)}
+                  style={styles.rememberTap}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: rememberMe }}
+                >
+                  <View style={[styles.checkbox, { borderColor: rememberMe ? colors.primary : colors.muted, backgroundColor: rememberMe ? colors.primary : 'transparent' }]}>
+                    {rememberMe && <Text style={[styles.checkMark, { color: colors.onPrimary }]}>✓</Text>}
+                  </View>
+                  <Text style={[styles.rememberText, { color: colors.muted }]}>Remember me</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} style={styles.rememberTap}>
+                  <Text style={[styles.rememberText, { color: colors.muted }]}>Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
 
               <Text style={[styles.roleNote, { color: colors.muted }]}>
                 Your account role opens your dedicated workspace.
@@ -168,16 +184,16 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 20,
+    paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1,
   },
   brandTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.bold },
   themeBtn: {
     borderWidth: 1, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 18,
+    paddingHorizontal: 14, paddingVertical: 10, minHeight: 44, justifyContent: 'center',
   },
   themeBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
   scroll: { paddingBottom: 64 },
-  formWrapper: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 64 },
+  formWrapper: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 32 },
   formCard: {
     borderRadius: 24, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 18,
   },
@@ -188,17 +204,21 @@ const styles = StyleSheet.create({
   errorText: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
   field: {
     borderWidth: 1, borderRadius: 12,
-    paddingHorizontal: 16, paddingTop: 18, paddingBottom: 18, gap: 8,
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, gap: 6,
   },
   fieldLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
-  fieldInput: { fontFamily: Typography.fontFamilyBody, fontSize: 12, padding: 0 },
-  rememberRow: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
-  roleNote: { fontFamily: Typography.fontFamilyBody, fontSize: 12, marginTop: -10 },
+  fieldInput: { fontFamily: Typography.fontFamilyBody, fontSize: 15, paddingVertical: 4, paddingHorizontal: 0, minHeight: 28 },
+  rememberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
+  rememberTap: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
+  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  checkMark: { fontSize: 12, fontWeight: Typography.weight.bold, lineHeight: 14 },
+  rememberText: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
+  roleNote: { fontFamily: Typography.fontFamilyBody, fontSize: 12, marginTop: -8 },
   primaryBtn: {
     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
-    alignItems: 'center',
+    alignItems: 'center', minHeight: 48, justifyContent: 'center',
   },
   primaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
-  createAccountText: { fontFamily: Typography.fontFamilyBody, fontSize: 13, fontWeight: Typography.weight.bold },
+  createAccountText: { fontFamily: Typography.fontFamilyBody, fontSize: 13, fontWeight: Typography.weight.bold, paddingVertical: 8 },
   legal: { fontFamily: Typography.fontFamilyBody, fontSize: 12, textAlign: 'center', paddingHorizontal: 20 },
 });

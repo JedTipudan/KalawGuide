@@ -4,9 +4,11 @@ import {
   TouchableOpacity, Alert, Modal, RefreshControl, ScrollView,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { KalawInput } from '../../components/common/KalawInput';
 import { KalawButton } from '../../components/common/KalawButton';
 import { getDatabase } from '../../database/migrations/init';
+import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
@@ -17,6 +19,7 @@ const PRESET_ICONS = ['🏖','🌿','🏔','🌊','🏛','🍽','🛍','🎭','�
 
 export default function AdminCategoryManagementScreen() {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -58,11 +61,13 @@ export default function AdminCategoryManagementScreen() {
           'UPDATE destination_categories SET name=?, icon=?, color=? WHERE id=?',
           [name.trim(), icon, color, editing.id]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'category_saved', entityType: 'category', entityId: editing.id, entityName: name.trim() });
       } else {
         await db.runAsync(
           'INSERT INTO destination_categories (id, name, icon, color) VALUES (?, ?, ?, ?)',
           [generateId(), name.trim(), icon, color]
         );
+        await logActivity({ userId: user?.id ?? null, action: 'category_saved', entityType: 'category', entityId: 'new', entityName: name.trim() });
       }
       setModalVisible(false);
       await load();
@@ -75,6 +80,7 @@ export default function AdminCategoryManagementScreen() {
       { text: 'Delete', style: 'destructive', onPress: async () => {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM destination_categories WHERE id = ?', [id]);
+        await logActivity({ userId: user?.id ?? null, action: 'category_deleted', entityType: 'category', entityId: id, entityName: catName });
         await load();
       }},
     ]);
