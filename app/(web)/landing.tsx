@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { rw } from '../../utils/responsive';
+import { BrandLogo, Kiko } from '../../components/brand/Kiko';
 
 const HERO_SLIDES = [
   require('../../assets/images/hero-bg.png'),
@@ -55,7 +56,7 @@ export default function WebLandingScreen() {
 
       {/* ── Navigation ── */}
       <View {...rw('pad gap-sm')} style={[s.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text {...rw('logo-sm')} style={[s.navLogo, { color: colors.primary }]}>≋  KalawGuide</Text>
+        <BrandLogo color={colors.primary} size={22} />
         <View {...rw('hide-sm')} style={s.navLinks}>
           {['Home', 'Explore Destinations', 'Local Businesses', 'About'].map(l => (
             <TouchableOpacity key={l} onPress={() => l === 'Explore Destinations' ? router.push('/(web)/explore' as any) : undefined}>
@@ -126,6 +127,10 @@ export default function WebLandingScreen() {
             <Text style={s.heroCaption}>Go beyond the usual. Start somewhere local.</Text>
           </View>
         </div>
+        {/* Kiko greets visitors (desktop/tablet only; phones keep the hero text clear) */}
+        <View {...rw('hide-sm')} style={s.heroKiko} pointerEvents="none">
+          <div className="reveal-scale"><Kiko pose="presenting" height={400} /></div>
+        </View>
       </View>
 
       {/* ── Travel search ── */}
@@ -208,6 +213,12 @@ export default function WebLandingScreen() {
                 <Text style={[s.heroBtnText, { color: colors.onPrimary }]}>Plan Your Budget</Text>
               </TouchableOpacity>
             </div>
+            <View style={s.kikoTip}>
+              <Kiko pose="relax" height={170} />
+              <Text style={[s.kikoTipText, { color: budgetMuted }]}>
+                {'"Plan the budget first, then relax. I will keep the numbers honest." — Kiko'}
+              </Text>
+            </View>
           </View>
           <div className="reveal-scale hover-lift" style={{ flex: 1 } as any}>
             <View style={[s.budgetCard, { backgroundColor: budgetCardBg, borderColor: colors.border, borderWidth: 1 }]}>
@@ -285,7 +296,7 @@ export default function WebLandingScreen() {
 
       {/* ── Footer ── */}
       <View {...rw('pad')} style={[s.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-        <Text style={[s.footerLogo, { color: colors.primary }]}>≋  KalawGuide</Text>
+        <BrandLogo color={colors.primary} size={26} />
         <Text style={[s.footerSub, { color: colors.muted }]}>Discover more of the Philippines, starting in Mati City.</Text>
         <View style={s.footerLinks}>
           {['About KalawGuide', 'Explore', 'Business Registration', 'Contact'].map(l => (
@@ -354,6 +365,9 @@ const s = StyleSheet.create({
   heroBtnPrimary: { paddingHorizontal: 20, paddingVertical: 13, borderRadius: 12 },
   heroBtnSecondary: { paddingHorizontal: 20, paddingVertical: 13, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.15)' },
   heroBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  heroKiko: { position: 'absolute', right: 56, bottom: 0, zIndex: 2 },
+  kikoTip: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginTop: 8 },
+  kikoTipText: { flex: 1, fontSize: 14, fontStyle: 'italic', lineHeight: 21, paddingBottom: 16 },
   heroCaption: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
   // Search
   searchSection: { paddingHorizontal: 72, paddingVertical: 32 },

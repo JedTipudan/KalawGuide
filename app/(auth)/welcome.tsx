@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/tokens';
 import { storage } from '../../utils/storage';
+import { BrandLogo, Kiko } from '../../components/brand/Kiko';
 
 const ONBOARDED_KEY = 'kalawguide_onboarded';
 
@@ -32,7 +33,7 @@ export default function WelcomeScreen() {
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       {/* App bar */}
       <View style={[styles.appBar, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.appBarTitle, { color: colors.primary }]}>≋ KalawGuide</Text>
+        <BrandLogo color={colors.primary} size={20} />
         <TouchableOpacity>
           <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
         </TouchableOpacity>
@@ -42,7 +43,8 @@ export default function WelcomeScreen() {
       <View style={styles.content}>
         {/* Hero placeholder */}
         <View style={[styles.hero, { backgroundColor: colors.subtle }]}>
-          <Text style={styles.heroEmoji}>🏖</Text>
+          <View style={[styles.heroSun, { backgroundColor: colors.surface }]} />
+          <Kiko pose="welcome" height={240} />
         </View>
 
         <Text style={[styles.locationLabel, { color: colors.accent }]}>MATI CITY · DAVAO ORIENTAL</Text>
@@ -94,8 +96,8 @@ const styles = StyleSheet.create({
   appBarTitle: { fontFamily: Typography.fontFamilyBody, fontSize: 22, fontWeight: Typography.weight.semiBold },
   menuIcon: { fontFamily: Typography.fontFamilyBody, fontSize: 22 },
   content: { flex: 1, paddingHorizontal: 20, paddingTop: 20, gap: 16 },
-  hero: { width: '100%', height: 260, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  heroEmoji: { fontSize: 72 },
+  hero: { width: '100%', height: 260, borderRadius: 16, alignItems: 'center', justifyContent: 'flex-end', overflow: 'hidden' },
+  heroSun: { position: 'absolute', width: 200, height: 200, borderRadius: 100, opacity: 0.7 },
   locationLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.semiBold },
   heading: { fontFamily: Typography.fontFamilyBody, fontSize: 28, fontWeight: Typography.weight.bold, lineHeight: 40 },
   tagline: { fontFamily: Typography.fontFamilyBody, fontSize: 16 },

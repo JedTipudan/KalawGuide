@@ -12,6 +12,7 @@ import { KalawCard } from '../../../components/cards/KalawCard';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
 import { Typography, Spacing, Radius } from '../../../constants/tokens';
+import { Kiko } from '../../../components/brand/Kiko';
 
 type FavTab = 'destinations' | 'businesses';
 
@@ -98,7 +99,7 @@ export default function FavoritesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>{tab === 'destinations' ? '🗺' : '🏪'}</Text>
+            <Kiko pose="lookout" height={160} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No favorites yet</Text>
             <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
               Tap the ♡ on any {tab === 'destinations' ? 'destination' : 'business'} to save it here.

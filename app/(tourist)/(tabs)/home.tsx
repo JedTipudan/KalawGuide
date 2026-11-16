@@ -10,6 +10,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
 import { Typography, Spacing } from '../../../constants/tokens';
+import { BrandLogo, Kiko } from '../../../components/brand/Kiko';
 
 interface DestRow {
   id: string; name: string; location: string;
@@ -57,7 +58,7 @@ export default function HomeScreen() {
       >
         {/* App bar */}
         <View style={[styles.appBar, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.appBarTitle, { color: colors.primary }]}>≋ KalawGuide</Text>
+          <BrandLogo color={colors.primary} size={20} />
         </View>
 
         {/* Content */}
@@ -105,13 +106,19 @@ export default function HomeScreen() {
           </View>
 
           {/* Hero banner */}
-          <View style={[styles.heroBanner, { backgroundColor: colors.subtle }]}>
-            <View style={styles.heroOverlay}>
-              <Text style={[styles.heroText, { color: colors.surface }]}>
-                A little further from ordinary.
-              </Text>
+          <TouchableOpacity
+            style={[styles.heroBanner, { backgroundColor: colors.subtle }]}
+            onPress={() => router.push('/(tourist)/map' as any)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Open the live map with Kiko"
+          >
+            <View style={styles.heroCopy}>
+              <Text style={[styles.heroText, { color: colors.text }]}>A little further from ordinary.</Text>
+              <Text style={[styles.heroCta, { color: colors.primary }]}>Kiko spotted new places → see the map</Text>
             </View>
-          </View>
+            <Kiko pose="lookout" height={150} style={styles.heroKiko} />
+          </TouchableOpacity>
 
           {/* Find your next */}
           <Text style={[styles.sectionLabel, { color: colors.text }]}>Find your next favorite place</Text>
@@ -203,16 +210,15 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weight.semiBold, textAlign: 'center',
   },
   heroBanner: {
-    height: 130, borderRadius: 20, overflow: 'hidden',
-    justifyContent: 'flex-end',
+    height: 150, borderRadius: 20, overflow: 'hidden',
+    flexDirection: 'row', alignItems: 'center',
   },
-  heroOverlay: {
-    padding: 16, backgroundColor: 'rgba(5,26,38,0.32)',
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-  },
+  heroCopy: { flex: 1, paddingLeft: 18, paddingRight: 4, gap: 8 },
+  heroCta: { fontFamily: Typography.fontFamilyBody, fontSize: 13, fontWeight: Typography.weight.semiBold },
+  heroKiko: { alignSelf: 'flex-end', marginRight: 6 },
   heroText: {
-    fontFamily: Typography.fontFamilyBody, fontSize: 22,
-    fontWeight: Typography.weight.semiBold,
+    fontFamily: Typography.fontFamilyBody, fontSize: 20, lineHeight: 26,
+    fontWeight: Typography.weight.bold,
   },
   sectionLabel: {
     fontFamily: Typography.fontFamilyBody, fontSize: 16,

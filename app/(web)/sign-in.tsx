@@ -2,8 +2,6 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { WebLayout } from '../../components/web/WebLayout';
@@ -12,8 +10,9 @@ import { KalawInput } from '../../components/common/KalawInput';
 import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
 import { rw } from '../../utils/responsive';
+import { Kiko } from '../../components/brand/Kiko';
+import { promptGoogleProfile } from '../../services/auth/googlePrompt';
 
-WebBrowser.maybeCompleteAuthSession();
 
 export default function WebSignInScreen() {
   const { colors } = useTheme();
@@ -53,22 +52,13 @@ export default function WebSignInScreen() {
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
     try {
-      const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
-      if (!clientId) {
-        const { isNewUser } = await googleSignIn({ id: 'google_demo_' + Date.now(), email: 'demo.google@kalawguide.app', name: 'Google Demo User', picture: undefined });
-        if (isNewUser) router.replace('/(web)/role-select' as any);
-        return;
-      }
-      const redirectUri = AuthSession.makeRedirectUri({ scheme: 'kalawguide' });
-      const request = new AuthSession.AuthRequest({ clientId, scopes: ['openid', 'profile', 'email'], redirectUri, responseType: AuthSession.ResponseType.Token });
-      const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
-      if (result.type === 'success' && result.authentication?.accessToken) {
-        const info = await (await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${result.authentication.accessToken}`)).json();
-        const { isNewUser } = await googleSignIn({ id: info.sub, email: info.email, name: info.name, picture: info.picture });
-        if (isNewUser) router.replace('/(web)/role-select' as any);
-      }
+      const profile = await promptGoogleProfile();
+      if (!profile) return; // user closed the Google window
+      const { isNewUser } = await googleSignIn(profile);
+      if (isNewUser) router.replace('/(web)/role-select' as any);
     } catch (err: unknown) {
-      setErrors({ general: err instanceof Error ? err.message : 'Google sign-in failed.' });
+      const msg = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
+      setErrors({ general: msg });
     } finally {
       setGoogleLoading(false);
     }
@@ -80,9 +70,7 @@ export default function WebSignInScreen() {
         {/* Left — travel invitation */}
         <View {...rw('hide-sm')} style={styles.invitation}>
           <View style={[styles.invitationInner, { backgroundColor: colors.subtle, borderWidth: 1, borderColor: colors.border }]}>
-            <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
-              <Text style={styles.logoText}>K</Text>
-            </View>
+            <Kiko pose="map" height={170} />
             <Text style={[styles.inviteTitle, { color: colors.text }]}>Welcome back to{'\n'}KalawGuide</Text>
             <Text style={[styles.inviteDesc, { color: colors.muted }]}>
               Your travel companion for Mati City, Davao Oriental. Discover destinations, plan budgets, and explore local businesses.

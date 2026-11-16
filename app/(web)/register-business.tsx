@@ -9,6 +9,7 @@ import { KalawButton } from '../../components/common/KalawButton';
 import { KalawInput } from '../../components/common/KalawInput';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
 import { rw } from '../../utils/responsive';
+import { Kiko } from '../../components/brand/Kiko';
 
 export default function WebRegisterBusinessScreen() {
   const { colors } = useTheme();
@@ -56,9 +57,7 @@ export default function WebRegisterBusinessScreen() {
       <View {...rw('stack pad vpad')} style={[styles.authLayout, { backgroundColor: colors.background }]}>
         <View {...rw('hide-sm')} style={styles.invitation}>
           <View style={[styles.invitationInner, { backgroundColor: colors.subtle, borderWidth: 1, borderColor: colors.border }]}>
-            <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
-              <Text style={styles.logoText}>K</Text>
-            </View>
+            <Kiko pose="map" height={170} />
             <Text style={[styles.inviteTitle, { color: colors.text }]}>List your business{'\n'}on KalawGuide</Text>
             <Text style={[styles.inviteDesc, { color: colors.muted }]}>
               Reach tourists visiting Mati City. Create your business profile, publish your products, services and prices, and get verified so tourists know you're legit.

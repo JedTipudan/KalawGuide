@@ -24,7 +24,7 @@ Built for the **ITMSD1 Inter-Class Mobile Hackathon**. All AI assistance used to
 10. [Data and offline model](#data-and-offline-model)
 11. [Project structure](#project-structure)
 12. [Web architecture and routing](#web-architecture-and-routing)
-13. [Design system](#design-system)
+13. [Design system](#design-system) · [Meet Kiko](#meet-kiko-the-mascot)
 14. [Troubleshooting](#troubleshooting)
 15. [Changelog](#changelog)
 16. [License](#license)
@@ -185,7 +185,7 @@ Tourist and business owner accounts are created from the sign-up screens. Each d
 
 ### Google Sign-In (optional)
 
-Without a client ID, the Google button signs in a **demo** Google user, which is fine for the hackathon. To use real Google accounts:
+The **Continue with Google** button is on the sign-in and tourist registration screens (mobile and web sign-in). It signs in a returning user and creates the account for a new one. Without a client ID, it signs in a **demo** Google user, which is fine for the hackathon. To use real Google accounts:
 
 1. In [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials), create OAuth clients: a **Web** client, **Android** (`com.kalawguide.app`) and **iOS** (`com.kalawguide.app`).
 2. Put the web client ID in `.env` as `EXPO_PUBLIC_GOOGLE_CLIENT_ID`. Add the Android and iOS IDs too if you build those apps.
@@ -274,6 +274,7 @@ app/                         Expo Router: every file is a screen
   (web)/                     Website versions (public, tourist, business-*, admin-*)
 
 components/
+  brand/Kiko.tsx             Mascot images, KikoAvatar, BrandLogo (Kiko + wordmark)
   admin/                     ReportView, ActivityLogView (shared by mobile + web admin)
   assistant/                 KalawAssistanceFAB (chat), AssistantCards
   cards/, common/            KalawCard, KalawButton, KalawInput, Icon, GoogleSignInButton, WebAppShell
@@ -293,6 +294,7 @@ services/
 testing/fakeSqlite.ts        Test database backed by Node's SQLite
 types/index.ts               Shared TypeScript types
 utils/                       helpers, storage, responsive (rw() web breakpoint tags)
+assets/images/mascot/        Kiko poses (transparent, compressed) · assets/icon.png = app icon
 guide.html                   Free deployment checklist
 vercel.json                  Vercel build, headers and rewrites
 ```
@@ -344,6 +346,26 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 
 ---
 
+### Meet Kiko, the mascot
+
+<img src="assets/images/mascot/kiko-map.png" alt="Kiko" width="140" align="right" />
+
+**Kiko** is KalawGuide's mascot: a cheerful Mati travel bird in a "Mati" sun hat and a hibiscus shirt.
+
+- **Where Kiko appears:**
+  - The **app icon**, Android adaptive icon and web favicon.
+  - The **logo** next to "KalawGuide" in the web nav, mobile app bars and landing footer.
+  - **Kalaw Assistance:** Kiko is the chat button, the header, the greeting and the avatar on every reply.
+  - The mobile **welcome** screen, holding an "Explore Mati!" sign.
+  - The **Home** banner, with binoculars. Tapping it opens the live map.
+  - The website **landing hero** (desktop and tablet), plus a budget tip with Kiko relaxing.
+  - The web **sign-in and registration** panels.
+  - The **empty states** for My Trips and Favorites.
+- **Code:** `components/brand/Kiko.tsx` exports `Kiko` (full-body poses: `map`, `presenting`, `welcome`, `lookout`, `relax`), `KikoAvatar` and `BrandLogo`.
+- **Images:** compressed transparent PNGs in `assets/images/mascot/`, about 70–85 KB each. They were produced from the team's original art, which was about 1.5 MB per file.
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -362,6 +384,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
+- **Google sign-in on the mobile login.** "Continue with Google" now appears on mobile sign-in, not only on registration. Mobile register now uses real Google sign-in instead of the demo-only version. All screens share `services/auth/googlePrompt.ts`.
+- **Kiko the mascot and a new app icon.** Kiko now appears on the app icon, favicon, logo, assistant, welcome screen, Home banner, landing page, auth panels and empty states.
 - **Bookings removed.**
   - KalawGuide now advertises and verifies businesses, and tourists contact them directly.
   - The booking screens, routes, dashboard stats and report sections are gone, and the `booking_requests` table is dropped.

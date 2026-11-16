@@ -25,6 +25,7 @@ import { MAX_INPUT_LENGTH } from '../../features/assistant/guard';
 import { Icon } from '../common/Icon';
 import { BudgetBreakdownCard, DestinationCard } from './AssistantCards';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { Kiko, KikoAvatar } from '../brand/Kiko';
 
 const SUGGESTIONS: AssistantSuggestion[] = [
   { id: '1', label: 'Budget for Dahican Beach', query: 'How much should I prepare for Dahican Beach?' },
@@ -140,12 +141,12 @@ export function KalawAssistanceFAB() {
     <>
       {/* Floating Action Button */}
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: fabColor }]}
+        style={[styles.fab, { backgroundColor: fabColor, borderColor: fabColor }]}
         onPress={() => setIsOpen(true)}
-        accessibilityLabel={`Open ${ASSISTANT_NAME}`}
+        accessibilityLabel={`Open ${ASSISTANT_NAME} — chat with Kiko`}
         accessibilityRole="button"
       >
-        <Icon name="assistant" size={24} color={onFab} />
+        <KikoAvatar size={52} />
       </TouchableOpacity>
 
       {/* Chat Modal */}
@@ -161,9 +162,7 @@ export function KalawAssistanceFAB() {
               {/* Header */}
               <View style={[styles.header, { borderBottomColor: colors.border }]}>
                 <View style={styles.headerLeft}>
-                  <View style={[styles.headerIcon, { backgroundColor: fabColor }]}>
-                    <Icon name="assistant" size={20} color={onFab} />
-                  </View>
+                  <KikoAvatar size={44} />
                   <View style={styles.headerText}>
                     <Text style={[styles.headerTitle, { color: colors.text }]} accessibilityRole="header">
                       {ASSISTANT_NAME}
@@ -214,11 +213,12 @@ export function KalawAssistanceFAB() {
                 onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
                 ListEmptyComponent={
                   <View style={styles.emptyState}>
+                    <Kiko pose="presenting" height={150} />
                     <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                      Hello{user ? `, ${user.displayName.split(' ')[0]}` : ''}!
+                      {`Hello${user ? `, ${user.displayName.split(' ')[0]}` : ''}! I'm Kiko.`}
                     </Text>
                     <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
-                      Ask me about destinations, verified businesses, itineraries and travel budgets in KalawGuide. I work even without internet.
+                      Your Mati travel buddy. Ask me about the best places to visit, verified businesses, itineraries and travel budgets. I work even without internet.
                     </Text>
                     <View style={styles.suggestions}>
                       {SUGGESTIONS.map(s => (
@@ -239,6 +239,8 @@ export function KalawAssistanceFAB() {
                   const isUser = item.role === 'user';
                   const cards = item.metadata?.cards ?? [];
                   return (
+                    <View style={[styles.messageRow, isUser && styles.messageRowUser]}>
+                    {!isUser && <KikoAvatar size={30} style={styles.bubbleAvatar} />}
                     <View
                       style={[
                         styles.messageBubble,
@@ -261,6 +263,7 @@ export function KalawAssistanceFAB() {
                           Includes estimates — confirm before you travel
                         </Text>
                       )}
+                    </View>
                     </View>
                   );
                 }}
@@ -318,9 +321,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 75,
     right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 8,
@@ -402,8 +407,11 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamilyBody,
     fontSize: Typography.size.body,
   },
+  messageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
+  messageRowUser: { justifyContent: 'flex-end' },
+  bubbleAvatar: { marginBottom: Spacing.sm },
   messageBubble: {
-    maxWidth: '88%',
+    maxWidth: '82%',
     padding: Spacing.md,
     borderRadius: Radius.md,
     marginBottom: Spacing.sm,

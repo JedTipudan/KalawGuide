@@ -10,6 +10,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
 import { Typography } from '../../../constants/tokens';
+import { Kiko } from '../../../components/brand/Kiko';
 
 interface ItineraryRow {
   id: string; title: string; description: string | null;
@@ -88,9 +89,10 @@ export default function TripsScreen() {
 
           {/* Trip list */}
           {itineraries.length === 0 && !loading ? (
-            <View style={[styles.savedCard, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.savedTitle, { color: colors.text }]}>Your coastal escape, ready when you are.</Text>
-              <Text style={[styles.savedBody, { color: colors.muted }]}>
+            <View style={[styles.savedCard, { backgroundColor: colors.surface, alignItems: 'center' }]}>
+              <Kiko pose="relax" height={150} />
+              <Text style={[styles.savedTitle, { color: colors.text, textAlign: 'center' }]}>Your coastal escape, ready when you are.</Text>
+              <Text style={[styles.savedBody, { color: colors.muted, textAlign: "center" }]}>
                 No trips yet.{'\n'}Keep planning without losing your place.
               </Text>
             </View>

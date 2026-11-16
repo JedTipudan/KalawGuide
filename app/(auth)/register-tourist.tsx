@@ -9,6 +9,7 @@ import { KalawButton } from '../../components/common/KalawButton';
 import { KalawInput } from '../../components/common/KalawInput';
 import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { promptGoogleProfile } from '../../services/auth/googlePrompt';
 
 export default function RegisterTouristScreen() {
   const { colors } = useTheme();
@@ -55,10 +56,13 @@ export default function RegisterTouristScreen() {
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
     try {
-      const { isNewUser } = await googleSignIn({ id: 'google_demo_' + Date.now(), email: 'demo.google@kalawguide.app', name: 'Google Demo User', picture: undefined });
-      if (isNewUser) router.replace('/(auth)/role-select');
+      const profile = await promptGoogleProfile();
+      if (!profile) return; // user closed the Google window
+      const { isNewUser } = await googleSignIn(profile);
+      if (isNewUser) router.replace('/(auth)/role-select' as any);
     } catch (err: unknown) {
-      setErrors({ general: err instanceof Error ? err.message : 'Google sign-in failed.' });
+      const msg = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
+      setErrors({ general: msg });
     } finally {
       setGoogleLoading(false);
     }

@@ -336,6 +336,73 @@ AI tool: Claude Code (Anthropic). The user asked for five things:
 
 ---
 
+## Mascot (Kiko) and App Icon (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The team supplied mascot and app-icon artwork, and asked the AI to use it wherever it would attract users. The artwork itself was provided by the team. The AI only processed and placed it.
+
+**Image processing** (Python + Pillow, run locally; no new app dependencies)
+- **App icon:**
+  - Filled the black rounded-corner surround with the icon's own navy (`#072D4B`) to make a full-bleed 1024 px `assets/icon.png`.
+  - Made a 196 px `favicon.png`.
+  - Made an Android adaptive foreground (art inside the safe zone) on a solid navy background.
+  - Set `android.adaptiveIcon.backgroundColor` in `app.json`.
+- **Avatar:** made a round Kiko face crop (`kiko-avatar.png`).
+- **Mascot poses:**
+  - Trimmed and resized the transparent poses (`kiko-map`, `kiko-presenting`).
+  - Removed the white background from three white-background poses (`kiko-welcome`, `kiko-lookout`, `kiko-relax`), and cropped stray marks at the image edges.
+  - Converted all of them to 256-colour PNGs: about 1.5 MB → 70–85 KB each.
+
+**Placement**
+- New `components/brand/Kiko.tsx` (`Kiko`, `KikoAvatar`, `BrandLogo`).
+- Kalaw Assistance:
+  - Kiko is the chat button and the header image.
+  - The greeting says "I'm Kiko" and shows the presenting pose.
+  - Each assistant reply has a Kiko avatar.
+- Logo: Kiko + "KalawGuide" in the web nav (wide and compact), mobile Home, Welcome and Sign-in app bars, and the landing nav and footer.
+- Mobile Welcome: the 🏖 emoji placeholder is replaced by Kiko with the "Explore Mati!" sign.
+- Mobile Home: the banner shows Kiko with binoculars and links to the live map.
+- Web landing: the presenting pose over the hero (hidden on phones), and a "plan, then relax" tip with Kiko beside the budget section.
+- Web sign-in, registration (tourist and business) and forgot-password panels: Kiko replaces the "K" badge.
+- Empty states: My Trips (relaxing pose) and Favorites (binoculars pose).
+
+**Not changed:** the Android monochrome (themed) icon still uses the previous artwork.
+
+**Verification:**
+- `npx tsc --noEmit` shows no new errors.
+- ESLint shows no new errors.
+- `npx jest` passes 127/127 tests.
+- `npx expo export -p web` builds and bundles all six mascot images.
+- Layouts were not viewed on a device or in a browser during this session.
+
+---
+
+## Google Sign-in Placement Fix (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user reported that on mobile, Google sign-in appeared on Register but not on the login screen, and asked whether Figma shows it.
+
+**Findings**
+- **Figma:** the mobile Sign in (10:17178) and Tourist registration (10:17334) frames show **no** Google button.
+- **Mobile sign-in:** already contained a working Google OAuth handler, but never rendered a button.
+- **Mobile register:** rendered a Google button, but its handler always used a demo account, even when a real client ID was configured.
+
+**What the AI changed**
+- New `services/auth/googlePrompt.ts` (`promptGoogleProfile`):
+  - Uses real Google OAuth when `EXPO_PUBLIC_GOOGLE_CLIENT_ID` is set, and demo mode otherwise.
+  - Returns `null` when the user cancels.
+  - The demo user ID is now fixed instead of time-based. Accounts are matched by email, so the demo user still signs in as the same account.
+- Mobile sign-in: shows "Continue with Google" under the Sign In button, with an "or" divider (the Figma layout above it is unchanged). Errors are now shown instead of silently swallowed.
+- Mobile tourist register and web sign-in: use the same helper. Mobile register now does real Google sign-in. Web behaviour is unchanged, and the duplicated OAuth code is removed.
+
+**Note:** this adds a Google button the Figma frames don't show, at the user's request. The Figma design could be updated to match.
+
+**Verification:**
+- `npx tsc --noEmit` shows no new errors.
+- ESLint shows only a pre-existing apostrophe error in web sign-in.
+- `npx jest` passes 127/127 tests.
+- Not tested on a device.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -350,3 +417,5 @@ Kalaw Assistance Enter-to-send and error fallback (2026-11-16).
 Light mode check against Figma: admin/business shells, auth panels (2026-11-16).
 Mobile sign-in fixes and assistant place recommendations (2026-11-16).
 Admin settings redesign, working reports & activity logs, bookings removed, README rewrite (2026-11-16).
+Mascot (Kiko) and app icon added (2026-11-16).
+Google sign-in placement fix (2026-11-16).

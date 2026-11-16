@@ -5,13 +5,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Typography } from '../../constants/tokens';
+import { BrandLogo } from '../../components/brand/Kiko';
+import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
+import { promptGoogleProfile } from '../../services/auth/googlePrompt';
 
-WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const { colors, mode, setMode } = useTheme();
@@ -26,6 +26,7 @@ export default function SignInScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const passwordRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   async function handleSignIn() {
@@ -39,29 +40,25 @@ export default function SignInScreen() {
   }
 
   async function handleGoogleSignIn() {
+    setGoogleLoading(true);
     try {
-      const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
-      if (!clientId) {
-        const { isNewUser } = await googleSignIn({ id: 'google_demo_' + Date.now(), email: 'demo.google@kalawguide.app', name: 'Google Demo User', picture: undefined });
-        if (isNewUser) router.replace('/(auth)/role-select');
-        return;
-      }
-      const redirectUri = AuthSession.makeRedirectUri({ scheme: 'kalawguide' });
-      const request = new AuthSession.AuthRequest({ clientId, scopes: ['openid', 'profile', 'email'], redirectUri, responseType: AuthSession.ResponseType.Token });
-      const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
-      if (result.type === 'success' && result.authentication?.accessToken) {
-        const info = await (await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${result.authentication.accessToken}`)).json();
-        const { isNewUser } = await googleSignIn({ id: info.sub, email: info.email, name: info.name, picture: info.picture });
-        if (isNewUser) router.replace('/(auth)/role-select');
-      }
-    } catch { /* silent */ }
+      const profile = await promptGoogleProfile();
+      if (!profile) return; // user closed the Google window
+      const { isNewUser } = await googleSignIn(profile);
+      if (isNewUser) router.replace('/(auth)/role-select' as any);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
+      setError(msg);
+    } finally {
+      setGoogleLoading(false);
+    }
   }
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Top bar — sits below the status bar (safe-area-context handles Android + iOS) */}
       <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.brandTitle, { color: colors.primary }]}>≋  KalawGuide</Text>
+        <BrandLogo color={colors.primary} size={20} />
         <TouchableOpacity
           onPress={cycleTheme}
           style={[styles.themeBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -162,6 +159,14 @@ export default function SignInScreen() {
                 </Text>
               </TouchableOpacity>
 
+              {/* Google — signs in a returning user, creates the account for a new one */}
+              <View style={styles.orRow}>
+                <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.orText, { color: colors.muted }]}>or</Text>
+                <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+              </View>
+              <GoogleSignInButton onPress={handleGoogleSignIn} loading={googleLoading} />
+
               {/* Create account */}
               <TouchableOpacity onPress={() => router.push('/(auth)/register-tourist')}>
                 <Text style={[styles.createAccountText, { color: colors.primary }]}>
@@ -219,6 +224,9 @@ const styles = StyleSheet.create({
     alignItems: 'center', minHeight: 48, justifyContent: 'center',
   },
   primaryBtnText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: -4 },
+  orLine: { flex: 1, height: 1 },
+  orText: { fontFamily: Typography.fontFamilyBody, fontSize: 13 },
   createAccountText: { fontFamily: Typography.fontFamilyBody, fontSize: 13, fontWeight: Typography.weight.bold, paddingVertical: 8 },
   legal: { fontFamily: Typography.fontFamilyBody, fontSize: 12, textAlign: 'center', paddingHorizontal: 20 },
 });

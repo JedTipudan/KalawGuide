@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Typography, Spacing } from '../../constants/tokens';
+import { BrandLogo } from '../brand/Kiko';
 
 interface WebNavProps {
   variant?: 'public' | 'tourist' | 'business' | 'admin';
@@ -45,7 +46,7 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
       <View style={{ zIndex: 50 }}>
         <View style={[styles.nav, styles.navCompact, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => { setMenuOpen(false); goHome(); }}>
-            <Text style={[styles.logo, styles.logoCompact, { color: colors.primary }]}>≋  KalawGuide</Text>
+            <BrandLogo color={colors.primary} size={18} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setMenuOpen(o => !o)}
@@ -99,7 +100,7 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
   return (
     <View style={[styles.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       <TouchableOpacity onPress={goHome}>
-        <Text style={[styles.logo, { color: colors.primary }]}>≋  KalawGuide</Text>
+        <BrandLogo color={colors.primary} size={22} />
       </TouchableOpacity>
 
       <View style={styles.right}>
