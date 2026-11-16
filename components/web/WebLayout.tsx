@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { WebNav } from './WebNav';
 import { Typography, Spacing } from '../../constants/tokens';
+import { rw } from '../../utils/responsive';
 
 interface WebLayoutProps {
   children: React.ReactNode;
@@ -19,7 +20,7 @@ export function WebLayout({ children, navVariant = 'public', scrollable = true }
       <div className="page-enter" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <View style={styles.body}>{children}</View>
       </div>
-      <View style={[styles.footer, { borderTopColor: colors.border }]}>
+      <View {...rw('pad')} style={[styles.footer, { borderTopColor: colors.border }]}>
         <Text style={[styles.footerText, { color: colors.muted }]}>
           KalawGuide · Privacy Policy · Terms and Conditions
         </Text>

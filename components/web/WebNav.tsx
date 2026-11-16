@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +14,9 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { width } = useWindowDimensions();
+  const compact = width < 1024; // 8 tourist links don't fit in one row below this
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function goHome() {
     if (!user) { router.push('/(web)/landing' as any); return; }
@@ -29,6 +32,69 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
   }
 
   const themeLabel = mode === 'light' ? '☀ Light' : mode === 'dark' ? '☾ Dark' : '◐ System';
+  const links = variant === 'tourist' ? TOURIST_LINKS : variant === 'business' ? BUSINESS_LINKS : variant === 'admin' ? ADMIN_LINKS : [];
+
+  function go(route: string) {
+    setMenuOpen(false);
+    router.push(route as any);
+  }
+
+  // Phone-width browsers: logo + menu button, links in a dropdown panel
+  if (compact) {
+    return (
+      <View style={{ zIndex: 50 }}>
+        <View style={[styles.nav, styles.navCompact, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => { setMenuOpen(false); goHome(); }}>
+            <Text style={[styles.logo, styles.logoCompact, { color: colors.primary }]}>≋  KalawGuide</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setMenuOpen(o => !o)}
+            style={[styles.menuBtn, { borderColor: colors.border }]}
+            accessibilityRole="button"
+            accessibilityLabel={menuOpen ? 'Close menu' : 'Open menu'}
+          >
+            <Text style={[styles.menuBtnText, { color: colors.text }]}>{menuOpen ? '✕' : '☰'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {menuOpen && (
+          <View style={[styles.menuPanel, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+            {links.map(l => (
+              <TouchableOpacity
+                key={l.route}
+                onPress={() => go(l.route)}
+                style={[styles.menuItem, pathname === l.route && { backgroundColor: colors.subtle }]}
+              >
+                <Text style={[styles.menuItemText, { color: pathname === l.route ? colors.primary : colors.text }]}>{l.label}</Text>
+              </TouchableOpacity>
+            ))}
+            <View style={styles.menuActions}>
+              <TouchableOpacity
+                onPress={cycleTheme}
+                style={[styles.themeBtn, { backgroundColor: colors.subtle, borderColor: colors.border }]}
+              >
+                <Text style={[styles.themeBtnText, { color: colors.text }]}>{themeLabel}</Text>
+              </TouchableOpacity>
+              {user ? (
+                <TouchableOpacity onPress={() => { setMenuOpen(false); signOut(); }} style={[styles.signOutBtn, { borderColor: colors.border }]}>
+                  <Text style={[styles.signOutText, { color: colors.muted }]}>Sign Out</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity onPress={() => go('/(web)/sign-in')} style={[styles.signOutBtn, { borderColor: colors.border }]}>
+                    <Text style={[styles.signOutText, { color: colors.text }]}>Sign In</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => go('/(web)/register-tourist')} style={[styles.ctaBtn, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.ctaBtnText, { color: colors.onPrimary }]}>Get Started</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -142,6 +208,14 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderBottomWidth: 1,
   },
+  navCompact: { paddingHorizontal: 16, paddingVertical: 12 },
+  logoCompact: { fontSize: Typography.size.h5 },
+  menuBtn: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  menuBtnText: { fontSize: 20, fontFamily: Typography.fontFamilyBody },
+  menuPanel: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, gap: 2 },
+  menuItem: { paddingHorizontal: 12, paddingVertical: 12, borderRadius: 8, minHeight: 44, justifyContent: 'center' },
+  menuItemText: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.medium },
+  menuActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingHorizontal: 12, paddingTop: 12 },
   logo: {
     fontFamily: Typography.fontFamilyBody,
     fontSize: Typography.size.h4,

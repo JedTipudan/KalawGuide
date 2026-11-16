@@ -3,12 +3,13 @@ import { View, StyleSheet } from 'react-native';
 import { WebLayout } from '../../components/web/WebLayout';
 import { KalawAssistanceFAB } from '../../components/assistant/KalawAssistanceFAB';
 import BookingHistoryScreen from '../(tourist)/booking-history';
+import { rw } from '../../utils/responsive';
 
 export default function WebBookingHistoryScreen() {
   return (
     <View style={styles.root}>
       <WebLayout navVariant="tourist" scrollable={false}>
-        <View style={styles.workspace}>
+        <View {...rw('pad0')} style={styles.workspace}>
           <BookingHistoryScreen />
         </View>
       </WebLayout>

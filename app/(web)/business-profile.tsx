@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 const DOCUMENT_TYPES = [
   { value: 'business_permit', label: 'Business Permit', hint: "Mayor's permit or DTI registration" },
@@ -217,7 +218,7 @@ export default function WebBusinessProfileScreen() {
 
   return (
     <BusinessShell activeLabel="My Business Profile">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Text style={[s.pageTitle, { color: colors.text }]}>Business Profile</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>
           {bizId ? 'Update your business information.' : 'Create your business listing.'}

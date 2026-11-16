@@ -11,6 +11,7 @@ import { KalawButton } from '../../components/common/KalawButton';
 import { KalawInput } from '../../components/common/KalawInput';
 import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { rw } from '../../utils/responsive';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -75,9 +76,9 @@ export default function WebSignInScreen() {
 
   return (
     <WebLayout navVariant="public">
-      <View style={[styles.authLayout, { backgroundColor: colors.background }]}>
+      <View {...rw('stack pad vpad')} style={[styles.authLayout, { backgroundColor: colors.background }]}>
         {/* Left — travel invitation */}
-        <View style={styles.invitation}>
+        <View {...rw('hide-sm')} style={styles.invitation}>
           <View style={[styles.invitationInner, { backgroundColor: '#123747' }]}>
             <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
               <Text style={styles.logoText}>K</Text>
@@ -98,8 +99,8 @@ export default function WebSignInScreen() {
         </View>
 
         {/* Right — form card */}
-        <View style={styles.formSide}>
-          <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
+        <View {...rw('full')} style={styles.formSide}>
+          <View {...rw('card')} style={[styles.formCard, { backgroundColor: colors.surface }]}>
             <Text style={[styles.formTitle, { color: colors.text }]}>Sign In</Text>
             <Text style={[styles.formSub, { color: colors.muted }]}>Continue your journey</Text>
 

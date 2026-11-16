@@ -3,12 +3,13 @@ import { View, StyleSheet } from 'react-native';
 import { WebLayout } from '../../components/web/WebLayout';
 import { KalawAssistanceFAB } from '../../components/assistant/KalawAssistanceFAB';
 import BudgetScreen from '../(tourist)/budget';
+import { rw } from '../../utils/responsive';
 
 export default function WebBudgetScreen() {
   return (
     <View style={styles.root}>
       <WebLayout navVariant="tourist" scrollable={true}>
-        <View style={styles.workspace}>
+        <View {...rw('pad0')} style={styles.workspace}>
           <BudgetScreen />
         </View>
       </WebLayout>

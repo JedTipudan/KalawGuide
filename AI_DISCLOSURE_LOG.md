@@ -121,7 +121,58 @@ AI tool: Claude Code (Anthropic). The user asked that the `‹ Expense tracker` 
 
 **What the AI changed:** in `app/(tourist)/emergency.tsx`, `expenses.tsx` and `budget.tsx`, the whole top bar is now shown only when `Platform.OS !== 'web'`. The `‹ Title` text is now a real back button (`router.back()`, falling back to the Home tab when there is no history) with an accessibility label. Before this it was plain text that did nothing when tapped.
 
+**Follow-up:** at the user's request, the `My Trips` title bar in `app/(tourist)/(tabs)/trips.tsx` is now also mobile-only. It stays a plain title because My Trips is a bottom-tab screen on mobile and does not need a back button.
+
 **Verification:** `npx tsc --noEmit` shows no new errors. Not tested on a device or in a browser during this session.
+
+---
+
+## Responsive Website for Phone Browsers (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user asked that the website fit small phones for visitors who use the browser instead of the app.
+
+**What the AI changed**
+- `utils/responsive.ts` (new): `rw()` helper that adds `data-r` tags to react-native-web elements.
+- `components/common/WebAppShell.tsx`: tablet (≤1023px) and phone (≤767px) media queries for those tags. Also stops sideways page scrolling.
+- `components/web/WebNav.tsx`: below 1024px the nav becomes logo + `☰` menu button with a dropdown of links, theme switch and sign in/out (44px touch targets).
+- Tagged layout containers in 39 web files (no logic changes):
+  - landing, home, explore, recommendations, destination details
+  - sign-in, registration (tourist and business), forgot password, role select
+  - the 10 web wrappers around tourist screens
+  - all business/admin portal pages, `AdminShell`, `BusinessShell`, `WebLayout`
+
+**Verification:**
+- `npx tsc --noEmit` shows no new errors.
+- ESLint is clean on the new and changed shared files.
+- `npx expo export --platform web` builds successfully, and the page includes the `width=device-width` viewport tag.
+- Not viewed on a real phone or a browser in phone size during this session.
+- Wide data tables in the admin/business portals may still need sideways scrolling on very small screens.
+
+---
+
+## Deployment Setup and Cleanup (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user asked for free online hosting, a guide to follow, and removal of unused files.
+
+**What the AI did**
+- Read the Expo SDK 58 docs (expo-sqlite web setup, EAS Hosting, publishing websites). Found that expo-sqlite on web needs COOP/COEP headers, so chose Netlify's free plan, which can set them with a `_headers` file.
+- Added `netlify.toml`, `public/_headers`, `public/_redirects` and `guide.html` (deploy guide with checkboxes).
+- Removed files that nothing in the project references: `App.tsx`, `assets/splash-icon.png`, `assets/images/biz-coastal-table.png`, and the empty `hooks/`, `assets/fonts/`, `assets/icons/` folders. Test files, `.env.example`, `testing/`, `LICENSE` and all source modules were kept.
+
+**Verification:** `npx expo export -p web` succeeds, and the output contains `_headers`, `_redirects` and the sqlite `.wasm` file. The site was not actually deployed during this session. The team does that with their own Netlify account.
+
+---
+
+## Hosting Switched to Vercel (2026-11-16)
+
+AI tool: Claude Code (Anthropic). The user asked to use Vercel instead of Netlify.
+
+**What the AI changed**
+- Removed `netlify.toml`, `public/_headers` and `public/_redirects`.
+- Added `vercel.json`. It has the build command (`npx expo export -p web`), the output directory (`dist`), and the same COOP/COEP headers expo-sqlite needs on web. It also has a rewrite of all paths to `/` so refreshing a page works.
+- Rewrote the hosting steps in `guide.html` for Vercel's free Hobby plan (GitHub import, or `npx vercel --prod`), plus the Vercel troubleshooting steps. Updated the README "Web Deployment" section.
+
+**Verification:** `vercel.json` follows the Expo "Publishing websites" Vercel example, with the headers added. The site was not deployed during this session. The team deploys it with their own Vercel account.
 
 ---
 
@@ -131,3 +182,6 @@ Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementat
 UI refinement — Figma color and component style alignment (2026-11-16).
 Bug fix — scrolling and web menu icon on Emergency, Expenses and Budget (2026-11-16).
 UI fix — mobile-only back bar on Emergency, Expenses and Budget (2026-11-16).
+Responsive website for phone browsers (2026-11-16).
+Deployment setup (Netlify) and unused-file cleanup (2026-11-16).
+Hosting switched from Netlify to Vercel (2026-11-16).

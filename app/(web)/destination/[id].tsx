@@ -7,6 +7,7 @@ import { WebLayout } from '../../../components/web/WebLayout';
 import { getDatabase } from '../../../database/migrations/init';
 import { generateId, now } from '../../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
+import { rw } from '../../../utils/responsive';
 
 interface DestinationDetail {
   id: string; name: string; description: string; location: string;
@@ -68,7 +69,7 @@ export default function WebDestinationDetailScreen() {
 
   return (
     <WebLayout navVariant="tourist">
-      <View style={styles.workspace}>
+      <View {...rw('card')} style={styles.workspace}>
         <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(web)/explore' as any)} style={styles.backBtn}>
           <Text style={[styles.backText, { color: colors.primary }]}>← Back</Text>
         </TouchableOpacity>
@@ -76,9 +77,9 @@ export default function WebDestinationDetailScreen() {
         {!dest ? (
           <Text style={[styles.loading, { color: colors.muted }]}>Loading...</Text>
         ) : (
-          <View style={styles.twoCol}>
+          <View {...rw('stack')} style={styles.twoCol}>
             {/* Left: cover only */}
-            <View style={styles.leftCol}>
+            <View {...rw('full')} style={styles.leftCol}>
               <View style={[styles.coverPlaceholder, { backgroundColor: colors.subtle }]}>
                 <Text style={styles.coverIcon}>🏝</Text>
               </View>

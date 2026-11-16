@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
 import { BusinessVerificationStatus } from '../../types';
+import { rw } from '../../utils/responsive';
 
 interface BizRow {
   id: string; name: string; category: string; address: string;
@@ -169,7 +170,7 @@ export default function WebAdminBusinessesScreen() {
 
   return (
     <AdminShell activeLabel="Business Verification">
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.workspace}>
+      <ScrollView {...rw('scpad')} style={{ flex: 1 }} contentContainerStyle={s.workspace}>
         <Text style={[s.pageTitle, { color: colors.text }]}>Business Verification</Text>
 
         {/* Tab switcher */}

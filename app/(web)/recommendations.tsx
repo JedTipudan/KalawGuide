@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now, formatCurrency } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface RecommendationResult {
   id: string; name: string; category: string; address: string;
@@ -111,7 +112,7 @@ export default function WebRecommendationsScreen() {
 
   return (
     <WebLayout navVariant="tourist" scrollable>
-      <View style={[s.workspace, { backgroundColor: colors.background }]}>
+      <View {...rw('card')} style={[s.workspace, { backgroundColor: colors.background }]}>
         <Text style={[s.pageTitle, { color: colors.text }]}>🌟 Find Your Ideal Place</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>
           Describe what you're looking for and we'll match it against verified businesses in Mati City.
@@ -175,7 +176,7 @@ export default function WebRecommendationsScreen() {
             <Text style={[s.resultsHeader, { color: colors.text }]}>{results.length} match{results.length !== 1 ? 'es' : ''} found</Text>
             <View style={s.grid}>
               {results.map((item, index) => (
-                <View key={item.id} style={[s.card, { backgroundColor: colors.surface }]}>
+                <View {...rw('full')} key={item.id} style={[s.card, { backgroundColor: colors.surface }]}>
                   <View style={s.cardImgWrap}>
                     {item.coverImageUrl ? (
                       <Image source={{ uri: item.coverImageUrl }} style={s.cardImg} resizeMode="cover" />

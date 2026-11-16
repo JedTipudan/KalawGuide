@@ -4,6 +4,7 @@ import { AdminShell } from '../../components/web/AdminShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeMode } from '../../types';
+import { rw } from '../../utils/responsive';
 
 export default function WebAdminSettingsScreen() {
   const { colors, mode, setMode } = useTheme();
@@ -24,7 +25,7 @@ export default function WebAdminSettingsScreen() {
 
   return (
     <AdminShell activeLabel="System Settings">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Text style={[s.pageTitle, { color: colors.text }]}>System Settings</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>Administrator preferences and platform information.</Text>
 

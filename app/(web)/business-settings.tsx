@@ -4,6 +4,7 @@ import { BusinessShell } from '../../components/web/BusinessShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeMode } from '../../types';
+import { rw } from '../../utils/responsive';
 
 export default function WebBusinessSettingsScreen() {
   const { colors, mode, setMode } = useTheme();
@@ -24,7 +25,7 @@ export default function WebBusinessSettingsScreen() {
 
   return (
     <BusinessShell activeLabel="Account Settings">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Text style={[s.pageTitle, { color: colors.text }]}>Account Settings</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>Manage your account preferences.</Text>
 

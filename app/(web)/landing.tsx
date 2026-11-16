@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image 
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
+import { rw } from '../../utils/responsive';
 
 const HERO_SLIDES = [
   require('../../assets/images/hero-bg.png'),
@@ -53,9 +54,9 @@ export default function WebLandingScreen() {
     <ScrollView style={[s.root, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
 
       {/* ── Navigation ── */}
-      <View style={[s.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[s.navLogo, { color: colors.primary }]}>≋  KalawGuide</Text>
-        <View style={s.navLinks}>
+      <View {...rw('pad gap-sm')} style={[s.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text {...rw('logo-sm')} style={[s.navLogo, { color: colors.primary }]}>≋  KalawGuide</Text>
+        <View {...rw('hide-sm')} style={s.navLinks}>
           {['Home', 'Explore Destinations', 'Local Businesses', 'About'].map(l => (
             <TouchableOpacity key={l} onPress={() => l === 'Explore Destinations' ? router.push('/(web)/explore' as any) : undefined}>
               <div className="nav-link">
@@ -65,13 +66,13 @@ export default function WebLandingScreen() {
           ))}
         </View>
         <View style={s.navRight}>
-          <TouchableOpacity style={[s.navBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={cycleTheme}>
+          <TouchableOpacity {...rw('hide-sm')} style={[s.navBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={cycleTheme}>
             <Text style={[s.navBtnText, { color: colors.text }]}>{themeLabel}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.navBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push('/(web)/sign-in' as any)}>
+          <TouchableOpacity {...rw('tight')} style={[s.navBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push('/(web)/sign-in' as any)}>
             <Text style={[s.navBtnText, { color: colors.text }]}>Sign in</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.navBtnPrimary, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/register-tourist' as any)}>
+          <TouchableOpacity {...rw('tight')} style={[s.navBtnPrimary, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/register-tourist' as any)}>
             <Text style={[s.navBtnText, { color: colors.onPrimary }]}>Get started</Text>
           </TouchableOpacity>
         </View>
@@ -95,7 +96,7 @@ export default function WebLandingScreen() {
         ))}
         <View style={s.heroOverlay} />
         {/* dots */}
-        <View style={s.heroDots}>
+        <View {...rw('right-sm')} style={s.heroDots}>
           {HERO_SLIDES.map((_, i) => (
             <TouchableOpacity key={i} onPress={() => setSlideIndex(i)}>
               <View style={[s.heroDot, i === slideIndex && s.heroDotActive]} />
@@ -104,13 +105,13 @@ export default function WebLandingScreen() {
         </View>
         {/* text */}
         <div className="reveal-left" style={{ zIndex: 2, position: 'relative' } as any}>
-          <View style={s.heroContent}>
+          <View {...rw('pad')} style={s.heroContent}>
             <Text style={s.heroEyebrow}>MATI CITY, DAVAO ORIENTAL  /  PHILIPPINES</Text>
-            <Text style={s.heroTitle}>{'Discover More.\nTravel Smarter.\nSpend Better.'}</Text>
+            <Text {...rw('h1')} style={s.heroTitle}>{'Discover More.\nTravel Smarter.\nSpend Better.'}</Text>
             <Text style={s.heroSub}>
               Explore destinations, estimate your travel expenses, discover local businesses, and plan your next adventure with KalawGuide.
             </Text>
-            <View style={s.heroBtns}>
+            <View {...rw('wrap')} style={s.heroBtns}>
               <div className="hover-glow">
                 <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: colors.primary }]} onPress={() => router.push('/(web)/explore' as any)}>
                   <Text style={[s.heroBtnText, { color: colors.onPrimary }]}>Explore Destinations</Text>
@@ -129,8 +130,8 @@ export default function WebLandingScreen() {
 
       {/* ── Travel search ── */}
       <div className="reveal">
-        <View style={[s.searchSection, { backgroundColor: colors.surface }]}>
-          <View style={s.searchRow}>
+        <View {...rw('pad')} style={[s.searchSection, { backgroundColor: colors.surface }]}>
+          <View {...rw('stack')} style={s.searchRow}>
             <TextInput
               style={[s.searchInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
               placeholder="Where would you like to go?"
@@ -150,9 +151,9 @@ export default function WebLandingScreen() {
       </div>
 
       {/* ── Featured destinations ── */}
-      <View style={[s.section, { backgroundColor: colors.background }]}>
+      <View {...rw('pad vpad')} style={[s.section, { backgroundColor: colors.background }]}>
         <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>THE COAST IS CALLING</Text></div>
-        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>Find your kind of escape.</Text></div>
+        <div className="reveal"><Text {...rw('h2')} style={[s.sectionTitle, { color: colors.text }]}>Find your kind of escape.</Text></div>
         <div className="reveal"><Text style={[s.sectionSub, { color: colors.muted }]}>A fresh perspective on Mati and Davao Oriental.</Text></div>
         <div className="dest-grid reveal-group">
           {featuredDests.map((d, i) => (
@@ -179,9 +180,9 @@ export default function WebLandingScreen() {
       </View>
 
       {/* ── Explore by category ── */}
-      <View style={[s.section, { backgroundColor: colors.background }]}>
+      <View {...rw('pad vpad')} style={[s.section, { backgroundColor: colors.background }]}>
         <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>FOLLOW YOUR CURIOSITY</Text></div>
-        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>A place for every kind of traveler.</Text></div>
+        <div className="reveal"><Text {...rw('h2')} style={[s.sectionTitle, { color: colors.text }]}>A place for every kind of traveler.</Text></div>
         <div className="reveal reveal-group" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12 } as any}>
           {CATEGORIES.map(c => (
             <div key={c} className="reveal hover-chip">
@@ -194,11 +195,11 @@ export default function WebLandingScreen() {
       </View>
 
       {/* ── Budget planner promo ── */}
-      <View style={[s.section, { backgroundColor: budgetBg }]}>
-        <div className="reveal" style={{ display: 'flex', flexDirection: 'row', gap: 32, alignItems: 'flex-start' } as any}>
+      <View {...rw('pad vpad')} style={[s.section, { backgroundColor: budgetBg }]}>
+        <div data-r="stack" className="reveal" style={{ display: 'flex', flexDirection: 'row', gap: 32, alignItems: 'flex-start' } as any}>
           <View style={s.budgetLeft}>
             <Text style={[s.eyebrow, { color: colors.accent }]}>LESS GUESSWORK. MORE GOING.</Text>
-            <Text style={[s.sectionTitle, { color: budgetTitle }]}>Know Your Budget Before You Travel.</Text>
+            <Text {...rw('h2')} style={[s.sectionTitle, { color: budgetTitle }]}>Know Your Budget Before You Travel.</Text>
             <Text style={[s.sectionSub, { color: budgetMuted }]}>
               Build a realistic plan around your own estimates, then track what you actually spend.
             </Text>
@@ -230,9 +231,9 @@ export default function WebLandingScreen() {
       </View>
 
       {/* ── Local businesses ── */}
-      <View style={[s.section, { backgroundColor: colors.background }]}>
+      <View {...rw('pad vpad')} style={[s.section, { backgroundColor: colors.background }]}>
         <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>SUPPORT LOCAL</Text></div>
-        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>Meet the people behind the places.</Text></div>
+        <div className="reveal"><Text {...rw('h2')} style={[s.sectionTitle, { color: colors.text }]}>Meet the people behind the places.</Text></div>
         <div className="reveal"><Text style={[s.sectionSub, { color: colors.muted }]}>Find a stay, a great meal, or help getting around.</Text></div>
         <div className="dest-grid reveal-group">
           {BIZ_PLACEHOLDERS.map((b, i) => (
@@ -252,12 +253,12 @@ export default function WebLandingScreen() {
       </View>
 
       {/* ── How it works ── */}
-      <View style={[s.section, { backgroundColor: colors.background }]}>
+      <View {...rw('pad vpad')} style={[s.section, { backgroundColor: colors.background }]}>
         <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>YOUR NEXT TRIP, SIMPLIFIED</Text></div>
-        <div className="reveal"><Text style={[s.sectionTitle, { color: colors.text }]}>{'From "where?" to "we\'re here."'}</Text></div>
-        <div className="reveal reveal-group" style={{ display: 'flex', flexDirection: 'row', gap: 20 } as any}>
+        <div className="reveal"><Text {...rw('h2')} style={[s.sectionTitle, { color: colors.text }]}>{'From "where?" to "we\'re here."'}</Text></div>
+        <div data-r="stack" className="reveal reveal-group" style={{ display: 'flex', flexDirection: 'row', gap: 20 } as any}>
           {STEPS.map((step, i) => (
-            <div key={i} className="reveal" style={{ flex: 1 } as any}>
+            <div data-r="full" key={i} className="reveal" style={{ flex: 1 } as any}>
               <View style={s.stepCol}>
                 <Text style={[s.stepNum, { color: colors.accent }]}>0{i + 1}</Text>
                 <Text style={[s.stepTitle, { color: colors.text }]}>{step.title}</Text>
@@ -269,13 +270,13 @@ export default function WebLandingScreen() {
       </View>
 
       {/* ── Why KalawGuide ── */}
-      <View style={[s.section, { backgroundColor: whyBg }]}>
+      <View {...rw('pad vpad')} style={[s.section, { backgroundColor: whyBg }]}>
         <div className="reveal-left"><Text style={[s.eyebrow, { color: colors.accent }]}>BUILT AROUND YOUR JOURNEY</Text></div>
-        <div className="reveal"><Text style={[s.sectionTitle, { color: whyTitle }]}>Everything you need. Nothing in the way.</Text></div>
+        <div className="reveal"><Text {...rw('h2')} style={[s.sectionTitle, { color: whyTitle }]}>Everything you need. Nothing in the way.</Text></div>
         <div className="reveal"><Text style={[s.sectionSub, { color: whyMuted }]}>Travel planning in one platform, made for a more considered adventure.</Text></div>
         <div className="reveal reveal-group" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 16 } as any}>
           {BENEFITS.map(b => (
-            <div key={b} className="reveal" style={{ width: '47%' } as any}>
+            <div data-r="full" key={b} className="reveal" style={{ width: '47%' } as any}>
               <Text style={[s.benefitText, { color: whyTitle }]}>✓  {b}</Text>
             </div>
           ))}
@@ -283,7 +284,7 @@ export default function WebLandingScreen() {
       </View>
 
       {/* ── Footer ── */}
-      <View style={[s.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+      <View {...rw('pad')} style={[s.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         <Text style={[s.footerLogo, { color: colors.primary }]}>≋  KalawGuide</Text>
         <Text style={[s.footerSub, { color: colors.muted }]}>Discover more of the Philippines, starting in Mati City.</Text>
         <View style={s.footerLinks}>

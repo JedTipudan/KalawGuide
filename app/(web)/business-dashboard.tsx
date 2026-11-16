@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { BusinessVerificationStatus } from '../../types';
+import { rw } from '../../utils/responsive';
 
 interface BusinessRow {
   id: string; name: string; category: string;
@@ -56,7 +57,7 @@ export default function WebBusinessDashboardScreen() {
 
   return (
     <BusinessShell activeLabel="Dashboard">
-      <ScrollView
+      <ScrollView {...rw('scpad')}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}

@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { formatShortDate } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface NotifRow { id: string; type: string; title: string; body: string; is_read: number; created_at: string; }
 
@@ -48,7 +49,7 @@ export default function WebBusinessNotificationsScreen() {
 
   return (
     <BusinessShell activeLabel="Notifications">
-      <ScrollView
+      <ScrollView {...rw('scpad')}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}

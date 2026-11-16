@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now, formatCurrency } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface ProductRow { id: string; name: string; description: string | null; price: number; is_available: number; }
 interface ServiceRow { id: string; name: string; description: string | null; price: number; duration: string | null; is_available: number; }
@@ -102,7 +103,7 @@ export default function WebBusinessProductsScreen() {
 
   return (
     <BusinessShell activeLabel="Products & Services">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.pageHeader}>
           <View>
             <Text style={[s.pageTitle, { color: colors.text }]}>Products & Services</Text>

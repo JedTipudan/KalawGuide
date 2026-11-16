@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { now, formatShortDate } from '../../utils/helpers';
 import { BookingStatus } from '../../types';
+import { rw } from '../../utils/responsive';
 
 interface BookingRow {
   id: string; status: BookingStatus; requested_date: string | null;
@@ -70,7 +71,7 @@ export default function WebBusinessBookingsScreen() {
 
   return (
     <BusinessShell activeLabel="Booking Requests">
-      <ScrollView
+      <ScrollView {...rw('scpad')}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}

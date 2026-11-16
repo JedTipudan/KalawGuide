@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, A
 import { AdminShell } from '../../components/web/AdminShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
+import { rw } from '../../utils/responsive';
 
 interface ReportStats {
   totalUsers: number; tourists: number; businessOwners: number;
@@ -87,7 +88,7 @@ export default function WebAdminReportsScreen() {
 
   return (
     <AdminShell activeLabel="Reports & Analytics">
-      <ScrollView
+      <ScrollView {...rw('scpad')}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}

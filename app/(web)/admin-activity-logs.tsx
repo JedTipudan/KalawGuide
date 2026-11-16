@@ -4,6 +4,7 @@ import { AdminShell } from '../../components/web/AdminShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { formatShortDate } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface LogEntry {
   id: string; action: string; entity_type: string; entity_name: string | null;
@@ -41,7 +42,7 @@ export default function WebAdminActivityLogsScreen() {
 
   return (
     <AdminShell activeLabel="Activity Logs">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.pageHeader}>
           <Text style={[s.pageTitle, { color: colors.text }]}>Activity Logs</Text>
           <TouchableOpacity style={[s.refreshBtn, { borderColor: colors.border }]} onPress={load}>

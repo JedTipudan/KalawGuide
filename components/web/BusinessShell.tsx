@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
+import { rw } from '../../utils/responsive';
 
 const SIDEBAR_LINKS = [
   { label: 'Dashboard', route: '/(web)/business-dashboard' },
@@ -65,18 +66,18 @@ export function BusinessShell({ children, activeLabel }: Props) {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       {/* Command bar */}
-      <View style={[s.commandBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View {...rw('pad wrap')} style={[s.commandBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[s.logo, { color: colors.primary }]}>≋ KalawGuide</Text>
-        <Text style={[s.barLabel, { color: colors.muted }]}>BUSINESS WORKSPACE</Text>
+        <Text {...rw('hide-sm')} style={[s.barLabel, { color: colors.muted }]}>BUSINESS WORKSPACE</Text>
         <TouchableOpacity style={[s.themeBtn, { backgroundColor: colors.subtle, borderColor: colors.border }]} onPress={cycleTheme}>
           <Text style={[s.themeBtnText, { color: colors.text }]}>{themeLabel}</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={s.shell}>
+      <View {...rw('stack')} style={s.shell}>
         {/* Sidebar */}
-        <View style={[s.sidebar, { backgroundColor: colors.subtle, borderRightColor: colors.border, overflow: 'auto' as any }]}>
-          <Text style={[s.sidebarRole, { color: colors.accent }]}>BUSINESS OWNER</Text>
+        <View {...rw('sidebar')} style={[s.sidebar, { backgroundColor: colors.subtle, borderRightColor: colors.border, overflow: 'auto' as any }]}>
+          <Text {...rw('hide-sm')} style={[s.sidebarRole, { color: colors.accent }]}>BUSINESS OWNER</Text>
 
           {bizName && (
             <View style={[s.bizCard, { backgroundColor: colors.surface }]}>
@@ -103,7 +104,7 @@ export function BusinessShell({ children, activeLabel }: Props) {
             </TouchableOpacity>
           ))}
 
-          <Text style={[s.sidebarFooter, { color: colors.muted }]}>{'Only your business records\nare visible in this portal.'}</Text>
+          <Text {...rw('hide-sm')} style={[s.sidebarFooter, { color: colors.muted }]}>{'Only your business records\nare visible in this portal.'}</Text>
         </View>
 
         {/* Workspace */}

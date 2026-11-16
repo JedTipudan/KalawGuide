@@ -6,6 +6,7 @@ import { WebLayout } from '../../components/web/WebLayout';
 import { KalawButton } from '../../components/common/KalawButton';
 import { KalawInput } from '../../components/common/KalawInput';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { rw } from '../../utils/responsive';
 
 export default function WebForgotPasswordScreen() {
   const { colors } = useTheme();
@@ -25,8 +26,8 @@ export default function WebForgotPasswordScreen() {
 
   return (
     <WebLayout navVariant="public">
-      <View style={[styles.authLayout, { backgroundColor: colors.background }]}>
-        <View style={styles.invitation}>
+      <View {...rw('stack pad vpad')} style={[styles.authLayout, { backgroundColor: colors.background }]}>
+        <View {...rw('hide-sm')} style={styles.invitation}>
           <View style={[styles.invitationInner, { backgroundColor: '#123747' }]}>
             <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
               <Text style={styles.logoText}>K</Text>
@@ -38,8 +39,8 @@ export default function WebForgotPasswordScreen() {
           </View>
         </View>
 
-        <View style={styles.formSide}>
-          <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
+        <View {...rw('full')} style={styles.formSide}>
+          <View {...rw('card')} style={[styles.formCard, { backgroundColor: colors.surface }]}>
             {submitted ? (
               <View style={styles.successState}>
                 <Text style={styles.successIcon}>✉️</Text>

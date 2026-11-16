@@ -2,12 +2,13 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebLayout } from '../../components/web/WebLayout';
 import AddExpenseScreen from '../(tourist)/add-expense';
+import { rw } from '../../utils/responsive';
 
 export default function WebAddExpenseScreen() {
   return (
     <View style={styles.root}>
       <WebLayout navVariant="tourist" scrollable={true}>
-        <View style={styles.workspace}>
+        <View {...rw('pad0')} style={styles.workspace}>
           <AddExpenseScreen />
         </View>
       </WebLayout>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KalawGuide Deploy Guide</title>
+<style>
+  :root {
+    --bg: #F8FAFC; --surface: #FFFFFF; --subtle: #E0F2FE; --text: #1F2937; --muted: #64748B;
+    --border: #E2E8F0; --primary: #0E7490; --on-primary: #FFFFFF; --warn: #F97316; --ok: #16A34A;
+    --code-bg: #0F172A; --code-text: #E2E8F0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #071B26; --surface: #123747; --subtle: #194456; --text: #F8FAFC; --muted: #CBD5E1;
+      --border: #254656; --primary: #22B8C7; --on-primary: #071B26; --warn: #FB923C; --ok: #4ADE80;
+      --code-bg: #04121A; --code-text: #E2E8F0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 32px; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 22px; margin: 40px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+  h3 { font-size: 17px; margin: 24px 0 8px; }
+  p, li { color: var(--text); }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  a { color: var(--primary); }
+  code { background: var(--subtle); padding: 1px 6px; border-radius: 6px; font-size: 0.92em; overflow-wrap: anywhere; }
+  pre { background: var(--code-bg); color: var(--code-text); padding: 14px 16px; border-radius: 12px; overflow-x: auto; font-size: 14px; }
+  pre code { background: none; padding: 0; color: inherit; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+  .note { border-left: 4px solid var(--primary); }
+  .warn { border-left: 4px solid var(--warn); }
+  .toc { display: grid; gap: 6px; padding-left: 20px; }
+  ol.steps > li { margin-bottom: 10px; }
+  label.check { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; }
+  label.check input { margin-top: 5px; width: 18px; height: 18px; accent-color: var(--primary); flex: none; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .5px; padding: 2px 8px; border-radius: 999px; background: var(--subtle); color: var(--primary); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">ALL FREE</span>
+  <h1>Put KalawGuide online</h1>
+  <p class="lead">Step-by-step guide to publish the KalawGuide website for free on Vercel, plus an optional free Android APK for the hackathon demo. Tick the boxes as you go. Your progress is saved in this browser.</p>
+
+  <div class="card note">
+    <strong>What you will end up with</strong>
+    <ul>
+      <li>A public website, e.g. <code>https://kalawguide.vercel.app</code>, that works on laptops and phones.</li>
+      <li>Automatic re-deploys every time you push to GitHub.</li>
+      <li>(Optional) An Android <code>.apk</code> download link you can share or turn into a QR code.</li>
+    </ul>
+  </div>
+
+  <div class="card warn">
+    <strong>Read this first: where the data lives</strong>
+    <p>KalawGuide stores its data in a SQLite database <em>inside each visitor's browser</em>. There is no shared server. On the live site:</p>
+    <ul>
+      <li>Every visitor starts with the same seeded demo data (destinations, the default admin account, and so on).</li>
+      <li>Accounts, trips, budgets and expenses someone creates stay on <em>their own</em> device and browser. Other people won't see them.</li>
+      <li>An admin approving a business on one laptop won't change what tourists see on their phones.</li>
+    </ul>
+    <p>This is fine for a hackathon demo. Explain it during Demo Day if the judges ask. Sharing data between users would need a backend, and that's outside the free setup.</p>
+  </div>
+
+  <h3>Contents</h3>
+  <ol class="toc">
+    <li><a href="#prep">Prepare the repository</a></li>
+    <li><a href="#vercel">Deploy on Vercel (recommended)</a></li>
+    <li><a href="#cli">Alternative: deploy from your computer (Vercel CLI)</a></li>
+    <li><a href="#check">Check the live site</a></li>
+    <li><a href="#google">Google Sign-In on the live site</a></li>
+    <li><a href="#apk">Optional: free Android APK</a></li>
+    <li><a href="#hackathon">Hackathon tracker checklist</a></li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+  </ol>
+
+  <h2 id="prep">1. Prepare the repository</h2>
+  <p>The project already includes the one file Vercel needs:</p>
+  <table>
+    <tr><th>File</th><th>What it does</th></tr>
+    <tr><td><code>vercel.json</code></td><td>Tells Vercel how to build the site (<code>npx expo export -p web</code> → <code>dist</code>). Sends the two security headers that the browser database (expo-sqlite) needs, without which the app can't load its data. Also sends every page path to the app, so refreshing <code>/explore</code> works instead of showing "404".</td></tr>
+  </table>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="p1"><span>Make sure the app runs locally: <code>npx expo start --web</code>.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="p2"><span>Commit and push everything to GitHub (run these in the project folder):</span></label>
+<pre><code>git add -A
+git commit -m "Prepare web deployment"
+git push origin main</code></pre></li>
+    <li><label class="check"><input type="checkbox" data-k="p3"><span>Make the repo public. The hackathon requires it (or invite the instructor). On GitHub: <em>Settings → General → Danger Zone → Change visibility → Public</em>.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="p4"><span>Never commit your real <code>.env</code> file. It's already in <code>.gitignore</code>. Only <code>.env.example</code> is shared.</span></label></li>
+  </ol>
+
+  <h2 id="vercel">2. Deploy on Vercel (recommended)</h2>
+  <p>Vercel's free <strong>Hobby</strong> plan covers personal and non-commercial projects like this hackathon. Once connected to GitHub, it rebuilds the site automatically after every push.</p>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="v1"><span>Go to <a href="https://vercel.com/signup" target="_blank" rel="noopener">vercel.com/signup</a>, choose <strong>Hobby</strong>, and continue with <strong>GitHub</strong>.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="v2"><span>Click <strong>Add New… → Project</strong>, allow Vercel to see your repositories, and press <strong>Import</strong> next to <code>KalawGuide</code>.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="v3"><span>On the configure screen, leave <em>Framework Preset</em> as <strong>Other</strong>. The build command and output folder come from <code>vercel.json</code>, so you don't need to change anything.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="v4"><span>(Optional) Open <strong>Environment Variables</strong> and add <code>EXPO_PUBLIC_GOOGLE_CLIENT_ID</code> with your Google web client ID. Skip it and Google Sign-In stays in demo mode. Email sign-in works either way.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="v5"><span>Click <strong>Deploy</strong>. The first build takes a few minutes. When the confetti appears, click the preview to open your site.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="v6"><span>Your address is shown under <em>Domains</em> (e.g. <code>https://kalawguide.vercel.app</code>). To change it: <strong>Project → Settings → Domains → Edit</strong>, then pick a free <code>something.vercel.app</code> name.</span></label></li>
+  </ol>
+  <div class="card note">
+    <strong>Updating the site later:</strong> just <code>git push</code> to <code>main</code>. Vercel rebuilds and publishes on its own. Pushes to other branches get their own preview link. Watch progress under <em>Deployments</em>.
+  </div>
+
+  <h2 id="cli">3. Alternative: deploy from your computer (Vercel CLI)</h2>
+  <p>Use this if you don't want to connect GitHub.</p>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="cl1"><span>Log in once (it opens the browser):</span></label>
+<pre><code>npx vercel login</code></pre></li>
+    <li><label class="check"><input type="checkbox" data-k="cl2"><span>From the project folder, deploy to production. Answer the setup questions with the defaults. Vercel builds using <code>vercel.json</code>.</span></label>
+<pre><code>npx vercel --prod</code></pre></li>
+    <li><label class="check"><input type="checkbox" data-k="cl3"><span>To update later, run <code>npx vercel --prod</code> again.</span></label></li>
+  </ol>
+
+  <h2 id="check">4. Check the live site</h2>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="c1"><span>The landing page loads and shows destinations. That means the browser database works.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="c2"><span>Go to Explore, then <strong>refresh</strong> the page. It should stay on Explore, not show a 404.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="c3"><span>Sign in with the default admin account listed in <code>README.md</code> (section "Default Admin Account") and open the admin dashboard.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="c4"><span>Open the URL on a phone. The ☰ menu should appear at the top and nothing should scroll sideways.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="c5"><span>Optional header check: press F12 → <em>Network</em> → click the first request → <em>Response Headers</em> should show <code>cross-origin-opener-policy: same-origin</code> and <code>cross-origin-embedder-policy: credentialless</code> (set by <code>vercel.json</code>).</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="c6"><span>Add the live URL to the top of <code>README.md</code> and push.</span></label></li>
+  </ol>
+
+  <h2 id="google">5. Google Sign-In on the live site</h2>
+  <p>Without a Google client ID the app uses demo mode, which is fine for the hackathon. To use real Google accounts:</p>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="g1"><span>In <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console → Credentials</a>, open your <em>Web</em> OAuth client.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="g2"><span>Add your Vercel URL (e.g. <code>https://kalawguide.vercel.app</code>) to <strong>Authorized JavaScript origins</strong> and <strong>Authorized redirect URIs</strong>.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="g3"><span>Add <code>EXPO_PUBLIC_GOOGLE_CLIENT_ID</code> in Vercel (step 2.4), then <em>Deployments → ⋯ → Redeploy</em>. These values are baked in at build time.</span></label></li>
+  </ol>
+  <div class="card warn">
+    The database header <code>Cross-Origin-Opener-Policy: same-origin</code> can stop a Google sign-in popup from passing the login back to the site. If Google Sign-In fails on the live site, use email sign-in or demo mode for the demo. Don't remove the header: the app's data needs it.
+  </div>
+
+  <h2 id="apk">6. Optional: free Android APK</h2>
+  <p>The hackathon is about a <em>mobile</em> app, so a real Android install is a strong demo. Expo's free plan includes a limited number of cloud builds each month. You don't need Android Studio.</p>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="a1"><span>Create a free account at <a href="https://expo.dev/signup" target="_blank" rel="noopener">expo.dev/signup</a>.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="a2"><span>Log in from the project folder:</span></label>
+<pre><code>npx eas-cli@latest login</code></pre></li>
+    <li><label class="check"><input type="checkbox" data-k="a3"><span>Build an installable APK (the <code>preview</code> profile in <code>eas.json</code> is already set to APK):</span></label>
+<pre><code>npx eas-cli@latest build -p android --profile preview</code></pre>
+      When it asks to create the project and generate a keystore, answer <strong>Yes</strong>.</li>
+    <li><label class="check"><input type="checkbox" data-k="a4"><span>When the build finishes (on the free plan it can wait in a queue), open the link it prints. Download the APK or show its QR code to install it on Android phones.</span></label></li>
+  </ol>
+
+  <h2 id="hackathon">7. Hackathon tracker checklist</h2>
+  <ol class="steps">
+    <li><label class="check"><input type="checkbox" data-k="h1"><span><strong>Figma URL (Col I):</strong> in Figma, <em>Share → Anyone with the link → can view</em>, then paste the link.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="h2"><span><strong>GitHub Repo URL (Col J):</strong> paste <code>https://github.com/JedTipudan/KalawGuide</code> after making it public.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="h3"><span><strong>AI disclosure:</strong> <code>AI_DISCLOSURE_LOG.md</code> is in the repo root and up to date. Double-check the percentage table before the final freeze.</span></label></li>
+    <li><label class="check"><input type="checkbox" data-k="h4"><span>Put the live website URL and APK link in your pitch deck for Demo Day.</span></label></li>
+  </ol>
+
+  <h2 id="trouble">8. Troubleshooting</h2>
+  <table>
+    <tr><th>Problem</th><th>Fix</th></tr>
+    <tr><td>Blank page, or the console says <code>SharedArrayBuffer is not defined</code></td><td>The headers aren't being sent. Check that <code>vercel.json</code> is committed at the project root, and that <em>Framework Preset</em> is <strong>Other</strong>. Redeploy.</td></tr>
+    <tr><td>"404: NOT_FOUND" after refreshing a page</td><td>The <code>rewrites</code> rule in <code>vercel.json</code> is missing. Commit it and redeploy.</td></tr>
+    <tr><td>Build fails during install</td><td>Commit <code>package-lock.json</code> together with <code>package.json</code>. Under <em>Settings → General → Node.js Version</em>, choose 22.x.</td></tr>
+    <tr><td>Changes don't show up</td><td>Check <em>Deployments</em> for a failed build. Hard-refresh the browser (Ctrl+Shift+R).</td></tr>
+    <tr><td>My data disappeared</td><td>Data lives in each browser. Clearing site data, private windows, or a different device each start fresh from the demo seed data.</td></tr>
+  </table>
+</main>
+<script>
+  // Remember ticked steps in this browser (optional convenience).
+  document.querySelectorAll('input[data-k]').forEach(function (box) {
+    var key = 'kg-guide-' + box.dataset.k;
+    try { box.checked = localStorage.getItem(key) === '1'; } catch (e) {}
+    box.addEventListener('change', function () {
+      try { localStorage.setItem(key, box.checked ? '1' : '0'); } catch (e) {}
+    });
+  });
+</script>
+</body>
+</html>

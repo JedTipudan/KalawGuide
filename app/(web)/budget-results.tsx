@@ -2,12 +2,13 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebLayout } from '../../components/web/WebLayout';
 import BudgetResultsScreen from '../(tourist)/budget-results';
+import { rw } from '../../utils/responsive';
 
 export default function WebBudgetResultsScreen() {
   return (
     <View style={styles.root}>
       <WebLayout navVariant="tourist" scrollable={false}>
-        <View style={styles.workspace}>
+        <View {...rw('pad0')} style={styles.workspace}>
           <BudgetResultsScreen />
         </View>
       </WebLayout>

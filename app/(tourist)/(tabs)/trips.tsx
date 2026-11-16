@@ -61,10 +61,12 @@ export default function TripsScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Nav bar */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.navTitle, { color: colors.primary }]}>My Trips</Text>
-      </View>
+      {/* Nav bar — mobile only; on web the top WebNav handles navigation */}
+      {Platform.OS !== 'web' && (
+        <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.navTitle, { color: colors.primary }]}>My Trips</Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>

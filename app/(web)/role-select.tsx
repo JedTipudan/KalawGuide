@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { WebLayout } from '../../components/web/WebLayout';
 import { KalawButton } from '../../components/common/KalawButton';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { rw } from '../../utils/responsive';
 
 export default function WebRoleSelectScreen() {
   const { colors } = useTheme();
@@ -25,8 +26,8 @@ export default function WebRoleSelectScreen() {
 
   return (
     <WebLayout navVariant="public">
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+      <View {...rw('card')} style={[styles.container, { backgroundColor: colors.background }]}>
+        <View {...rw('full card')} style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>How will you use KalawGuide?</Text>
           <Text style={[styles.sub, { color: colors.muted }]}>Choose your role to get started</Text>
 

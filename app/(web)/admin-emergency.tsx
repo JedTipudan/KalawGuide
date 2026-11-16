@@ -4,6 +4,7 @@ import { AdminShell } from '../../components/web/AdminShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface ContactRow {
   id: string; name: string; organization: string;
@@ -85,7 +86,7 @@ export default function WebAdminEmergencyScreen() {
 
   return (
     <AdminShell activeLabel="Emergency Contacts">
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content}>
         <View style={s.pageHeader}>
           <View>
             <Text style={[s.pageTitle, { color: colors.text }]}>Emergency Contacts</Text>

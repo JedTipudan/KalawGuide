@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now, formatCurrency } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface PriceRow {
   id: string; title: string; amount: number; unit: string;
@@ -119,7 +120,7 @@ export default function WebBusinessPricesScreen() {
 
   return (
     <BusinessShell activeLabel="Price Management">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.pageHeader}>
           <View>
             <Text style={[s.pageTitle, { color: colors.text }]}>Price Management</Text>

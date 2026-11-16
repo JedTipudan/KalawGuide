@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface FacilityRow { id: string; name: string; icon: string | null; }
 
@@ -93,7 +94,7 @@ export default function WebBusinessFacilitiesScreen() {
 
   return (
     <BusinessShell activeLabel="Facilities & Activities">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Text style={[s.pageTitle, { color: colors.text }]}>Facilities & Activities</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>
           List what your establishment offers. These appear on your public listing.

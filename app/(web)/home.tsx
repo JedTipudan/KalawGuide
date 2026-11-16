@@ -7,6 +7,7 @@ import { WebLayout } from '../../components/web/WebLayout';
 import { KalawAssistanceFAB } from '../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../database/migrations/init';
 import { Typography } from '../../constants/tokens';
+import { rw } from '../../utils/responsive';
 
 interface DestRow {
   id: string; name: string; description: string;
@@ -74,14 +75,14 @@ export default function WebHomeScreen() {
       <WebLayout navVariant="tourist" scrollable={true}>
 
         {/* ── Travel workspace ── */}
-        <View style={[styles.workspace, { backgroundColor: colors.background }]}>
+        <View {...rw('pad')} style={[styles.workspace, { backgroundColor: colors.background }]}>
 
           {/* Eyebrow + headline */}
           <div className="reveal-left">
             <Text style={[styles.eyebrow, { color: colors.accent }]}>YOUR LOCAL TRAVEL COMPANION</Text>
           </div>
           <div className="reveal">
-            <Text style={[styles.headline, { color: colors.text }]}>A little further from ordinary.</Text>
+            <Text {...rw('h2')} style={[styles.headline, { color: colors.text }]}>A little further from ordinary.</Text>
           </div>
           <div className="reveal">
             <Text style={[styles.subline, { color: colors.muted }]}>
@@ -106,7 +107,7 @@ export default function WebHomeScreen() {
                 </div>
               ))}
               <View style={styles.heroOverlay} />
-              <View style={styles.heroContent}>
+              <View {...rw('card')} style={styles.heroContent}>
                 <View style={styles.heroTextBlock}>
                   <Text style={styles.heroTitle}>Less searching. More discovering.</Text>
                   <Text style={styles.heroSub}>Explore the coast, plan a weekend, and make it yours.</Text>
@@ -247,7 +248,7 @@ export default function WebHomeScreen() {
 
         {/* ── KalawAssistance strip ── */}
         <div className="reveal">
-          <View style={[styles.assistStrip, { backgroundColor: colors.subtle }]}>
+          <View {...rw('pad')} style={[styles.assistStrip, { backgroundColor: colors.subtle }]}>
             <Text style={[styles.assistText, { color: colors.accent }]}>
               ✦ KalawAssistance · Travel help, even offline
             </Text>
@@ -255,8 +256,8 @@ export default function WebHomeScreen() {
         </div>
 
         {/* ── Footer links ── */}
-        <View style={[styles.footerLinks, { backgroundColor: colors.background }]}>
-          <View style={styles.footerLinkRow}>
+        <View {...rw('pad')} style={[styles.footerLinks, { backgroundColor: colors.background }]}>
+          <View {...rw('wrap')} style={styles.footerLinkRow}>
             {FOOTER_LINKS.map(l => (
               <TouchableOpacity key={l.label} onPress={() => router.push(l.route as any)}>
                 <Text style={[styles.footerLink, { color: colors.muted }]}>{l.label}</Text>

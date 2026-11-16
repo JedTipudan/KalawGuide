@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { AdminShell } from '../../components/web/AdminShell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
+import { rw } from '../../utils/responsive';
 
 interface Stats {
   users: number; businesses: number; pendingVerifications: number;
@@ -48,7 +49,7 @@ export default function WebAdminDashboardScreen() {
 
   return (
     <AdminShell activeLabel="Dashboard">
-      <ScrollView
+      <ScrollView {...rw('scpad')}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}

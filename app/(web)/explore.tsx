@@ -9,6 +9,7 @@ import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
 import { Destination } from '../../types';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
+import { rw } from '../../utils/responsive';
 
 export default function WebExploreScreen() {
   const { colors } = useTheme();
@@ -79,7 +80,7 @@ export default function WebExploreScreen() {
   return (
     <View style={{ flex: 1 }}>
       <WebLayout navVariant="tourist" scrollable={true}>
-        <View style={[styles.workspace, { backgroundColor: colors.background }]}>
+        <View {...rw('card')} style={[styles.workspace, { backgroundColor: colors.background }]}>
             <View style={styles.pageHeader}>
               <Text style={[styles.pageTitle, { color: colors.text }]}>Explore Destinations</Text>
               <Text style={[styles.pageSub, { color: colors.muted }]}>Discover beaches, mountains, waterfalls, and cultural sites in Davao Oriental</Text>
@@ -117,7 +118,7 @@ export default function WebExploreScreen() {
               </View>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 } as any}>
+            <div className="card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 } as any}>
               {(filtered.length > 0 ? filtered : PLACEHOLDER_DESTS).map((d, i) => {
                 const item = d as { id?: string; name: string; location: string; description?: string; estimatedFee?: number };
                 return (

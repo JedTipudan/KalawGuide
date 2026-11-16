@@ -203,6 +203,19 @@ To promote any other account to admin:
 
 ---
 
+## Web Deployment (free, Vercel)
+
+Full step-by-step guide: open **`guide.html`** in a browser.
+
+`vercel.json` holds everything Vercel needs:
+- **Build:** `npx expo export -p web`, output directory `dist`, framework preset "Other"
+- **Headers:** `Cross-Origin-Embedder-Policy: credentialless` and `Cross-Origin-Opener-Policy: same-origin`, which expo-sqlite needs on web (SharedArrayBuffer)
+- **Rewrites:** every path goes to `/` (SPA fallback), so refreshing any route works
+
+In Vercel (Hobby plan), choose **Add New → Project → Import** on the GitHub repo, and every push to `main` redeploys. Without GitHub: `npx vercel --prod`. Data is stored in each visitor's browser (local SQLite), so accounts and changes are not shared between devices.
+
+---
+
 ## Android Build (EAS)
 
 ```bash
@@ -447,8 +460,29 @@ Pending `#FFC83D` · Under review `#3772D4` · Approved `#00B3C7` · Rejected `#
 
 ## Changelog
 
+### Switched hosting from Netlify to Vercel
+- Replaced `netlify.toml`, `public/_headers` and `public/_redirects` with a single `vercel.json` (build settings, COOP/COEP headers, SPA rewrite)
+- `guide.html` now walks through deploying on Vercel's free Hobby plan (GitHub import or `npx vercel --prod`)
+
+### Free web deployment setup and cleanup
+- Added free web hosting config (first Netlify, since replaced by `vercel.json` — see above)
+- Added `guide.html`, a step-by-step deploy guide (website hosting, optional free Android APK via EAS Build, hackathon tracker checklist)
+- Removed unused files: `App.tsx` (entry is `index.ts` → `expo-router/entry`), `assets/splash-icon.png` and `assets/images/biz-coastal-table.png` (not referenced anywhere), and the empty `hooks/`, `assets/fonts/` and `assets/icons/` folders
+
+### Responsive website for phone browsers
+- **Navigation:** below 1024px wide, the top web nav (`components/web/WebNav.tsx`) collapses to the logo plus a `☰` button. The button opens a dropdown with all page links, the theme switch and sign in/out.
+- **How it works:** new `rw()` helper in `utils/responsive.ts` tags layout containers (`data-r="stack pad …"`). The media queries in `components/common/WebAppShell.tsx` apply tablet (≤1023px) and phone (≤767px) overrides. The page never scrolls sideways.
+- **Phone layouts:**
+  - Landing page: nav links and theme button hidden, smaller headlines, single-column cards, stacked sections.
+  - Sign-in and registration pages: the side panel is hidden and the form uses the full width.
+  - Explore and Recommendations: cards stack in one column (two on tablets).
+  - Destination details: columns stack.
+- **Tourist screens shared with the app** (Budget, Trips, Expenses, Emergency, Profile, etc.): web side padding removed on phones, so they look like the mobile app.
+- **Business and admin portals:** the sidebar becomes a wrapping strip at the top on phones, and page padding shrinks to 16px.
+
 ### Mobile-only back bar (Emergency, Expenses, Budget)
 - The `‹ Screen name` top bar (with its `☰` menu) on Emergency, Expenses and Budget now shows only on mobile. On web, the top WebNav bar handles navigation.
+- My Trips: its `My Trips` title bar also shows only on mobile (it is a bottom-tab screen there, so it has no back arrow)
 - On mobile, tapping `‹ Screen name` now goes back (`router.back()`), or to Home if there is no previous screen. Before this it was plain text.
 
 ### Scroll and web menu fixes (Emergency, Expenses, Budget)

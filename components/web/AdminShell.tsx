@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { rw } from '../../utils/responsive';
 
 const SIDEBAR_LINKS = [
   { label: 'Dashboard', route: '/(web)/admin-dashboard' },
@@ -42,16 +43,16 @@ export function AdminShell({ children, activeLabel }: Props) {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <View style={s.commandBar}>
+      <View {...rw('pad wrap')} style={s.commandBar}>
         <Text style={s.logo}>≋ KalawGuide</Text>
-        <Text style={s.barLabel}>CONTROL CENTER / ADMINISTRATOR</Text>
+        <Text {...rw('hide-sm')} style={s.barLabel}>CONTROL CENTER / ADMINISTRATOR</Text>
         <TouchableOpacity style={s.themeBtn} onPress={cycleTheme}>
           <Text style={s.themeBtnText}>{themeLabel}</Text>
         </TouchableOpacity>
       </View>
-      <View style={s.shell}>
-        <View style={s.sidebar}>
-          <Text style={s.sidebarSection}>PLATFORM MANAGEMENT</Text>
+      <View {...rw('stack')} style={s.shell}>
+        <View {...rw('sidebar')} style={s.sidebar}>
+          <Text {...rw('hide-sm')} style={s.sidebarSection}>PLATFORM MANAGEMENT</Text>
           {SIDEBAR_LINKS.map(link => (
             <TouchableOpacity
               key={link.label}
@@ -65,7 +66,7 @@ export function AdminShell({ children, activeLabel }: Props) {
               <Text style={[s.itemText, isActive(link) && s.itemTextActive]}>{link.label}</Text>
             </TouchableOpacity>
           ))}
-          <Text style={s.sidebarFooter}>{'Administrator access\nRestricted workspace'}</Text>
+          <Text {...rw('hide-sm')} style={s.sidebarFooter}>{'Administrator access\nRestricted workspace'}</Text>
         </View>
         <ScrollView style={s.workspace} showsVerticalScrollIndicator={false}>
           {children}

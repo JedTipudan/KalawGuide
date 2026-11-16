@@ -148,6 +148,36 @@ export function WebAppShell({ children }: Props) {
         }
         .dest-grid > * { min-width: 0; }
 
+        /* ── Responsive (phone browsers) — tokens set via utils/responsive.ts rw() ── */
+        html, body { max-width: 100%; overflow-x: hidden; }
+        @media (max-width: 1023px) {
+          .dest-grid, .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          [data-r~="pad"] { padding-left: 24px !important; padding-right: 24px !important; }
+        }
+        @media (max-width: 767px) {
+          .dest-grid, .card-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 16px !important; }
+          [data-r~="pad"] { padding-left: 16px !important; padding-right: 16px !important; }
+          [data-r~="pad0"] { padding-left: 0 !important; padding-right: 0 !important; }
+          [data-r~="vpad"] { padding-top: 24px !important; padding-bottom: 24px !important; }
+          [data-r~="stack"] { flex-direction: column !important; align-items: stretch !important; }
+          [data-r~="full"] { width: 100% !important; max-width: 100% !important; min-width: 0 !important; flex-basis: auto !important; }
+          [data-r~="hide-sm"] { display: none !important; }
+          [data-r~="card"] { padding: 20px !important; }
+          [data-r~="h1"] { font-size: 32px !important; line-height: 40px !important; }
+          [data-r~="h2"] { font-size: 26px !important; line-height: 34px !important; }
+          [data-r~="scpad"] > div { padding-left: 16px !important; padding-right: 16px !important; }
+          [data-r~="wrap"] { flex-wrap: wrap !important; }
+          [data-r~="gap-sm"] { gap: 8px !important; }
+          [data-r~="tight"] { padding: 8px 12px !important; }
+          [data-r~="logo-sm"] { font-size: 18px !important; }
+          [data-r~="right-sm"] { right: 16px !important; }
+          [data-r~="sidebar"] {
+            width: 100% !important; max-width: none !important; min-width: 0 !important;
+            flex-direction: row !important; flex-wrap: wrap !important; gap: 4px !important;
+            padding: 8px 12px !important; border-right-width: 0 !important;
+          }
+        }
+
         /* ── Hover lift on cards ── */
         .hover-lift {
           transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),

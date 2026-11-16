@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { now } from '../../utils/helpers';
+import { rw } from '../../utils/responsive';
 
 interface UserRow {
   id: string; email: string; display_name: string;
@@ -88,7 +89,7 @@ export default function WebAdminUsersScreen() {
 
   return (
     <AdminShell activeLabel="User Management">
-      <ScrollView
+      <ScrollView {...rw('scpad')}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
