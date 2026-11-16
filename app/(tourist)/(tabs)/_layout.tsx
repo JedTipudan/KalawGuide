@@ -9,8 +9,8 @@ function TabIcon({ name, label, focused, color }: { name: string; label: string;
   const { colors } = useTheme();
   return (
     <View style={[styles.tabItem, focused && { backgroundColor: colors.subtle, borderRadius: 8 }]}>
-      <Icon name={name as any} size={24} color={focused ? colors.primary : colors.muted} />
-      <Text style={[styles.tabLabel, { color: focused ? colors.primary : colors.muted }]}>{label}</Text>
+      <Icon name={name as any} size={24} color={focused ? colors.primary : colors.onNavigation} />
+      <Text style={[styles.tabLabel, { color: focused ? colors.primary : colors.onNavigation }]}>{label}</Text>
     </View>
   );
 }

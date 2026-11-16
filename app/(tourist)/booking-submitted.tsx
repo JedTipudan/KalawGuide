@@ -22,14 +22,14 @@ export default function BookingSubmittedScreen() {
         </View>
 
         <Text style={[styles.pageTitle, { color: colors.text }]}>Booking submitted</Text>
-        <Text style={[styles.disclaimer, { color: '#57717A' }]}>
+        <Text style={[styles.disclaimer, { color: colors.muted }]}>
           Submitting a request does not confirm availability or a reservation.
         </Text>
 
         {/* Confirmation card */}
         <View style={[styles.card, { backgroundColor: '#FFFFFF', ...shadow }]}>
-          <Text style={[styles.successTitle, { color: '#197151' }]}>✓ Request submitted</Text>
-          <Text style={[styles.pendingLabel, { color: '#956112' }]}>Pending business review</Text>
+          <Text style={[styles.successTitle, { color: colors.success }]}>✓ Request submitted</Text>
+          <Text style={[styles.pendingLabel, { color: colors.warning }]}>Pending business review</Text>
 
           <View style={[styles.detailsBlock, { borderTopColor: colors.border }]}>
             {businessName ? (
@@ -46,12 +46,12 @@ export default function BookingSubmittedScreen() {
             ) : null}
           </View>
 
-          <Text style={[styles.noteText, { color: '#57717A' }]}>
+          <Text style={[styles.noteText, { color: colors.muted }]}>
             The business will approve or reject your request after reviewing availability. No payment or reservation is implied.
           </Text>
 
           <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.primary, borderColor: '#DDE7E7' }]}
+            style={[styles.primaryBtn, { backgroundColor: colors.primary, borderColor: colors.border }]}
             onPress={() => router.push('/(tourist)/booking-history' as any)}
             activeOpacity={0.85}
           >
@@ -59,7 +59,7 @@ export default function BookingSubmittedScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.secondaryBtn, { backgroundColor: '#FFFFFF', borderColor: '#DDE7E7' }]}
+            style={[styles.secondaryBtn, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}
             onPress={() => router.push('/(tourist)/businesses' as any)}
             activeOpacity={0.85}
           >

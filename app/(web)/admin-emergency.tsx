@@ -200,16 +200,16 @@ export default function WebAdminEmergencyScreen() {
                 <Text style={[s.cell, s.cellText, { color: colors.primary }]}>{c.contact_number}</Text>
                 <View style={s.cell}>
                   {c.is_verified === 1
-                    ? <View style={[s.badge, { backgroundColor: '#19715120' }]}><Text style={[s.badgeText, { color: '#197151' }]}>✅ Verified</Text></View>
-                    : <View style={[s.badge, { backgroundColor: '#95611220' }]}><Text style={[s.badgeText, { color: '#956112' }]}>⚠️ Unverified</Text></View>
+                    ? <View style={[s.badge, { backgroundColor: colors.success + '20' }]}><Text style={[s.badgeText, { color: colors.success }]}>✅ Verified</Text></View>
+                    : <View style={[s.badge, { backgroundColor: colors.warning + '20' }]}><Text style={[s.badgeText, { color: colors.warning }]}>⚠️ Unverified</Text></View>
                   }
                 </View>
                 <View style={[s.cell, s.actions]}>
                   <TouchableOpacity style={[s.actionBtn, { borderColor: colors.border }]} onPress={() => openEdit(c)}>
                     <Text style={[s.actionText, { color: colors.text }]}>✏️ Edit</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[s.actionBtn, { borderColor: '#AC354560', backgroundColor: '#AC354510' }]} onPress={() => handleDelete(c.id)}>
-                    <Text style={[s.actionText, { color: '#AC3545' }]}>🗑 Delete</Text>
+                  <TouchableOpacity style={[s.actionBtn, { borderColor: colors.danger + '60', backgroundColor: colors.danger + '10' }]} onPress={() => handleDelete(c.id)}>
+                    <Text style={[s.actionText, { color: colors.danger }]}>🗑 Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>

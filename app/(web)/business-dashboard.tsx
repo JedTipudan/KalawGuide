@@ -14,11 +14,11 @@ interface BusinessRow {
 interface BookingCount { pending: number; approved: number; total: number; }
 
 const STATUS_CONFIG: Record<BusinessVerificationStatus, { label: string; color: string }> = {
-  not_submitted: { label: 'Not submitted', color: '#57717A' },
-  pending: { label: 'Pending verification', color: '#956112' },
-  approved: { label: 'Approved', color: '#197151' },
-  rejected: { label: 'Rejected', color: '#AC3545' },
-  suspended: { label: 'Suspended', color: '#AC3545' },
+  not_submitted: { label: 'Not submitted', color: '#64748B' },
+  pending: { label: 'Pending verification', color: '#F97316' },
+  approved: { label: 'Approved', color: '#22C55E' },
+  rejected: { label: 'Rejected', color: '#F97316' },
+  suspended: { label: 'Suspended', color: '#F97316' },
 };
 
 export default function WebBusinessDashboardScreen() {

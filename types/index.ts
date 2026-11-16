@@ -352,11 +352,113 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 // ─── KalawAssistance ──────────────────────────────────────────────────────────
 
+export type AssistantIntent =
+  | 'destination_search'
+  | 'destination_details'
+  | 'travel_budget'
+  | 'transportation'
+  | 'accommodation'
+  | 'food_recommendation'
+  | 'activity_search'
+  | 'itinerary_planning'
+  | 'business_information'
+  | 'booking_information'
+  | 'emergency_information'
+  | 'app_help'
+  | 'unrelated'
+  | 'malicious_or_override_attempt';
+
+export interface DestinationCardData {
+  id: string;
+  name: string;
+  location: string;
+  description: string;
+  fee: number | null;
+  feeVerified: boolean;
+}
+
+export type AssistantCard =
+  | { type: 'destination'; data: DestinationCardData }
+  | { type: 'budget'; data: TripBudgetResult };
+
+export interface AssistantReplyMeta {
+  intent: AssistantIntent;
+  sources: string[];
+  offline: boolean;
+  hasEstimates: boolean;
+  model: 'deterministic' | 'local_llm';
+  cards?: AssistantCard[];
+}
+
 export interface AssistantMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  metadata?: AssistantReplyMeta;
+}
+
+// ─── Trip budget (assistant calculator) ──────────────────────────────────────
+
+export type PricingModel =
+  | 'per_person'
+  | 'per_vehicle'
+  | 'per_trip'
+  | 'per_room'
+  | 'per_night'
+  | 'per_day'
+  | 'one_time';
+
+export type TripCostCategory =
+  | 'transportation'
+  | 'accommodation'
+  | 'food'
+  | 'entrance_fees'
+  | 'activities'
+  | 'additional';
+
+export interface TripCostItem {
+  category: TripCostCategory;
+  label: string;
+  /** null = price unknown; never guessed */
+  amount: number | null;
+  model: PricingModel;
+  verified: boolean;
+  /** per_vehicle only: seats per vehicle (default: whole group fits one vehicle) */
+  capacity?: number;
+  /** per_day / per_night / per_trip: also multiply by travelers (e.g. food per person per day) */
+  perTraveler?: boolean;
+  source?: string;
+}
+
+export interface TripBudgetInput {
+  travelers: number;
+  days: number;
+  nights?: number;
+  rooms?: number;
+  items: TripCostItem[];
+  /** 0.1 = 10% */
+  contingencyRate?: number;
+}
+
+export interface TripBudgetLine extends TripCostItem {
+  quantity: number;
+  subtotal: number;
+}
+
+export interface TripBudgetResult {
+  travelers: number;
+  days: number;
+  nights: number;
+  rooms: number;
+  lines: TripBudgetLine[];
+  missing: TripCostItem[];
+  subtotals: Record<TripCostCategory, number>;
+  contingency: number;
+  groupTotal: number;
+  perPerson: number;
+  dailyPerPerson: number;
+  hasEstimates: boolean;
 }
 
 export interface AssistantSuggestion {

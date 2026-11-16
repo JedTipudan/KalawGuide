@@ -9,7 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { now, generateId } from '../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../constants/tokens';
 
 interface BizRow {
   id: string; name: string; category: string; address: string;
@@ -17,11 +17,11 @@ interface BizRow {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  not_submitted: { label: 'Draft',            color: '#57717A', icon: '📝' },
-  pending:       { label: 'Pending Approval', color: '#956112', icon: '⏳' },
-  approved:      { label: 'Published',        color: '#197151', icon: '✅' },
-  rejected:      { label: 'Rejected',         color: '#AC3545', icon: '❌' },
-  suspended:     { label: 'Suspended',        color: '#AC3545', icon: '⛔' },
+  not_submitted: { label: 'Draft',            color: '#E2E8F0', icon: '📝' },
+  pending:       { label: 'Pending Approval', color: '#FFC83D', icon: '⏳' },
+  approved:      { label: 'Published',        color: '#00B3C7', icon: '✅' },
+  rejected:      { label: 'Rejected',         color: '#FF5700', icon: '❌' },
+  suspended:     { label: 'Suspended',        color: '#A83200', icon: '⛔' },
 };
 
 export default function BusinessListingsScreen() {
@@ -100,8 +100,8 @@ export default function BusinessListingsScreen() {
             <View style={[styles.card, { backgroundColor: colors.surface, ...shadow }]}>
               <Text style={[styles.bizName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
               <Text style={[styles.bizMeta, { color: colors.muted }]}>{item.category.replace('_', ' ')} · {item.address}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: cfg.color + '20' }]}>
-                <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.icon} {cfg.label}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: cfg.color }]}>
+                <Text style={[styles.statusText, { color: statusLabel(cfg.color) }]}>{cfg.icon} {cfg.label}</Text>
               </View>
               {item.verification_note ? (
                 <Text style={[styles.note, { color: colors.danger }]}>Admin note: {item.verification_note}</Text>

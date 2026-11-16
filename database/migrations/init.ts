@@ -155,5 +155,17 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     );
   `);
 
+  // Incremental column migrations — safe on existing installs (columns are only added once).
+  const assistantCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(assistant_messages)');
+  if (!assistantCols.some(c => c.name === 'user_id')) {
+    await db.execAsync('ALTER TABLE assistant_messages ADD COLUMN user_id TEXT;');
+  }
+  if (!assistantCols.some(c => c.name === 'metadata')) {
+    await db.execAsync('ALTER TABLE assistant_messages ADD COLUMN metadata TEXT;');
+  }
+  await db.execAsync(
+    'CREATE INDEX IF NOT EXISTS idx_assistant_messages_user ON assistant_messages(user_id, timestamp);'
+  );
+
   await db.execAsync('PRAGMA foreign_keys = ON;');
 }

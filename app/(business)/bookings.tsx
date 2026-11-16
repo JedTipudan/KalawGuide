@@ -9,7 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { now, formatShortDate } from '../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../constants/tokens';
 import { BookingStatus } from '../../types';
 
 interface BookingRow {
@@ -26,11 +26,11 @@ interface BookingRow {
 }
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
-  pending: '#956112',
-  approved: '#197151',
-  rejected: '#AC3545',
-  cancelled: '#57717A',
-  completed: '#075C73',
+  pending: '#FFC83D',
+  approved: '#00B3C7',
+  rejected: '#FF5700',
+  cancelled: '#F3E9DF',
+  completed: '#0755CC',
 };
 
 const STATUS_ICONS: Record<BookingStatus, string> = {
@@ -172,8 +172,8 @@ export default function BusinessBookingsScreen() {
                       <Text style={[styles.notes, { color: colors.muted }]} numberOfLines={2}>💬 {item.notes}</Text>
                     ) : null}
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-                    <Text style={[styles.statusText, { color: statusColor }]}>
+                  <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                    <Text style={[styles.statusText, { color: statusLabel(statusColor) }]}>
                       {STATUS_ICONS[item.status]} {item.status}
                     </Text>
                   </View>

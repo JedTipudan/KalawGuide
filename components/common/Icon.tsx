@@ -5,7 +5,7 @@ type IconName =
   | 'home' | 'explore' | 'trips' | 'budget' | 'profile'
   | 'search' | 'menu' | 'close' | 'assistant' | 'save'
   | 'location' | 'check' | 'phone' | 'bell' | 'chevron'
-  | 'businesses' | 'favorites';
+  | 'businesses' | 'favorites' | 'send';
 
 interface Props {
   name: IconName;
@@ -31,10 +31,11 @@ const PATHS: Record<IconName, string | string[]> = {
   chevron: 'M9 5L16 12L9 19',
   // extras not in Figma set — use simple geometric paths
   businesses: ['M3 9L12 3L21 9V21H15V15H9V21H3V9Z'],
+  send: 'M12 19V5M5 12L12 5L19 12',
   favorites: 'M12 21L10.55 19.7C5.4 15.1 2 12.1 2 8.5C2 5.5 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.5 22 8.5C22 12.1 18.6 15.1 13.45 19.7L12 21Z',
 };
 
-export function Icon({ name, size = 24, color = '#075C73' }: Props) {
+export function Icon({ name, size = 24, color = '#0E7490' }: Props) {
   const paths = PATHS[name];
   const pathArray = Array.isArray(paths) ? paths : [paths];
 

@@ -12,7 +12,7 @@ interface UserRow {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  tourist: '#075C73', business_owner: '#197151', admin: '#AC3545',
+  tourist: '#0E7490', business_owner: '#22C55E', admin: '#F97316',
 };
 
 const ROLE_FILTERS = [
@@ -158,8 +158,8 @@ export default function WebAdminUsersScreen() {
                 <View key={u.id} style={[s.row, { borderColor: colors.border, backgroundColor: blocked ? colors.danger + '08' : colors.surface }]}>
                   {/* User */}
                   <View style={[s.cell, { flex: 2, flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
-                    <View style={[s.avatar, { backgroundColor: blocked ? '#AC354520' : roleColor + '20' }]}>
-                      <Text style={[s.avatarText, { color: blocked ? '#AC3545' : roleColor }]}>
+                    <View style={[s.avatar, { backgroundColor: blocked ? colors.danger + '20' : roleColor + '20' }]}>
+                      <Text style={[s.avatarText, { color: blocked ? colors.danger : roleColor }]}>
                         {u.display_name[0]?.toUpperCase() ?? '?'}
                       </Text>
                     </View>
@@ -186,8 +186,8 @@ export default function WebAdminUsersScreen() {
                   {/* Status */}
                   <View style={s.cell}>
                     {blocked
-                      ? <View style={[s.badge, { backgroundColor: '#AC354520' }]}><Text style={[s.badgeText, { color: '#AC3545' }]}>🚫 Blocked</Text></View>
-                      : <View style={[s.badge, { backgroundColor: '#19715120' }]}><Text style={[s.badgeText, { color: '#197151' }]}>✅ Active</Text></View>
+                      ? <View style={[s.badge, { backgroundColor: colors.danger + '20' }]}><Text style={[s.badgeText, { color: colors.danger }]}>🚫 Blocked</Text></View>
+                      : <View style={[s.badge, { backgroundColor: colors.success + '20' }]}><Text style={[s.badgeText, { color: colors.success }]}>✅ Active</Text></View>
                     }
                   </View>
 
@@ -203,12 +203,12 @@ export default function WebAdminUsersScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[s.actionBtn, blocked
-                            ? { borderColor: '#19715160', backgroundColor: '#19715110' }
-                            : { borderColor: '#AC354560', backgroundColor: '#AC354510' }
+                            ? { borderColor: colors.success + '60', backgroundColor: colors.success + '10' }
+                            : { borderColor: colors.danger + '60', backgroundColor: colors.danger + '10' }
                           ]}
                           onPress={() => toggleBlock(u.id, u.status)}
                         >
-                          <Text style={[s.actionText, { color: blocked ? '#197151' : '#AC3545' }]}>
+                          <Text style={[s.actionText, { color: blocked ? colors.success : colors.danger }]}>
                             {blocked ? '✅ Unblock' : '🚫 Block'}
                           </Text>
                         </TouchableOpacity>

@@ -40,14 +40,14 @@ export default function WebLandingScreen() {
 
   const featuredDests = destinations.length > 0 ? destinations : PLACEHOLDER_DESTS;
 
-  const budgetBg      = isDark ? colors.surface : '#F2EBDC';
+  const budgetBg      = isDark ? colors.surface : '#E0F2FE';
   const budgetCardBg  = isDark ? colors.subtle  : '#FFFFFF';
-  const budgetTitle   = isDark ? colors.text    : '#122F3C';
-  const budgetMuted   = isDark ? colors.muted   : '#57717A';
-  const budgetDivider = isDark ? colors.border  : '#DDE7E7';
-  const whyBg         = isDark ? colors.subtle  : '#EDF3F2';
-  const whyTitle      = isDark ? colors.text    : '#122F3C';
-  const whyMuted      = isDark ? colors.muted   : '#57717A';
+  const budgetTitle   = isDark ? colors.text    : '#123747';
+  const budgetMuted   = isDark ? colors.muted   : '#64748B';
+  const budgetDivider = isDark ? colors.border  : '#E2E8F0';
+  const whyBg         = isDark ? colors.subtle  : '#E0F2FE';
+  const whyTitle      = isDark ? colors.text    : '#123747';
+  const whyMuted      = isDark ? colors.muted   : '#64748B';
 
   return (
     <ScrollView style={[s.root, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>

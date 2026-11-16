@@ -59,7 +59,7 @@ export default function OwnerNotificationsScreen() {
         ListHeaderComponent={
           <View style={styles.listHeader}>
             <Text style={[styles.pageTitle, { color: colors.text }]}>Owner notifications</Text>
-            <Text style={[styles.pageSubtitle, { color: '#57717A' }]}>
+            <Text style={[styles.pageSubtitle, { color: colors.muted }]}>
               Booking, verification, and listing updates for your business.
             </Text>
           </View>
@@ -68,7 +68,7 @@ export default function OwnerNotificationsScreen() {
           <View style={[styles.emptyCard, { backgroundColor: colors.surface, ...shadow }]}>
             <Text style={styles.emptyIcon}>🔔</Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No notifications yet</Text>
-            <Text style={[styles.emptyBody, { color: '#57717A' }]}>
+            <Text style={[styles.emptyBody, { color: colors.muted }]}>
               Booking requests and verification updates will appear here.
             </Text>
           </View>
@@ -85,7 +85,7 @@ export default function OwnerNotificationsScreen() {
             <Text style={styles.notifIcon}>{TYPE_ICONS[item.type] ?? '🔔'}</Text>
             <View style={styles.notifBody}>
               <Text style={[styles.notifTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.notifText, { color: '#57717A' }]} numberOfLines={2}>{item.body}</Text>
+              <Text style={[styles.notifText, { color: colors.muted }]} numberOfLines={2}>{item.body}</Text>
               <Text style={[styles.notifDate, { color: colors.muted }]}>{formatShortDate(item.created_at)}</Text>
             </View>
             {!item.is_read && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}

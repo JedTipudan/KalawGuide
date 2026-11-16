@@ -53,7 +53,7 @@ export default function WebAdminReportsScreen() {
       ],
     },
     {
-      title: 'Businesses', color: '#197151',
+      title: 'Businesses', color: '#22C55E',
       items: [
         { label: 'Total Businesses', value: stats.totalBusinesses },
         { label: 'Approved', value: stats.approvedBusinesses },
@@ -61,14 +61,14 @@ export default function WebAdminReportsScreen() {
       ],
     },
     {
-      title: 'Destinations', color: '#075C73',
+      title: 'Destinations', color: '#0E7490',
       items: [
         { label: 'Total Destinations', value: stats.totalDestinations },
         { label: 'Featured', value: stats.featuredDestinations },
       ],
     },
     {
-      title: 'Bookings', color: '#956112',
+      title: 'Bookings', color: '#F97316',
       items: [
         { label: 'Total Bookings', value: stats.totalBookings },
         { label: 'Pending', value: stats.pendingBookings },

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { AdminShell } from '../../components/web/AdminShell';
+import { statusLabel } from '../../constants/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
@@ -14,8 +15,8 @@ interface BizRow {
 }
 
 const STATUS_COLORS: Record<BusinessVerificationStatus, string> = {
-  not_submitted: '#57717A', pending: '#956112', approved: '#197151',
-  rejected: '#AC3545', suspended: '#AC3545',
+  not_submitted: '#E2E8F0', pending: '#FFC83D', approved: '#00B3C7',
+  rejected: '#FF5700', suspended: '#A83200',
 };
 
 interface RevisionRow {
@@ -249,29 +250,29 @@ export default function WebAdminBusinessesScreen() {
                         <Text style={[s.bizAddr, { color: colors.muted }]} numberOfLines={1}>{item.owner_email ?? ''}</Text>
                       </View>
                       <View style={s.cell}>
-                        <View style={[s.badge, { backgroundColor: sc + '20' }]}>
-                          <Text style={[s.badgeText, { color: sc }]}>{item.verification_status.replace('_', ' ')}</Text>
+                        <View style={[s.badge, { backgroundColor: sc }]}>
+                          <Text style={[s.badgeText, { color: statusLabel(sc) }]}>{item.verification_status.replace('_', ' ')}</Text>
                         </View>
                       </View>
                       <View style={[s.cell, s.actions]}>
                         {item.verification_status === 'pending' && (
                           <>
-                            <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#19715120', borderColor: '#197151' }]} onPress={() => handleApprove(item.id)}>
-                              <Text style={[s.actionText, { color: '#197151' }]}>✅ Approve</Text>
+                            <TouchableOpacity style={[s.actionBtn, { backgroundColor: colors.success + '20', borderColor: colors.success }]} onPress={() => handleApprove(item.id)}>
+                              <Text style={[s.actionText, { color: colors.success }]}>✅ Approve</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#AC354520', borderColor: '#AC3545' }]} onPress={() => handleReject(item.id)}>
-                              <Text style={[s.actionText, { color: '#AC3545' }]}>❌ Reject</Text>
+                            <TouchableOpacity style={[s.actionBtn, { backgroundColor: colors.danger + '20', borderColor: colors.danger }]} onPress={() => handleReject(item.id)}>
+                              <Text style={[s.actionText, { color: colors.danger }]}>❌ Reject</Text>
                             </TouchableOpacity>
                           </>
                         )}
                         {item.verification_status === 'approved' && (
-                          <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#95611220', borderColor: '#956112' }]} onPress={() => handleSuspend(item.id)}>
-                            <Text style={[s.actionText, { color: '#956112' }]}>⛔ Suspend</Text>
+                          <TouchableOpacity style={[s.actionBtn, { backgroundColor: colors.warning + '20', borderColor: colors.warning }]} onPress={() => handleSuspend(item.id)}>
+                            <Text style={[s.actionText, { color: colors.warning }]}>⛔ Suspend</Text>
                           </TouchableOpacity>
                         )}
                         {(item.verification_status === 'rejected' || item.verification_status === 'suspended') && (
-                          <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#19715120', borderColor: '#197151' }]} onPress={() => handleReactivate(item.id)}>
-                            <Text style={[s.actionText, { color: '#197151' }]}>✅ Reactivate</Text>
+                          <TouchableOpacity style={[s.actionBtn, { backgroundColor: colors.success + '20', borderColor: colors.success }]} onPress={() => handleReactivate(item.id)}>
+                            <Text style={[s.actionText, { color: colors.success }]}>✅ Reactivate</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -342,11 +343,11 @@ export default function WebAdminBusinessesScreen() {
                   <Text style={[s.cell, s.cellText, { color: colors.success }]} numberOfLines={2}>{rev.new_value}</Text>
                   <Text style={[s.cell, s.cellText, { color: colors.muted }]} numberOfLines={1}>{rev.submitted_by_email ?? '—'}</Text>
                   <View style={[s.cell, s.actions]}>
-                    <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#19715120', borderColor: '#197151' }]} onPress={() => reviewRevision(rev.id, true)}>
-                      <Text style={[s.actionText, { color: '#197151' }]}>✅ Approve</Text>
+                    <TouchableOpacity style={[s.actionBtn, { backgroundColor: colors.success + '20', borderColor: colors.success }]} onPress={() => reviewRevision(rev.id, true)}>
+                      <Text style={[s.actionText, { color: colors.success }]}>✅ Approve</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#AC354520', borderColor: '#AC3545' }]} onPress={() => reviewRevision(rev.id, false)}>
-                      <Text style={[s.actionText, { color: '#AC3545' }]}>❌ Reject</Text>
+                    <TouchableOpacity style={[s.actionBtn, { backgroundColor: colors.danger + '20', borderColor: colors.danger }]} onPress={() => reviewRevision(rev.id, false)}>
+                      <Text style={[s.actionText, { color: colors.danger }]}>❌ Reject</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

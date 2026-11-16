@@ -23,11 +23,11 @@ interface BusinessRow {
 interface ListingStats { total: number; published: number; pending: number; rejected: number; }
 
 const STATUS_CONFIG: Record<BusinessVerificationStatus, { label: string; color: string; icon: string }> = {
-  not_submitted: { label: 'Not Submitted', color: '#57717A', icon: '📝' },
-  pending: { label: 'Pending Review', color: '#956112', icon: '⏳' },
-  approved: { label: 'Approved', color: '#197151', icon: '✅' },
-  rejected: { label: 'Rejected', color: '#AC3545', icon: '❌' },
-  suspended: { label: 'Suspended', color: '#AC3545', icon: '⛔' },
+  not_submitted: { label: 'Not Submitted', color: '#64748B', icon: '📝' },
+  pending: { label: 'Pending Review', color: '#F97316', icon: '⏳' },
+  approved: { label: 'Approved', color: '#22C55E', icon: '✅' },
+  rejected: { label: 'Rejected', color: '#F97316', icon: '❌' },
+  suspended: { label: 'Suspended', color: '#F97316', icon: '⛔' },
 };
 
 export default function BusinessDashboard() {

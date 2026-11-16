@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
@@ -39,16 +40,24 @@ export default function EmergencyScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Nav bar */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.navTitle, { color: colors.primary }]}>‹ Emergency information</Text>
-        <TouchableOpacity onPress={() => router.push('/(tourist)/settings' as any)}>
-          <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Nav bar — mobile only; on web the top WebNav handles navigation */}
+      {Platform.OS !== 'web' && (
+        <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tourist)/(tabs)/home' as any))}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Text style={[styles.navTitle, { color: colors.primary }]}>‹ Emergency information</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(tourist)/settings' as any)}>
+            <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <Text style={[styles.title, { color: colors.text }]}>Emergency information</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
@@ -125,13 +134,14 @@ export default function EmergencyScreen() {
         </View>
       </ScrollView>
 
-      <KalawAssistanceFAB />
+      {Platform.OS !== 'web' && <KalawAssistanceFAB />}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scrollView: { flex: 1 },
   navBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 18,

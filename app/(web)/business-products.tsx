@@ -204,8 +204,8 @@ export default function WebBusinessProductsScreen() {
                   <TouchableOpacity style={[s.actionBtn, { borderColor: colors.border }]} onPress={() => openEdit(item)}>
                     <Text style={[s.actionText, { color: colors.primary }]}>✏️ Edit</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[s.actionBtn, { borderColor: '#AC354560', backgroundColor: '#AC354510' }]} onPress={() => handleDelete(item.id, tab)}>
-                    <Text style={[s.actionText, { color: '#AC3545' }]}>🗑 Delete</Text>
+                  <TouchableOpacity style={[s.actionBtn, { borderColor: colors.danger + '60', backgroundColor: colors.danger + '10' }]} onPress={() => handleDelete(item.id, tab)}>
+                    <Text style={[s.actionText, { color: colors.danger }]}>🗑 Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>

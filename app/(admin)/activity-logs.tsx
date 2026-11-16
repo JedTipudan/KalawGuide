@@ -61,7 +61,7 @@ export default function AdminActivityLogsScreen() {
         ListHeaderComponent={
           <View style={styles.listHeader}>
             <Text style={[styles.pageTitle, { color: colors.text }]}>Activity logs</Text>
-            <Text style={[styles.pageSubtitle, { color: '#57717A' }]}>
+            <Text style={[styles.pageSubtitle, { color: colors.muted }]}>
               Platform-wide activity and system events.
             </Text>
           </View>
@@ -70,7 +70,7 @@ export default function AdminActivityLogsScreen() {
           <View style={[styles.emptyCard, { backgroundColor: colors.surface, ...shadow }]}>
             <Text style={styles.emptyIcon}>📋</Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No activity yet</Text>
-            <Text style={[styles.emptyBody, { color: '#57717A' }]}>
+            <Text style={[styles.emptyBody, { color: colors.muted }]}>
               Platform events will appear here as users interact with the app.
             </Text>
           </View>
@@ -84,7 +84,7 @@ export default function AdminActivityLogsScreen() {
               <Text style={[styles.logTitle, { color: colors.text }]}>
                 {item.entity_name ?? item.entity_id} — {item.action.replace(/_/g, ' ')}
               </Text>
-              <Text style={[styles.logText, { color: '#57717A' }]} numberOfLines={2}>
+              <Text style={[styles.logText, { color: colors.muted }]} numberOfLines={2}>
                 {item.details ?? `${item.entity_type} · ${item.user_email ?? item.user_id}`}
               </Text>
               <Text style={[styles.logDate, { color: colors.muted }]}>{formatShortDate(item.created_at)}</Text>

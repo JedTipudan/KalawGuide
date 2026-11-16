@@ -40,11 +40,11 @@ interface DocRow {
 }
 
 const STATUS_CONFIG: Record<string, { color: string; icon: string; message: string }> = {
-  not_submitted: { color: '#57717A', icon: '📋', message: 'Not yet submitted for review.' },
-  pending: { color: '#956112', icon: '⏳', message: 'Under review by administrator.' },
-  approved: { color: '#197151', icon: '✅', message: 'Approved — your listing is publicly visible.' },
-  rejected: { color: '#AC3545', icon: '❌', message: 'Rejected — see note below and resubmit.' },
-  suspended: { color: '#AC3545', icon: '⛔', message: 'Suspended by administrator.' },
+  not_submitted: { color: '#64748B', icon: '📋', message: 'Not yet submitted for review.' },
+  pending: { color: '#F97316', icon: '⏳', message: 'Under review by administrator.' },
+  approved: { color: '#22C55E', icon: '✅', message: 'Approved — your listing is publicly visible.' },
+  rejected: { color: '#F97316', icon: '❌', message: 'Rejected — see note below and resubmit.' },
+  suspended: { color: '#F97316', icon: '⛔', message: 'Suspended by administrator.' },
 };
 
 export default function BusinessProfileScreen() {

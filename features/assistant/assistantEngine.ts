@@ -1,247 +1,422 @@
-import { User } from '../../types';
-import { getDatabase } from '../../database/migrations/init';
+import { AssistantCard, AssistantIntent, AssistantReplyMeta, TripCostItem, User } from '../../types';
+import { formatCurrency } from '../../utils/helpers';
+import { calculateTripBudget, unitToPricingModel } from '../../services/budget/budgetService';
+import { checkInput, validateOutput } from './guard';
+import { classifyIntent } from './intent';
+import { REFUSAL } from './identity';
+import { BudgetRequest, matchDestination, parseBudgetRequest } from './budgetParser';
+import { getLocalModel } from './localModel';
+import {
+  BusinessInfo, DestinationInfo, PriceInfo, getApprovedBusinesses, getDestinations,
+  getEmergencyContacts, getFacilities, getMyBookings, getPrices,
+} from './knowledge';
 
 /**
- * Deterministic assistant engine — no paid AI API required.
- * Uses locally cached destination and business data.
- * Never invents prices, emergency numbers, or availability.
+ * Kalaw Assistance pipeline (works fully offline):
+ * guard → intent → refuse | retrieve (read-only, approved data) → template → validate output.
+ * Facts only come from KalawGuide's SQLite data; missing data is stated, never invented.
  */
-export async function getAssistantResponse(
+
+export interface AssistantReply {
+  content: string;
+  meta: AssistantReplyMeta;
+}
+
+interface Context {
+  query: string;
+  lower: string;
+  user: User | null;
+  destinations: DestinationInfo[];
+  businesses: BusinessInfo[];
+}
+
+interface Answer {
+  content: string;
+  sources?: string[];
+  cards?: AssistantCard[];
+  hasEstimates?: boolean;
+}
+
+const ESTIMATE_NOTE = 'Verified = confirmed in KalawGuide or published by an approved business. Estimate = not yet confirmed; check before you go.';
+
+export async function getAssistantReply(
   query: string,
-  user: User | null
-): Promise<string> {
-  const q = query.toLowerCase();
+  user: User | null,
+  opts: { offline: boolean }
+): Promise<AssistantReply> {
+  const model = getLocalModel();
+  const base = { offline: opts.offline, model: model ? 'local_llm' as const : 'deterministic' as const };
+  const refuse = (intent: AssistantIntent): AssistantReply =>
+    ({ content: REFUSAL, meta: { ...base, intent, sources: [], hasEstimates: false } });
 
-  // Recommendation intent — match against actual DB data
-  if (
-    q.includes('recommend') || q.includes('suggest') || q.includes('looking for') ||
-    q.includes('want') || q.includes('find me') || q.includes('show me') ||
-    q.includes('best place') || q.includes('where can i') || q.includes('ideal')
-  ) {
-    return await getRecommendations(query, user);
-  }
+  // Layer 1: deterministic input guard — nothing malicious reaches retrieval.
+  if (checkInput(query).blocked) return refuse('malicious_or_override_attempt');
 
-  if (q.includes('budget') || q.includes('cost') || q.includes('spend') || q.includes('money')) {
-    return getBudgetResponse();
-  }
-  if (q.includes('beach') || q.includes('surf') || q.includes('swim') || q.includes('dahican')) {
-    return getBeachResponse();
-  }
-  if (q.includes('waterfall') || q.includes('nature') || q.includes('mountain') || q.includes('hamiguitan')) {
-    return getNatureResponse();
-  }
-  if (q.includes('food') || q.includes('eat') || q.includes('restaurant') || q.includes('local')) {
-    return getFoodResponse();
-  }
-  if (q.includes('transport') || q.includes('getting around') || q.includes('jeepney') || q.includes('tricycle')) {
-    return getTransportResponse();
-  }
-  if (q.includes('emergency') || q.includes('police') || q.includes('hospital') || q.includes('help')) {
-    return getEmergencyResponse();
-  }
-  if (q.includes('destination') || q.includes('place') || q.includes('visit') || q.includes('top') || q.includes('best')) {
-    return await getDestinationsResponse();
-  }
-  if (q.includes('business') || q.includes('hotel') || q.includes('accommodation') || q.includes('stay') || q.includes('resort')) {
-    return await getBusinessesResponse(query);
-  }
-  if (q.includes('itinerary') || q.includes('plan') || q.includes('schedule') || q.includes('days')) {
-    return getItineraryResponse();
-  }
-  if (q.includes('safe') || q.includes('safety') || q.includes('tip') || q.includes('advice')) {
-    return getSafetyResponse();
+  let ctx: Context;
+  try {
+    const [destinations, businesses] = await Promise.all([getDestinations(), getApprovedBusinesses()]);
+    ctx = { query, lower: query.toLowerCase(), user, destinations, businesses };
+  } catch {
+    return {
+      content: "I couldn't open KalawGuide's offline data on this device. Please restart the app and try again.",
+      meta: { ...base, intent: 'app_help', sources: [], hasEstimates: false },
+    };
   }
 
-  return getDefaultResponse(user);
+  // Layer 2: intent classification — unrelated topics are refused here.
+  const intent = classifyIntent(query, {
+    destinations: ctx.destinations.map(d => d.name),
+    businesses: ctx.businesses.map(b => b.name),
+  });
+  if (intent === 'unrelated' || intent === 'malicious_or_override_attempt') return refuse(intent);
+
+  // Layer 3: retrieval + templates (permission checks live in each handler).
+  let answer: Answer;
+  try {
+    answer = await HANDLERS[intent](ctx);
+  } catch {
+    answer = { content: "Sorry, I couldn't read that information from KalawGuide right now. Please try again." };
+  }
+
+  let content = answer.content;
+  if (model) {
+    try { content = await model.rephrase(content); } catch { /* keep template text */ }
+  }
+
+  // Layer 4: output validation.
+  content = validateOutput(content);
+  const blocked = content === REFUSAL;
+  return {
+    content,
+    meta: {
+      ...base,
+      intent,
+      sources: blocked ? [] : [...new Set(answer.sources ?? [])],
+      hasEstimates: !blocked && !!answer.hasEstimates,
+      cards: blocked ? undefined : answer.cards,
+    },
+  };
 }
 
-// ─── Recommendation Engine ────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-interface ScoredBusiness {
-  id: string; name: string; category: string; address: string;
-  description: string; cover_image_url: string | null;
-  score: number; matchedKeywords: string[];
-  lowestPrice: number | null; priceUnit: string | null;
-  facilities: string[];
-}
+const feeText = (d: DestinationInfo) =>
+  d.fee === null
+    ? 'Entrance fee: not recorded in KalawGuide'
+    : `Entrance fee: ${formatCurrency(d.fee)} per person (${d.feeVerified ? 'verified' : 'estimate'})`;
 
-const KEYWORD_WEIGHTS: Record<string, string[]> = {
-  beach: ['beach', 'dahican', 'pujada', 'shore', 'coastal', 'ocean', 'sea', 'surf', 'swim', 'snorkel'],
-  resort: ['resort', 'accommodation', 'stay', 'overnight', 'room', 'cottage', 'villa'],
-  peaceful: ['peaceful', 'quiet', 'relaxing', 'serene', 'calm', 'tranquil', 'nature'],
-  affordable: ['affordable', 'cheap', 'budget', 'low cost', 'inexpensive', 'value'],
-  sunset: ['sunset', 'sunrise', 'view', 'scenic', 'panoramic', 'beautiful'],
-  food: ['food', 'restaurant', 'eat', 'dining', 'seafood', 'local', 'cuisine'],
-  adventure: ['adventure', 'activity', 'hiking', 'kayak', 'surf', 'zip', 'atv', 'extreme'],
-  family: ['family', 'kids', 'children', 'group', 'picnic', 'pool'],
-  romantic: ['romantic', 'couple', 'honeymoon', 'intimate', 'private'],
-  waterfall: ['waterfall', 'falls', 'river', 'nature', 'trek', 'hike'],
+const priceText = (p: PriceInfo) =>
+  `${p.title}: ${formatCurrency(p.amount)} ${p.unit} (${p.verified ? 'verified' : 'estimate'})`;
+
+const destCard = (d: DestinationInfo): AssistantCard => ({
+  type: 'destination',
+  data: { id: d.id, name: d.name, location: d.location, description: d.description, fee: d.fee, feeVerified: d.feeVerified },
+});
+
+const bizLine = (b: BusinessInfo, prices: PriceInfo[]) => {
+  const lowest = prices.find(p => p.businessId === b.id);
+  return `• **${b.name}** — ${b.address}${lowest ? `\n  From ${priceText(lowest)}` : '\n  No published prices yet'}`;
 };
 
-async function getRecommendations(query: string, user: User | null): Promise<string> {
-  try {
-    const db = await getDatabase();
-    const q = query.toLowerCase();
+const NO_DATA = (what: string) =>
+  `KalawGuide doesn't have ${what} yet, so I can't give you details or prices. I won't guess. Please check again later or ask locally.`;
 
-    // Fetch approved businesses with their prices and facilities
-    const businesses = await db.getAllAsync<{
-      id: string; name: string; category: string; address: string; description: string; cover_image_url: string | null;
-    }>(
-      "SELECT id, name, category, address, description, cover_image_url FROM businesses WHERE verification_status = 'approved' AND is_active = 1"
-    );
+async function businessesWithPrices(ctx: Context, categories: string[]) {
+  const list = ctx.businesses.filter(b => categories.includes(b.category));
+  const prices = await getPrices(list.map(b => b.id));
+  return { list, prices };
+}
 
-    if (businesses.length === 0) {
-      // Fall back to destinations
-      return await getDestinationsResponse();
-    }
+// ─── Budget ───────────────────────────────────────────────────────────────────
 
-    const scored: ScoredBusiness[] = [];
+async function budgetFor(dest: DestinationInfo, req: BudgetRequest, ctx: Context): Promise<Answer> {
+  const travelers = req.travelers ?? 1;
+  const days = req.days ?? 1;
+  const nights = req.nights ?? days - 1;
+  const rooms = req.rooms ?? Math.ceil(travelers / 2);
+  const assumptions: string[] = [];
+  if (req.travelers === undefined) assumptions.push('1 traveler (tell me how many are going)');
+  if (req.days === undefined) assumptions.push('a 1-day trip (tell me how many days)');
 
-    for (const biz of businesses) {
-      const searchText = `${biz.name} ${biz.description} ${biz.category} ${biz.address}`.toLowerCase();
-      let score = 0;
-      const matchedKeywords: string[] = [];
+  const items: TripCostItem[] = [];
+  const sources = [`destinations:${dest.id}`];
 
-      // Score against keyword groups
-      for (const [group, keywords] of Object.entries(KEYWORD_WEIGHTS)) {
-        const queryHitsGroup = keywords.some(k => q.includes(k));
-        const bizHitsGroup = keywords.some(k => searchText.includes(k));
-        if (queryHitsGroup && bizHitsGroup) {
-          score += 3;
-          matchedKeywords.push(group);
-        } else if (queryHitsGroup) {
-          score += 0;
-        } else if (bizHitsGroup) {
-          score += 0.5;
-        }
-      }
+  items.push({
+    category: 'entrance_fees', label: `${dest.name} entrance fee`, amount: dest.fee,
+    model: 'per_person', verified: dest.feeVerified, source: `destinations:${dest.id}`,
+  });
 
-      // Direct word overlap between query and business text
-      const queryWords = q.split(/\s+/).filter(w => w.length > 3);
-      for (const word of queryWords) {
-        if (searchText.includes(word)) { score += 1; matchedKeywords.push(word); }
-      }
-
-      if (score < 1) continue;
-
-      // Get lowest price
-      const priceRow = await db.getFirstAsync<{ amount: number; unit: string }>(
-        'SELECT amount, unit FROM listing_prices WHERE business_id = ? AND is_active = 1 ORDER BY amount ASC LIMIT 1',
-        [biz.id]
-      );
-
-      // Get facilities
-      const facilityRows = await db.getAllAsync<{ name: string }>(
-        'SELECT name FROM listing_facilities WHERE business_id = ? LIMIT 6',
-        [biz.id]
-      );
-
-      scored.push({
-        ...biz,
-        score,
-        matchedKeywords: [...new Set(matchedKeywords)],
-        lowestPrice: priceRow?.amount ?? null,
-        priceUnit: priceRow?.unit ?? null,
-        facilities: facilityRows.map(f => f.name),
-      });
-    }
-
-    scored.sort((a, b) => b.score - a.score);
-    const top = scored.slice(0, 3);
-
-    if (top.length === 0) {
-      return `🔍 No close match found for your description.\n\nTry browsing the **Local Businesses** section to explore all verified establishments in Mati City.\n\nYou can also describe what you're looking for differently — mention the type of place, activities, or atmosphere you want.`;
-    }
-
-    const lines = top.map((biz, i) => {
-      const priceStr = biz.lowestPrice !== null
-        ? `Starting from ₱${biz.lowestPrice.toLocaleString('en-PH')} ${biz.priceUnit ?? ''}`
-        : 'Contact for rates';
-      const facilStr = biz.facilities.length > 0 ? biz.facilities.slice(0, 3).join(', ') : '';
-      const matchStr = biz.matchedKeywords.slice(0, 3).join(', ');
-      return `**${i + 1}. ${biz.name}**\n📍 ${biz.address}\n💰 ${priceStr}${facilStr ? `\n🏗 ${facilStr}` : ''}\n✅ Matches: ${matchStr}\n${biz.description.slice(0, 100)}...`;
+  if (req.accommodation !== 'none' && nights > 0) {
+    if (req.rooms === undefined) assumptions.push(`${rooms} room(s) for ${travelers} traveler(s)`);
+    const { prices } = await businessesWithPrices(ctx, ['accommodation']);
+    const rates = prices.filter(p => {
+      const m = unitToPricingModel(p.unit);
+      return m === 'per_room' || m === 'per_night' || p.category === 'room_rate' || p.category === 'overnight';
     });
-
-    const userName = user ? ` ${user.displayName.split(' ')[0]}` : '';
-    return `🌟 **Recommended for you${userName}:**\n\n${lines.join('\n\n')}\n\n💡 Tap **View Details** on any listing in the Businesses section to see full photos, prices, and contact info.\n\n⚠️ Prices are as published by the establishment — confirm directly before visiting.`;
-  } catch {
-    return getDefaultResponse(user);
+    const pick = req.accommodation === 'premium' ? rates[rates.length - 1] : rates[0];
+    items.push(pick
+      ? { category: 'accommodation', label: `${pick.title} — ${pick.businessName}`, amount: pick.amount,
+          model: unitToPricingModel(pick.unit) === 'per_night' ? 'per_night' : 'per_room', verified: pick.verified,
+          source: `businesses:${pick.businessId}` }
+      : { category: 'accommodation', label: 'Accommodation (no published room rate in KalawGuide)', amount: null, model: 'per_room', verified: false });
   }
-}
 
-async function getBusinessesResponse(query: string): Promise<string> {
-  try {
-    const db = await getDatabase();
-    const rows = await db.getAllAsync<{ name: string; category: string; address: string }>(
-      "SELECT name, category, address FROM businesses WHERE verification_status = 'approved' AND is_active = 1 LIMIT 5"
-    );
-    if (rows.length === 0) return getAccommodationResponse();
-    const list = rows.map((b, i) => `${i + 1}. **${b.name}** — ${b.category.replace('_', ' ')} · ${b.address}`).join('\n');
-    return `🏪 **Verified Businesses in Mati City**\n\n${list}\n\n💡 Browse the full list in the **Businesses** section for photos, prices, and contact details.`;
-  } catch {
-    return getAccommodationResponse();
+  const { prices: fares } = await businessesWithPrices(ctx, ['transport']);
+  const wanted = req.transport?.replace('_', '-');
+  const fare = (wanted ? fares.filter(f => `${f.title} ${f.unit}`.toLowerCase().includes(wanted.split('-')[0])) : fares)[0];
+  if (fare) {
+    const model = unitToPricingModel(fare.unit);
+    if (!model) assumptions.push(`"${fare.unit}" fare treated as one charge for the whole trip`);
+    items.push({
+      category: 'transportation', label: `${fare.title} — ${fare.businessName}`, amount: fare.amount,
+      model: model ?? 'per_trip', verified: fare.verified, source: `businesses:${fare.businessId}`,
+    });
+  } else {
+    items.push({ category: 'transportation', label: `Transportation${wanted ? ` (${wanted})` : ''} — no published fare in KalawGuide`, amount: null, model: 'per_trip', verified: false });
   }
-}
 
-// ─── Static responses ─────────────────────────────────────────────────────────
+  items.push(req.foodPerPersonPerDay !== undefined
+    ? { category: 'food', label: 'Food (your amount per person per day)', amount: req.foodPerPersonPerDay, model: 'per_day', perTraveler: true, verified: false }
+    : { category: 'food', label: 'Food budget per person per day (tell me your amount)', amount: null, model: 'per_day', perTraveler: true, verified: false });
 
-function getBudgetResponse(): string {
-  return `💰 **Budget Planning for Mati City**\n\nHere's a general daily budget guide (amounts are estimates — not verified prices):\n\n• **Budget traveler:** ₱800–₱1,500/day\n  - Budget accommodation, local eateries, public transport\n\n• **Mid-range traveler:** ₱1,500–₱3,500/day\n  - Comfortable guesthouse, restaurants, some activities\n\n• **Comfortable traveler:** ₱3,500+/day\n  - Better accommodation, tours, dining out\n\n**Use the Budget Planner** in the app to create your personalized estimate.\n\n⚠️ All amounts shown are general estimates. Actual prices vary — always confirm with businesses directly.`;
-}
+  const result = calculateTripBudget({ travelers, days, nights, rooms, items });
+  items.forEach(i => i.source && sources.push(i.source));
 
-function getBeachResponse(): string {
-  return `🏖 **Beaches in Mati City**\n\n**Dahican Beach** is the crown jewel of Mati City — a long stretch of white sand famous for:\n• Surfing and skimboarding\n• Crystal-clear waters\n• Stunning sunrises\n• Relaxed local atmosphere\n\n**Pujada Bay** offers:\n• Protected calm waters\n• Snorkeling opportunities\n• Island hopping\n• Mangrove exploration\n\n**Tips:**\n• Best time to visit: November–May (dry season)\n• Bring reef-safe sunscreen\n• Respect local fishing communities\n\n⚠️ Entrance fees and availability may change — confirm locally before visiting.`;
-}
+  const lines = result.lines.map(l =>
+    `• ${l.label}: ${formatCurrency(l.amount!)} × ${l.quantity} = ${formatCurrency(l.subtotal)} (${l.verified ? 'verified' : 'estimate'})`);
+  const missing = result.missing.map(m => `• ${m.label}${m.category === 'entrance_fees' ? ' — not recorded in KalawGuide' : ''}`);
 
-function getNatureResponse(): string {
-  return `🌿 **Nature Destinations in Davao Oriental**\n\n**Mount Hamiguitan Range Wildlife Sanctuary**\n• UNESCO World Heritage Site\n• Home to the Philippine Eagle\n• Rare pygmy forest ecosystem\n• Requires permits and guides\n\n**Aliwagwag Falls (Cateel)**\n• One of the highest waterfalls in the Philippines\n• Series of cascading falls\n\n**Cape San Agustin**\n• Southeasternmost point of Mindanao\n• Historic lighthouse\n• Panoramic ocean views\n\n⚠️ Always hire a registered local guide for mountain treks. Permits may be required.`;
-}
-
-function getFoodResponse(): string {
-  return `🍽 **Local Food in Mati City**\n\n**Must-try local dishes:**\n• **Kinilaw** — fresh raw fish cured in vinegar and spices\n• **Sinuglaw** — combination of kinilaw and grilled pork\n• **Durian** — Davao's famous fruit\n• **Fresh seafood** — straight from Pujada Bay\n\n**Where to eat:**\n• Mati City Public Market — freshest local produce\n• Local carinderias for authentic home-style cooking\n\n⚠️ Explore the **Businesses** section for current restaurant listings.`;
-}
-
-function getTransportResponse(): string {
-  return `🚌 **Getting Around Mati City**\n\n**From Davao City to Mati:**\n• Bus: ~4–5 hours via national highway\n• Van for hire: faster but more expensive\n\n**Within Mati City:**\n• **Tricycles** — most common for short distances\n• **Habal-habal** (motorcycle taxis) — for areas without roads\n• **Jeepneys** — for longer routes\n\n**Tips:**\n• Always agree on fare before riding\n• Keep small bills handy\n\n⚠️ Transport schedules and fares change. Confirm current rates locally.`;
-}
-
-function getEmergencyResponse(): string {
-  return `🚨 **Emergency Information**\n\nFor verified emergency contacts, check the **Emergency Information** section in the app.\n\n**General emergency numbers (Philippines):**\n• National Emergency Hotline: **911**\n• Philippine National Police: **117**\n• Bureau of Fire Protection: **160**\n\n⚠️ In immediate danger, call 911.`;
-}
-
-async function getDestinationsResponse(): Promise<string> {
-  try {
-    const db = await getDatabase();
-    const destinations = await db.getAllAsync<{ name: string; location: string; description: string }>(
-      'SELECT name, location, description FROM destinations WHERE is_active = 1 AND is_featured = 1 LIMIT 4'
-    );
-    if (destinations.length === 0) return getDefaultDestinationsText();
-    const list = destinations
-      .map((d, i) => `${i + 1}. **${d.name}** — ${d.location}\n   ${d.description.slice(0, 80)}...`)
-      .join('\n\n');
-    return `🗺 **Top Destinations in Davao Oriental**\n\n${list}\n\n💡 Explore the full list in the **Destinations** section!`;
-  } catch {
-    return getDefaultDestinationsText();
+  let content = `💰 **Trip estimate: ${dest.name}**\n${travelers} traveler(s) · ${days} day(s) · ${result.nights} night(s)\n\n${lines.join('\n')}`;
+  content += `\n• Contingency (10%): ${formatCurrency(result.contingency)}`;
+  content += `\n\n**Group total: ${formatCurrency(result.groupTotal)}**\nPer person: ${formatCurrency(result.perPerson)} · Per person per day: ${formatCurrency(result.dailyPerPerson)}`;
+  if (missing.length) content += `\n\n⚠️ Not included (price not available, so I didn't guess):\n${missing.join('\n')}`;
+  if (assumptions.length) content += `\n\nAssumed: ${assumptions.join('; ')}.`;
+  if (req.budgetCap !== undefined) {
+    content += result.groupTotal <= req.budgetCap
+      ? `\n\n✅ Fits your ${formatCurrency(req.budgetCap)} budget, with ${formatCurrency(req.budgetCap - result.groupTotal)} left.`
+      : `\n\n❌ ${formatCurrency(result.groupTotal - req.budgetCap)} over your ${formatCurrency(req.budgetCap)} budget.`;
   }
+  content += `\n\n${ESTIMATE_NOTE}`;
+
+  return { content, sources, cards: [{ type: 'budget', data: result }, destCard(dest)], hasEstimates: result.hasEstimates };
 }
 
-function getDefaultDestinationsText(): string {
-  return `🗺 **Top Destinations in Davao Oriental**\n\n1. **Dahican Beach** — Mati City's famous surfing beach\n2. **Pujada Bay** — Protected bay for snorkeling and island hopping\n3. **Mount Hamiguitan** — UNESCO World Heritage wildlife sanctuary\n4. **Cape San Agustin** — Scenic cape with historic lighthouse\n5. **Aliwagwag Falls** — Spectacular cascading waterfalls in Cateel\n\nExplore the **Destinations** section for photos and details!`;
+function affordable(req: BudgetRequest, ctx: Context): Answer {
+  const travelers = req.travelers ?? 1;
+  const known = ctx.destinations.filter(d => d.fee !== null).sort((a, b) => a.fee! - b.fee!);
+  const unknown = ctx.destinations.filter(d => d.fee === null);
+  if (ctx.destinations.length === 0) return { content: NO_DATA('any destinations registered') };
+
+  let content = `🗺 **Destinations by entrance fee** (for ${travelers} traveler${travelers > 1 ? 's' : ''})\n\n`;
+  content += known.map(d => `• **${d.name}** — ${formatCurrency(d.fee! * travelers)} total (${d.feeVerified ? 'verified' : 'estimate'})`).join('\n');
+  if (unknown.length) content += `\n• Fee not recorded: ${unknown.map(d => d.name).join(', ')}`;
+
+  if (req.budgetCap !== undefined) {
+    let spent = 0;
+    const fits: string[] = [];
+    for (const d of known) {
+      if (spent + d.fee! * travelers > req.budgetCap) break;
+      spent += d.fee! * travelers;
+      fits.push(d.name);
+    }
+    content += fits.length
+      ? `\n\nWith ${formatCurrency(req.budgetCap)}, entrance fees for **${fits.join(', ')}** come to ${formatCurrency(spent)}.`
+      : `\n\nNo recorded entrance fees fit within ${formatCurrency(req.budgetCap)}.`;
+  } else if (/\bbudget\b/.test(ctx.lower)) {
+    content += '\n\nTell me your budget amount (for example "₱3,000") and I\'ll check which ones fit.';
+  }
+  content += '\n\nThis covers entrance fees only. Ask "How much should I prepare for <destination>?" to include transport, food and accommodation.';
+  return {
+    content,
+    sources: ctx.destinations.map(d => `destinations:${d.id}`),
+    cards: known.slice(0, 3).map(destCard),
+    hasEstimates: ctx.destinations.some(d => !d.feeVerified),
+  };
 }
 
-function getAccommodationResponse(): string {
-  return `🏨 **Accommodation in Mati City**\n\nMati City offers various accommodation options:\n\n• **Budget guesthouses** — affordable options near the city center\n• **Beach resorts** — near Dahican Beach for the full experience\n• **Mid-range hotels** — comfortable stays with amenities\n\nBrowse the **Local Businesses** section for current listings with contact details.\n\n⚠️ Availability and prices change. Contact businesses directly to confirm.`;
-}
+// ─── Handlers ─────────────────────────────────────────────────────────────────
 
-function getItineraryResponse(): string {
-  return `📅 **Sample Mati City Itinerary**\n\n**Day 1 — Arrival & Beach**\n• Arrive in Mati City\n• Check in to accommodation\n• Sunset at Dahican Beach\n\n**Day 2 — Beach & Bay**\n• Morning surf/swim at Dahican Beach\n• Afternoon island hopping in Pujada Bay\n\n**Day 3 — Nature & Culture**\n• Visit Cape San Agustin\n• Explore Mati City Public Market\n\nUse the **Itinerary Planner** to build your personalized schedule!`;
-}
+const HANDLERS: Record<Exclude<AssistantIntent, 'unrelated' | 'malicious_or_override_attempt'>, (ctx: Context) => Promise<Answer>> = {
+  async travel_budget(ctx) {
+    const req = parseBudgetRequest(ctx.query, ctx.destinations.map(d => d.name));
+    const dest = ctx.destinations.find(d => d.name === req.destination);
+    return dest ? budgetFor(dest, req, ctx) : affordable(req, ctx);
+  },
 
-function getSafetyResponse(): string {
-  return `🛡 **Travel Safety Tips for Mati City**\n\n**General safety:**\n• Mati City is generally safe for tourists\n• Stay aware of your surroundings\n• Keep valuables secure\n\n**Water activities:**\n• Check weather and sea conditions\n• Swim in designated areas\n• Use life jackets for boat trips\n\n**Health:**\n• Bring insect repellent (dengue prevention)\n• Stay hydrated in tropical heat\n\n**Emergency:** Call **911** for immediate assistance.`;
-}
+  async destination_search(ctx) {
+    const req = parseBudgetRequest(ctx.query, ctx.destinations.map(d => d.name));
+    if (req.budgetCap !== undefined || /\b(cheap|afford|budget)/.test(ctx.lower)) return affordable(req, ctx);
+    if (ctx.destinations.length === 0) return { content: NO_DATA('any destinations registered') };
+    const top = ctx.destinations.slice(0, 6);
+    return {
+      content: `🗺 **Destinations in KalawGuide**\n\n${top.map(d => `• **${d.name}** — ${d.location}${d.category ? ` · ${d.category}` : ''}\n  ${feeText(d)}`).join('\n')}\n\nAsk me about any of them for details or a budget.`,
+      sources: top.map(d => `destinations:${d.id}`),
+      cards: top.slice(0, 3).map(destCard),
+      hasEstimates: top.some(d => !d.feeVerified),
+    };
+  },
 
-function getDefaultResponse(user: User | null): string {
-  const name = user ? ` ${user.displayName.split(' ')[0]}` : '';
-  return `Hi${name}! I'm KalawAssistance, your local travel guide for Mati City and Davao Oriental. 🌊\n\nI can help you with:\n• 🌟 **Recommendations** — describe your ideal place and I'll match it\n• 🏖 **Beach info** — Dahican, Pujada Bay\n• 🌿 **Nature destinations** — Mount Hamiguitan, Aliwagwag Falls\n• 🍽 **Local food** — what to eat and where\n• 💰 **Budget planning** — cost estimates\n• 🚌 **Getting around** — transport options\n• 📅 **Itinerary ideas** — day-by-day suggestions\n• 🛡 **Safety tips** — travel advice\n\nWhat would you like to know?`;
-}
+  async destination_details(ctx) {
+    const name = matchDestination(ctx.query, ctx.destinations.map(d => d.name));
+    const d = ctx.destinations.find(x => x.name === name);
+    if (!d) return HANDLERS.destination_search(ctx);
+    const coords = d.latitude !== null && d.longitude !== null ? `\nCoordinates: ${d.latitude}, ${d.longitude}` : '';
+    return {
+      content: `📍 **${d.name}**\n${d.location}${d.category ? ` · ${d.category}` : ''}${coords}\n\n${d.description || 'No description recorded.'}\n\n${feeText(d)}`,
+      sources: [`destinations:${d.id}`],
+      cards: [destCard(d)],
+      hasEstimates: !d.feeVerified,
+    };
+  },
+
+  async itinerary_planning(ctx) {
+    const req = parseBudgetRequest(ctx.query, ctx.destinations.map(d => d.name));
+    if (ctx.destinations.length === 0) return { content: NO_DATA('any destinations registered') };
+    const days = req.days ?? 2;
+    const travelers = req.travelers ?? 1;
+    const ordered = [...ctx.destinations].sort((a, b) => Number(b.name === req.destination) - Number(a.name === req.destination));
+    const plan: string[] = [];
+    const used: DestinationInfo[] = [];
+    for (let day = 0; day < days; day++) {
+      const stops = ordered.slice(day * 2, day * 2 + 2);
+      used.push(...stops);
+      plan.push(`**Day ${day + 1}**\n${stops.length ? stops.map(s => `• ${s.name} (${s.location}) — ${feeText(s)}`).join('\n') : '• Free day: rest or explore verified local businesses'}`);
+    }
+    const result = calculateTripBudget({
+      travelers, days, contingencyRate: 0,
+      items: used.map(s => ({ category: 'entrance_fees' as const, label: `${s.name} entrance fee`, amount: s.fee, model: 'per_person' as const, verified: s.feeVerified })),
+    });
+    let content = `📅 **${days}-day plan for ${travelers} traveler${travelers > 1 ? 's' : ''}** (from destinations in KalawGuide)\n\n${plan.join('\n\n')}`;
+    content += `\n\nEntrance fees total: ${formatCurrency(result.groupTotal)} (${formatCurrency(result.perPerson)} per person).`;
+    if (result.missing.length) content += ` Fees not recorded for: ${result.missing.map(m => m.label.replace(' entrance fee', '')).join(', ')}.`;
+    if (req.days === undefined) content += '\n\nAssumed 2 days. Tell me how many days you have.';
+    content += '\n\nSave it from the **Trips** tab, and ask me "How much should I prepare…" for a full budget.';
+    return {
+      content,
+      sources: used.map(s => `destinations:${s.id}`),
+      cards: [{ type: 'budget', data: result }],
+      hasEstimates: result.hasEstimates,
+    };
+  },
+
+  async accommodation(ctx) {
+    const req = parseBudgetRequest(ctx.query, ctx.destinations.map(d => d.name));
+    const { list, prices } = await businessesWithPrices(ctx, ['accommodation']);
+    if (list.length === 0) return { content: NO_DATA('any verified accommodations') };
+    let shown = list;
+    let note = '';
+    if (req.budgetCap !== undefined) {
+      shown = list.filter(b => prices.some(p => p.businessId === b.id && p.amount <= req.budgetCap!));
+      note = `\n\nShowing places with a published rate of ${formatCurrency(req.budgetCap)} or less.`;
+    } else if (/\bbudget\b/.test(ctx.lower)) {
+      note = '\n\nTell me your budget per night (for example "₱1,500") and I\'ll filter these.';
+    }
+    if (shown.length === 0) return { content: `No verified accommodation in KalawGuide has a published rate within ${formatCurrency(req.budgetCap!)}.` };
+    return {
+      content: `🏨 **Verified accommodations**\n\n${shown.slice(0, 6).map(b => bizLine(b, prices)).join('\n')}${note}\n\nConfirm availability with the business before you go.`,
+      sources: shown.map(b => `businesses:${b.id}`),
+      hasEstimates: prices.some(p => !p.verified),
+    };
+  },
+
+  async transportation(ctx) {
+    const { list, prices } = await businessesWithPrices(ctx, ['transport']);
+    if (list.length === 0) {
+      return { content: `${NO_DATA('any verified transport operators or fares')}\n\nTip: agree on the fare before riding a tricycle or habal-habal.` };
+    }
+    const fareLines = prices.slice(0, 8).map(p => `• ${p.businessName} — ${priceText(p)}`);
+    return {
+      content: `🚌 **Transportation in KalawGuide**\n\n${list.slice(0, 6).map(b => `• **${b.name}** — ${b.address}${b.contact ? ` · ${b.contact}` : ''}`).join('\n')}${fareLines.length ? `\n\n**Published fares**\n${fareLines.join('\n')}` : '\n\nNo published fares yet.'}\n\nVehicle fares are per vehicle, not per person.`,
+      sources: list.map(b => `businesses:${b.id}`),
+      hasEstimates: prices.some(p => !p.verified),
+    };
+  },
+
+  async food_recommendation(ctx) {
+    const { list, prices } = await businessesWithPrices(ctx, ['restaurant']);
+    const markets = ctx.destinations.filter(d => d.category === 'Food');
+    if (list.length === 0 && markets.length === 0) return { content: NO_DATA('any verified restaurants') };
+    let content = '🍽 **Food in KalawGuide**';
+    if (list.length) {
+      content += `\n\n${list.slice(0, 5).map(b => {
+        const items = prices.filter(p => p.businessId === b.id).slice(0, 3);
+        return `• **${b.name}** — ${b.address}${items.length ? `\n  ${items.map(priceText).join('\n  ')}` : ''}`;
+      }).join('\n')}`;
+    }
+    if (markets.length) content += `\n\nFood spots: ${markets.map(m => `**${m.name}** (${m.location})`).join(', ')}`;
+    return {
+      content,
+      sources: [...list.map(b => `businesses:${b.id}`), ...markets.map(m => `destinations:${m.id}`)],
+      hasEstimates: prices.some(p => !p.verified),
+    };
+  },
+
+  async activity_search(ctx) {
+    const { list, prices } = await businessesWithPrices(ctx, ['activity', 'tour_operator']);
+    const services = prices.filter(p => p.category === 'service' || p.category === 'activity_fee');
+    let content = '🏄 **Activities**';
+    if (list.length) {
+      content += `\n\n${list.slice(0, 5).map(b => {
+        const s = services.filter(p => p.businessId === b.id).slice(0, 3);
+        return `• **${b.name}** — ${b.address}${s.length ? `\n  ${s.map(priceText).join('\n  ')}` : ''}`;
+      }).join('\n')}`;
+    } else {
+      content += '\n\nNo verified activity or tour operators are listed in KalawGuide yet.';
+    }
+    if (ctx.destinations.length) {
+      content += `\n\nDestinations to explore: ${ctx.destinations.slice(0, 6).map(d => `**${d.name}**${d.category ? ` (${d.category})` : ''}`).join(', ')}`;
+    }
+    return {
+      content,
+      sources: [...list.map(b => `businesses:${b.id}`), ...ctx.destinations.slice(0, 6).map(d => `destinations:${d.id}`)],
+      hasEstimates: services.some(p => !p.verified),
+    };
+  },
+
+  async business_information(ctx) {
+    const b = ctx.businesses.find(x => ctx.lower.includes(x.name.toLowerCase()));
+    if (!b) {
+      if (ctx.businesses.length === 0) return { content: NO_DATA('any verified businesses') };
+      return {
+        content: `🏪 **Verified businesses**\n\n${ctx.businesses.slice(0, 8).map(x => `• **${x.name}** — ${x.category.replace('_', ' ')} · ${x.address}`).join('\n')}\n\nAsk about one by name for prices and details.`,
+        sources: ctx.businesses.slice(0, 8).map(x => `businesses:${x.id}`),
+      };
+    }
+    const [prices, facilities] = await Promise.all([getPrices([b.id]), getFacilities(b.id)]);
+    let content = `🏪 **${b.name}** · ${b.category.replace('_', ' ')}\n${b.address}`;
+    if (b.contact) content += `\nContact: ${b.contact}`;
+    if (b.hours) content += `\nHours: ${b.hours}`;
+    if (b.description) content += `\n\n${b.description}`;
+    content += prices.length ? `\n\n**Prices**\n${prices.slice(0, 8).map(p => `• ${priceText(p)}`).join('\n')}` : '\n\nNo published prices yet.';
+    if (facilities.length) content += `\n\nFacilities: ${facilities.join(', ')}`;
+    return { content, sources: [`businesses:${b.id}`], hasEstimates: prices.some(p => !p.verified) };
+  },
+
+  async booking_information(ctx) {
+    const how = 'To request a booking, open a verified business and tap **Book**. The owner reviews your request, and you can follow it in **Booking History**.';
+    if (!ctx.user || ctx.user.role !== 'tourist') {
+      return { content: `${how}\n\nSign in with a tourist account to see your own booking requests.` };
+    }
+    const bookings = await getMyBookings(ctx.user.id);
+    if (bookings.length === 0) return { content: `You have no booking requests yet.\n\n${how}` };
+    return {
+      content: `📋 **Your recent booking requests**\n\n${bookings.map(b => `• ${b.businessName} — ${b.status}${b.requestedDate ? ` · ${b.requestedDate}` : ''}${b.guestCount ? ` · ${b.guestCount} guest(s)` : ''}`).join('\n')}\n\n${how}`,
+    };
+  },
+
+  async emergency_information() {
+    const contacts = await getEmergencyContacts();
+    const list = contacts.map(c => `• **${c.name}** (${c.organization}): ${c.number}${c.verified ? ' ✓ verified' : ' — not yet verified'}`);
+    return {
+      content: `🚨 **Emergency information**\n\nIn immediate danger, call the national emergency hotline **911**.${list.length ? `\n\n${list.join('\n')}` : '\n\nNo local emergency contacts are recorded in KalawGuide yet.'}\n\nThe full list is in the **Emergency** screen.`,
+      hasEstimates: contacts.some(c => !c.verified),
+    };
+  },
+
+  async app_help(ctx) {
+    const name = ctx.user ? ` ${ctx.user.displayName.split(' ')[0]}` : '';
+    return {
+      content: `Hi${name}! I'm Kalaw Assistance, the official KalawGuide tourism assistant. I work offline using KalawGuide's own data.\n\nI can help with:\n• Destinations, entrance fees and details\n• Verified accommodations, food, transport and activities\n• Trip budgets (e.g. "How much for Dahican Beach for 4 people, 3 days?")\n• Itineraries (e.g. "Plan a 3-day trip for 4 people")\n• Your booking requests and emergency contacts\n\nIn the app: save places with ♥ **Favorites**, plan trips in **Trips**, and track spending in **Budget** and **Expenses**.`,
+    };
+  },
+};

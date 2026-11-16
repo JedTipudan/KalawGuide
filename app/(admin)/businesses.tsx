@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { now, generateId } from '../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../constants/tokens';
 import { BusinessVerificationStatus } from '../../types';
 
 interface BizRow {
@@ -26,8 +26,8 @@ interface RevisionRow {
 type Tab = 'businesses' | 'revisions';
 
 const STATUS_COLORS: Record<BusinessVerificationStatus, string> = {
-  not_submitted: '#57717A', pending: '#956112', approved: '#197151',
-  rejected: '#AC3545', suspended: '#AC3545',
+  not_submitted: '#E2E8F0', pending: '#FFC83D', approved: '#00B3C7',
+  rejected: '#FF5700', suspended: '#A83200',
 };
 
 const FILTERS: { label: string; value: BusinessVerificationStatus | 'all' }[] = [
@@ -233,8 +233,8 @@ export default function AdminBusinessesScreen() {
                     <Text style={[styles.bizCategory, { color: colors.muted }]}>{item.category.replace('_', ' ')} · {item.address}</Text>
                     {item.owner_name && <Text style={[styles.ownerName, { color: colors.muted }]}>👤 {item.owner_name}</Text>}
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-                    <Text style={[styles.statusText, { color: statusColor }]}>{item.verification_status.replace('_', ' ')}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                    <Text style={[styles.statusText, { color: statusLabel(statusColor) }]}>{item.verification_status.replace('_', ' ')}</Text>
                   </View>
                 </View>
                 <View style={styles.actions}>

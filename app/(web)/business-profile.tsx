@@ -205,8 +205,8 @@ export default function WebBusinessProfileScreen() {
   }
 
   const STATUS_COLOR: Record<string, string> = {
-    not_submitted: colors.muted, pending: '#956112',
-    approved: '#197151', rejected: '#AC3545', suspended: '#AC3545',
+    not_submitted: colors.muted, pending: '#F97316',
+    approved: '#22C55E', rejected: '#F97316', suspended: '#F97316',
   };
 
   if (initializing) return (

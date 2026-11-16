@@ -13,9 +13,9 @@ import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 interface UserRow { id: string; email: string; display_name: string; role: string; provider: string; status: string; created_at: string; }
 
 const ROLE_COLORS: Record<string, string> = {
-  tourist: '#075C73',
-  business_owner: '#197151',
-  admin: '#AC3545',
+  tourist: '#0E7490',
+  business_owner: '#22C55E',
+  admin: '#F97316',
 };
 
 export default function AdminUsersScreen() {
@@ -114,8 +114,8 @@ export default function AdminUsersScreen() {
           const isSelf = item.id === currentUser?.id;
           return (
             <View style={[styles.card, { backgroundColor: blocked ? colors.danger + '08' : colors.surface, ...shadow }]}>
-              <View style={[styles.avatar, { backgroundColor: blocked ? '#AC354520' : roleColor + '20' }]}>
-                <Text style={[styles.avatarText, { color: blocked ? '#AC3545' : roleColor }]}>
+              <View style={[styles.avatar, { backgroundColor: blocked ? colors.danger + '20' : roleColor + '20' }]}>
+                <Text style={[styles.avatarText, { color: blocked ? colors.danger : roleColor }]}>
                   {item.display_name[0]?.toUpperCase() ?? '?'}
                 </Text>
               </View>
@@ -127,8 +127,8 @@ export default function AdminUsersScreen() {
                     <Text style={[styles.roleText, { color: roleColor }]}>{item.role.replace('_', ' ')}</Text>
                   </View>
                   {blocked && (
-                    <View style={[styles.roleBadge, { backgroundColor: '#AC354520' }]}>
-                      <Text style={[styles.roleText, { color: '#AC3545' }]}>🚫 Blocked</Text>
+                    <View style={[styles.roleBadge, { backgroundColor: colors.danger + '20' }]}>
+                      <Text style={[styles.roleText, { color: colors.danger }]}>🚫 Blocked</Text>
                     </View>
                   )}
                   <Text style={[styles.provider, { color: colors.muted }]}>

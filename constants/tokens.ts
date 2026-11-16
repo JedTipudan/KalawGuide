@@ -1,42 +1,66 @@
 // KalawGuide Design Tokens
+// Source of truth: Figma file "KalawGuide" (MZTmx7DKqJlhSyaObMO3Ht) → Design System › Semantic color palette
 export const Colors = {
   light: {
-    background: '#F7F8F5',
+    background: '#F8FAFC',
     surface: '#FFFFFF',
-    subtle: '#EDF3F2',
-    text: '#122F3C',
-    muted: '#57717A',
-    border: '#DDE7E7',
-    primary: '#075C73',
+    elevated: '#FFFFFF',
+    subtle: '#E0F2FE',
+    text: '#1F2937',
+    muted: '#64748B',
+    onNavigation: '#64748B',
+    border: '#E2E8F0',
+    primary: '#0E7490',
     onPrimary: '#FFFFFF',
-    accent: '#087F75',
-    success: '#197151',
-    warning: '#956112',
-    danger: '#AC3545',
-    sand: '#EDE6D6',
-    fabLight: '#075C73',
-    fabDark: '#6ED8DF',
-    statusBarDark: '#122530',
+    accent: '#22C55E',
+    success: '#22C55E',
+    warning: '#F97316',
+    danger: '#F97316',
+    sand: '#E0F2FE',
+    fabLight: '#0E7490',
+    fabDark: '#22B8C7',
+    statusBarDark: '#123747',
   },
   dark: {
-    background: '#0B1720',
-    surface: '#122530',
-    subtle: '#1A3040',
-    text: '#E8F0F3',
-    muted: '#ACC1C8',
-    border: '#2A4050',
-    primary: '#6ED8DF',
-    onPrimary: '#0B1720',
-    accent: '#4ECDC4',
-    success: '#4CAF82',
-    warning: '#F0A830',
-    danger: '#E05A6A',
-    sand: '#2A2218',
-    fabLight: '#075C73',
-    fabDark: '#6ED8DF',
-    statusBarDark: '#122530',
+    background: '#071B26',
+    surface: '#123747',
+    elevated: '#194456',
+    subtle: '#194456',
+    text: '#F8FAFC',
+    muted: '#CBD5E1',
+    onNavigation: '#94A3B8',
+    border: '#254656',
+    primary: '#22B8C7',
+    onPrimary: '#071B26',
+    accent: '#22B8C7',
+    success: '#4ADE80',
+    warning: '#FB923C',
+    danger: '#FB923C',
+    sand: '#0B2635',
+    fabLight: '#0E7490',
+    fabDark: '#22B8C7',
+    statusBarDark: '#123747',
   },
 } as const;
+
+// Figma "RequestStatus/*" badge fills (same in light and dark themes)
+export const StatusColors = {
+  pending: '#FFC83D',
+  under_review: '#3772D4',
+  approved: '#00B3C7',
+  rejected: '#FF5700',
+  cancelled: '#F3E9DF',
+  completed: '#0755CC',
+  suspended: '#A83200',
+  not_submitted: '#E2E8F0',
+} as const;
+
+const DARK_LABEL_FILLS: string[] = [StatusColors.pending, StatusColors.cancelled, StatusColors.not_submitted];
+
+/** Label color for text on a solid status fill (Figma RequestStatus/Label-Dark | Label-Light). */
+export function statusLabel(fill: string): string {
+  return DARK_LABEL_FILLS.includes(fill) ? '#171717' : '#FFFFFF';
+}
 
 export const Typography = {
   fontFamilyHeading: 'Manrope',
@@ -90,21 +114,21 @@ export const TouchTarget = {
 export const Shadows = {
   light: {
     sm: {
-      shadowColor: '#0D2530',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
+      shadowColor: '#1F2937', // Figma "KalawGuide / Soft card"
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
       elevation: 2,
     },
     md: {
-      shadowColor: '#0D2530',
+      shadowColor: '#1F2937',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.12,
       shadowRadius: 8,
       elevation: 4,
     },
     lg: {
-      shadowColor: '#0D2530',
+      shadowColor: '#1F2937',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.16,
       shadowRadius: 16,

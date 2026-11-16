@@ -392,24 +392,37 @@ Public web screens (`landing`, `explore`, `businesses`, `emergency`) are accessi
 
 All mobile screens are implemented to match the Figma design exactly (file `MZTmx7DKqJlhSyaObMO3Ht`, node `3-4` — Mobile Version canvas).
 
-| Token | Value |
-|---|---|
-| Primary | `#075C73` |
-| Accent | `#087F75` |
-| Background | `#F7F8F5` |
-| Surface | `#FFFFFF` |
-| Subtle | `#EDF3F2` |
-| Border | `#DDE7E7` |
-| Text | `#122F3C` |
-| Muted | `#57717A` |
+Colors are taken directly from the Figma variables (Design System › Semantic color palette, nodes `3:27` light / `3:27639` dark) and live in `constants/tokens.ts`.
+
+| Token | Light | Dark |
+|---|---|---|
+| Background | `#F8FAFC` | `#071B26` |
+| Surface | `#FFFFFF` | `#123747` |
+| Elevated surface | `#FFFFFF` | `#194456` |
+| Subtle / Secondary surface | `#E0F2FE` | `#194456` |
+| Text / Heading | `#1F2937` | `#F8FAFC` |
+| Muted | `#64748B` | `#CBD5E1` |
+| On navigation (inactive tab) | `#64748B` | `#94A3B8` |
+| Border | `#E2E8F0` | `#254656` |
+| Primary (Primary Action / Brand Text) | `#0E7490` | `#22B8C7` |
+| On primary | `#FFFFFF` | `#071B26` |
+| Accent (Secondary Action) | `#22C55E` | `#22B8C7` |
+| Success (Status Approved) | `#22C55E` | `#4ADE80` |
+| Warning (Highlight) | `#F97316` | `#FB923C` |
+| Danger (Input error) | `#F97316` | `#FB923C` |
+| Sand | `#E0F2FE` | `#0B2635` |
+
+**Status badges** (`StatusColors` + `statusLabel()` in `constants/tokens.ts`, Figma `RequestStatus/*`): solid fills with dark `#171717` or white labels.
+Pending `#FFC83D` · Under review `#3772D4` · Approved `#00B3C7` · Rejected `#FF5700` · Cancelled `#F3E9DF` · Completed `#0755CC` · Suspended `#A83200`.
 
 **Patterns:**
-- Nav bar: `‹ Screen name` in primary color + `☰` icon, white bg, `paddingHorizontal: 20`
-- Cards: `borderRadius: 18`, white bg, flat (no shadow)
-- Primary button: `#075C73` bg, white text, `borderRadius: 12`, `paddingVertical: 13`
-- Secondary button: white bg, `#DDE7E7` border, same radius/padding
-- Bottom tab: active item has `#EDF3F2` pill, `borderRadius: 8`, Inter Bold 10px labels
-- FAB: `#075C73`, 56×56, `borderRadius: 28`, `bottom: 90, right: 20`
+- Nav bar: `‹ Screen name` in primary color + `☰` icon, surface bg, `paddingHorizontal: 20`
+- Cards (`KalawCard`): surface bg, 1px border, `borderRadius: 12`, Figma "Soft card" shadow (`#1F2937` @ 6%, y 2, blur 8)
+- Primary button: primary bg, on-primary text, 1px border, `borderRadius: 12`, `paddingVertical: 13`, `paddingHorizontal: 16`, Inter SemiBold 14
+- Secondary button: transparent bg, 1px primary border, same radius/padding
+- Text inputs: surface fill, 1px border (danger color on error), `borderRadius: 12`
+- Bottom tab: active item has subtle pill, `borderRadius: 8`, Inter Bold 10px labels, inactive items use `onNavigation`
+- FAB: primary color, 56×56, `borderRadius: 28`, `bottom: 90, right: 20`
 
 ### Screens implemented from Figma
 
@@ -433,6 +446,23 @@ All mobile screens are implemented to match the Figma design exactly (file `MZTm
 ---
 
 ## Changelog
+
+### Mobile-only back bar (Emergency, Expenses, Budget)
+- The `‹ Screen name` top bar (with its `☰` menu) on Emergency, Expenses and Budget now shows only on mobile. On web, the top WebNav bar handles navigation.
+- On mobile, tapping `‹ Screen name` now goes back (`router.back()`), or to Home if there is no previous screen. Before this it was plain text.
+
+### Scroll and web menu fixes (Emergency, Expenses, Budget)
+- `components/web/WebLayout.tsx`: pages that scroll themselves (`scrollable={false}`) are now held to the browser window height (`100vh`), and every wrapper between the window and the page has `minHeight: 0`, so the page's own ScrollView can scroll on web (Emergency, Expenses, Trips, My Budgets, Booking history, etc.)
+- Emergency, Expenses and Budget: the ScrollView now fills the remaining screen height (`flex: 1`) on mobile and web
+- Emergency, Expenses and Budget: the in-screen `☰` menu icon is hidden on web, because the top web navigation bar already does that job. It still shows on mobile.
+- Emergency: uses `react-native-safe-area-context` `SafeAreaView` like the other tourist screens, and no longer shows a second KalawAssistance button on web
+
+### Figma color system alignment
+- Replaced the whole light and dark palette in `constants/tokens.ts` with the exact Figma variable values (see Design System above)
+- Added `elevated`, `onNavigation`, `StatusColors` and `statusLabel()` tokens from Figma
+- Removed hardcoded old-palette hex values from 32 screens/components (admin, business owner, tourist, web portals) in favor of theme tokens
+- Booking and verification status badges now use Figma's solid `RequestStatus` fills
+- `KalawButton`, `KalawCard` and `KalawInput` aligned with the Figma component specs (radius 12, 1px borders, Soft card shadow)
 
 ### Figma design implementation
 - Rewrote all major tourist-facing mobile screens to match Figma pixel-for-pixel

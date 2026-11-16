@@ -6,7 +6,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { now, formatShortDate } from '../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../constants/tokens';
 import { BookingStatus } from '../../types';
 
 interface BookingRow {
@@ -16,8 +16,8 @@ interface BookingRow {
 }
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
-  pending: '#956112', approved: '#197151', rejected: '#AC3545',
-  cancelled: '#57717A', completed: '#075C73',
+  pending: '#FFC83D', approved: '#00B3C7', rejected: '#FF5700',
+  cancelled: '#F3E9DF', completed: '#0755CC',
 };
 const FILTERS: (BookingStatus | 'all')[] = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
 
@@ -100,17 +100,17 @@ export default function AdminBookingManagementScreen() {
                   {item.requested_date && <Text style={[styles.meta, { color: colors.muted }]}>📅 {formatShortDate(item.requested_date)}</Text>}
                   <Text style={[styles.meta, { color: colors.muted }]}>Submitted {formatShortDate(item.created_at)}</Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: sc + '20' }]}>
-                  <Text style={[styles.statusText, { color: sc }]}>{item.status}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: sc }]}>
+                  <Text style={[styles.statusText, { color: statusLabel(sc) }]}>{item.status}</Text>
                 </View>
               </View>
               {item.status === 'pending' && (
                 <View style={styles.actions}>
-                  <TouchableOpacity style={[styles.approveBtn, { backgroundColor: '#197151' }]} onPress={() => updateStatus(item.id, 'approved')}>
+                  <TouchableOpacity style={[styles.approveBtn, { backgroundColor: colors.success }]} onPress={() => updateStatus(item.id, 'approved')}>
                     <Text style={styles.actionText}>✓ Approve</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.rejectBtn, { borderColor: '#AC3545' }]} onPress={() => updateStatus(item.id, 'rejected')}>
-                    <Text style={[styles.rejectText, { color: '#AC3545' }]}>✕ Reject</Text>
+                  <TouchableOpacity style={[styles.rejectBtn, { borderColor: colors.danger }]} onPress={() => updateStatus(item.id, 'rejected')}>
+                    <Text style={[styles.rejectText, { color: colors.danger }]}>✕ Reject</Text>
                   </TouchableOpacity>
                 </View>
               )}

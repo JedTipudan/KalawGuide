@@ -30,7 +30,7 @@ export const KalawInput = forwardRef<TextInputRef, Props>(function KalawInput({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
-      <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: error ? colors.danger : colors.border }]}>
+      <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: error ? colors.danger : colors.border }]}>
         <TextInput
           ref={ref}
           style={[styles.input, { color: colors.text }]}
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: Radius.md,
     minHeight: 48,
     paddingHorizontal: Spacing.base,

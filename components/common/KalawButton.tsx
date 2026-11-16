@@ -85,11 +85,11 @@ function variantContainerStyle(
   const opacity = disabled ? 0.5 : 1;
   switch (variant) {
     case 'primary':
-      return { backgroundColor: colors.primary, opacity };
+      return { backgroundColor: colors.primary, borderWidth: 1, borderColor: colors.border, opacity };
     case 'secondary':
       return {
         backgroundColor: 'transparent',
-        borderWidth: 1.5,
+        borderWidth: 1,
         borderColor: colors.primary,
         opacity,
       };
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md, // Figma buttons: 12
     minHeight: TouchTarget.min,
   },
   label: {
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
 
 const sizeStyles: Record<Size, ViewStyle> = {
   sm: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, minHeight: 36 },
-  md: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+  md: { paddingHorizontal: Spacing.base, paddingVertical: 13 },
   lg: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.base },
 };
 

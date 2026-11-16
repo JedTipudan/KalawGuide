@@ -89,7 +89,7 @@ export default function OwnerPhotoGalleryScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={[styles.pageTitle, { color: colors.text }]}>Photo gallery</Text>
-        <Text style={[styles.pageSubtitle, { color: '#57717A' }]}>
+        <Text style={[styles.pageSubtitle, { color: colors.muted }]}>
           Add a cover photo for your business listing. Images are stored locally.
         </Text>
 
@@ -107,7 +107,7 @@ export default function OwnerPhotoGalleryScreen() {
               <View style={styles.coverContainer}>
                 <Image source={{ uri: coverImage }} style={styles.coverImage} resizeMode="cover" />
                 <TouchableOpacity
-                  style={[styles.removeBtn, { backgroundColor: '#AC3545' }]}
+                  style={[styles.removeBtn, { backgroundColor: colors.danger }]}
                   onPress={removeCoverImage}
                 >
                   <Text style={styles.removeBtnText}>✕ Remove</Text>

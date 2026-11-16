@@ -81,11 +81,11 @@ export default function AdminReportsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={[styles.pageTitle, { color: colors.text }]}>Reports and analytics</Text>
-        <Text style={[styles.pageSubtitle, { color: '#57717A' }]}>
+        <Text style={[styles.pageSubtitle, { color: colors.muted }]}>
           Metrics appear when live reporting data is connected.
         </Text>
 
-        <View style={[styles.periodBar, { backgroundColor: colors.surface, borderColor: '#DDE7E7', ...shadow }]}>
+        <View style={[styles.periodBar, { backgroundColor: colors.surface, borderColor: colors.border, ...shadow }]}>
           <Text style={[styles.periodText, { color: colors.text }]}>Reporting period ▾    /    All time</Text>
         </View>
 

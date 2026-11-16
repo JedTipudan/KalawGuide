@@ -73,16 +73,24 @@ export default function BudgetScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Nav bar */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.navTitle, { color: colors.primary }]}>‹ Budget planner</Text>
-        <TouchableOpacity onPress={() => router.push('/(tourist)/settings' as any)}>
-          <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Nav bar — mobile only; on web the top WebNav handles navigation */}
+      {Platform.OS !== 'web' && (
+        <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tourist)/(tabs)/home' as any))}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Text style={[styles.navTitle, { color: colors.primary }]}>‹ Budget planner</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(tourist)/settings' as any)}>
+            <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             <Text style={[styles.title, { color: colors.text }]}>Plan your travel budget</Text>
             <Text style={[styles.subtitle, { color: colors.muted }]}>
@@ -164,6 +172,7 @@ export default function BudgetScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scrollView: { flex: 1 },
   navBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 18,

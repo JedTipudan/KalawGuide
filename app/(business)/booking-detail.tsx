@@ -7,7 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { now, formatShortDate } from '../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../constants/tokens';
 import { BookingStatus } from '../../types';
 
 interface BookingDetail {
@@ -19,8 +19,8 @@ interface BookingDetail {
 }
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
-  pending: '#956112', approved: '#197151', rejected: '#AC3545',
-  cancelled: '#57717A', completed: '#075C73',
+  pending: '#FFC83D', approved: '#00B3C7', rejected: '#FF5700',
+  cancelled: '#F3E9DF', completed: '#0755CC',
 };
 
 export default function OwnerBookingDetailScreen() {
@@ -91,8 +91,8 @@ export default function OwnerBookingDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Status badge */}
-        <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-          <Text style={[styles.statusText, { color: statusColor }]}>
+        <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+          <Text style={[styles.statusText, { color: statusLabel(statusColor) }]}>
             {booking.status.toUpperCase()}
           </Text>
         </View>
@@ -135,16 +135,16 @@ export default function OwnerBookingDetailScreen() {
         {booking.status === 'pending' && (
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.approveBtn, { backgroundColor: '#197151' }]}
+              style={[styles.approveBtn, { backgroundColor: colors.success }]}
               onPress={() => handleAction('approved')}
             >
               <Text style={styles.actionBtnText}>✓ Approve</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.rejectBtn, { borderColor: '#AC3545' }]}
+              style={[styles.rejectBtn, { borderColor: colors.danger }]}
               onPress={() => handleAction('rejected')}
             >
-              <Text style={[styles.rejectBtnText, { color: '#AC3545' }]}>✕ Reject</Text>
+              <Text style={[styles.rejectBtnText, { color: colors.danger }]}>✕ Reject</Text>
             </TouchableOpacity>
           </View>
         )}

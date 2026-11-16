@@ -54,7 +54,7 @@ export default function WebRegisterTouristScreen() {
     <WebLayout navVariant="public">
       <View style={[styles.authLayout, { backgroundColor: colors.background }]}>
         <View style={styles.invitation}>
-          <View style={[styles.invitationInner, { backgroundColor: '#122F3C' }]}>
+          <View style={[styles.invitationInner, { backgroundColor: '#123747' }]}>
             <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
               <Text style={styles.logoText}>K</Text>
             </View>
@@ -124,11 +124,11 @@ const styles = StyleSheet.create({
   logoMark: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   logoText: { fontSize: 28, fontWeight: '700', color: '#FFFFFF' },
   inviteTitle: { color: '#FFFFFF', fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h3, fontWeight: Typography.weight.bold, lineHeight: 38 },
-  inviteDesc: { color: '#ACC1C8', fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, lineHeight: 26 },
+  inviteDesc: { color: '#CBD5E1', fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, lineHeight: 26 },
   inviteFeatures: { gap: Spacing.md, marginTop: Spacing.sm },
   inviteFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  inviteFeatureDot: { color: '#6ED8DF', fontSize: 14 },
-  inviteFeatureText: { color: '#ACC1C8', fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
+  inviteFeatureDot: { color: '#22B8C7', fontSize: 14 },
+  inviteFeatureText: { color: '#CBD5E1', fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
   formSide: { width: 644, justifyContent: 'center' },
   formCard: { borderRadius: 24, padding: 40, gap: Spacing.base },
   formTitle: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.h3, fontWeight: Typography.weight.bold },

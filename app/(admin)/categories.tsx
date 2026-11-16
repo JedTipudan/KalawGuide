@@ -12,7 +12,7 @@ import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
 interface CategoryRow { id: string; name: string; icon: string; color: string; }
 
-const PRESET_COLORS = ['#075C73','#197151','#956112','#AC3545','#6B4FA0','#1A6B8A'];
+const PRESET_COLORS = ['#0E7490','#22C55E','#F97316','#F97316','#6B4FA0','#1A6B8A'];
 const PRESET_ICONS = ['🏖','🌿','🏔','🌊','🏛','🍽','🛍','🎭','⛵','🦅'];
 
 export default function AdminCategoryManagementScreen() {
@@ -23,7 +23,7 @@ export default function AdminCategoryManagementScreen() {
   const [editing, setEditing] = useState<CategoryRow | null>(null);
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('🏖');
-  const [color, setColor] = useState('#075C73');
+  const [color, setColor] = useState('#0E7490');
   const [saving, setSaving] = useState(false);
   const shadow = isDark ? Shadows.dark.sm : Shadows.light.sm;
 
@@ -39,7 +39,7 @@ export default function AdminCategoryManagementScreen() {
   async function onRefresh() { setRefreshing(true); await load(); setRefreshing(false); }
 
   function openAdd() {
-    setEditing(null); setName(''); setIcon('🏖'); setColor('#075C73');
+    setEditing(null); setName(''); setIcon('🏖'); setColor('#0E7490');
     setModalVisible(true);
   }
 

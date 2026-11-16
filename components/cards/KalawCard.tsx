@@ -38,7 +38,7 @@ export function KalawCard({
     <View
       style={[
         styles.card,
-        { backgroundColor: colors.surface, ...shadow },
+        { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, ...shadow },
         style,
       ]}
     >
