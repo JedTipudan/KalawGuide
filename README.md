@@ -130,7 +130,7 @@ A rule-based travel assistant that works **fully offline**. It answers only from
 
 ## Live map
 
-- **Real map with a free API key (recommended):** set **one** key and the whole app (Expo Go, APK, website) uses it. Step-by-step setup is in [`guide.html`](guide.html) → *Real map with a free API key*.
+- **Real map with a free API key (recommended):** set **one** key and the whole app (Expo Go, APK, website) uses it. Step-by-step setup is in `guide.html` (local setup guide, not in the repo) → *Real map with a free API key*.
 
   | Key | Map | Free plan |
   |---|---|---|
@@ -213,7 +213,7 @@ Never commit `.env`. Only `.env.example` belongs in git.
 
 ## Deploying for free
 
-The full step-by-step checklist is in **[`guide.html`](guide.html)**. Open it in a browser. It covers pre-deploy checks, Vercel, the Android APK, **avoiding Play Protect "unsafe app" warnings**, and a demo script. No `.env` or API keys are needed.
+The full step-by-step checklist is in `guide.html` (a local setup guide kept off GitHub). Open it in a browser. It covers pre-deploy checks, Vercel, the Android APK, **avoiding Play Protect "unsafe app" warnings**, and a demo script. No `.env` or API keys are needed.
 
 ### Website: Vercel (Hobby plan)
 `vercel.json` already contains:
@@ -325,7 +325,7 @@ types/index.ts               Shared TypeScript types
 utils/                       helpers, storage, responsive (rw() web breakpoint tags), placeImages (photo fallback)
 assets/images/mascot/        Kiko poses (transparent, compressed) · assets/icon.png = app icon
 assets/images/places/        Mati resort and viewpoint photos (JPEG, ≤960 px)
-guide.html                   Free deployment checklist
+guide.html                   Setup & deploy checklist (local only, not on GitHub)
 vercel.json                  Vercel build, headers and rewrites
 ```
 
