@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 
 /**
  * "Install KalawGuide" banner for the website (PWA), for people who don't want the APK.
@@ -39,6 +39,9 @@ function recentlyDismissed(): boolean {
 export function InstallAppBanner() {
   const [mode, setMode] = useState<'hidden' | 'ios' | 'prompt'>('hidden');
   const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(null);
+  // Wide screens: a small card in the bottom-left corner, clear of centered forms and buttons
+  // (it used to sit on top of the Sign In button). Phones: full-width card at the bottom.
+  const wide = useWindowDimensions().width >= 768;
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -77,8 +80,8 @@ export function InstallAppBanner() {
   };
 
   return (
-    <View style={s.wrap} accessibilityRole="alert">
-      <View style={s.card}>
+    <View style={[s.wrap, wide && s.wrapWide]} accessibilityRole="alert">
+      <View style={[s.card, wide && s.cardWide]}>
         <View style={s.textCol}>
           <Text style={s.title}>Install KalawGuide</Text>
           {mode === 'ios' ? (
@@ -110,6 +113,8 @@ const s = StyleSheet.create({
     position: 'fixed' as any, left: 0, right: 0, bottom: 0, zIndex: 9999,
     paddingHorizontal: 12, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' as any, alignItems: 'center',
   },
+  wrapWide: { right: 'auto' as any, left: 16, paddingHorizontal: 0, alignItems: 'flex-start' },
+  cardWide: { width: 360, maxWidth: 360 },
   card: {
     width: '100%' as any, maxWidth: 520, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12,
     backgroundColor: '#072D4B', borderRadius: 16, padding: 14,

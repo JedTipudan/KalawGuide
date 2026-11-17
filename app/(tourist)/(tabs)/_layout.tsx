@@ -9,8 +9,8 @@ function TabIcon({ name, label, focused, color }: { name: string; label: string;
   const { colors } = useTheme();
   return (
     <View style={[styles.tabItem, focused && { backgroundColor: colors.subtle, borderRadius: 8 }]}>
-      <Icon name={name as any} size={24} color={focused ? colors.primary : colors.onNavigation} />
-      <Text style={[styles.tabLabel, { color: focused ? colors.primary : colors.onNavigation }]}>{label}</Text>
+      <Icon name={name as any} size={22} color={focused ? colors.primary : colors.onNavigation} />
+      <Text numberOfLines={1} style={[styles.tabLabel, { color: focused ? colors.primary : colors.onNavigation }]}>{label}</Text>
     </View>
   );
 }
@@ -28,11 +28,14 @@ export default function TouristTabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 66 + insets.bottom,
-          paddingTop: 18,
-          paddingBottom: 24 + insets.bottom,
-          paddingHorizontal: 10,
+          // Room for the 22px icon + label (~48px); the old 18/24 padding squeezed them over the edges.
+          height: 64 + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: 6 + insets.bottom,
+          paddingHorizontal: 4,
         },
+        tabBarItemStyle: { paddingVertical: 0 },
+        tabBarIconStyle: { width: '100%', height: 52 },
       }}
     >
       <Tabs.Screen
@@ -66,7 +69,7 @@ export default function TouristTabsLayout() {
 const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 6, paddingHorizontal: 0, gap: 6, minWidth: 48,
+    paddingVertical: 4, paddingHorizontal: 4, gap: 3, minWidth: 52,
   },
   tabLabel: {
     fontFamily: Typography.fontFamilyBody,

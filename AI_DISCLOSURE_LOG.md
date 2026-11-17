@@ -778,6 +778,32 @@ AI tool: Claude Code (Anthropic). The user installed the PWA on Windows. Google 
 
 ---
 
+## Category Icons, Overlap Fixes and Business Layout (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user reported: destination category icons showed as words ("bed", "mo", "wav") in the APK; things overlapped in the app, the phone browser and the PWA; and the tourist Businesses list was too big, even on a desktop browser.
+
+**Causes found**
+- Seed categories stored icon *names* (`bed`, `mountain`, `waves`…) and screens printed them as text, cut off inside a 44 px badge.
+- `WebLayout` gave scrolling pages `minHeight: 0`, so on short screens the body shrank to the window height and content ran under the footer.
+- The tourist tab bar (APK) was 66 px tall with 42 px of padding, leaving about 24 px for an icon and label that need about 50 px.
+- Business cards were one full-width column on every screen, and on the website a business opened the bare phone screen stretched across the window.
+- `Inter`/`Manrope` were never loaded on the web, so text fell back to Times.
+- With 9 links, the tourist web nav ran into the logo at about 1200–1300 px wide. The PWA install banner sat on top of the Sign In button.
+
+**What the AI changed**
+- `utils/categoryIcon.ts` (new) maps stored icon names to emoji. It is used in the admin Categories and Destinations screens. New seeds store emoji.
+- `components/web/WebLayout.tsx`: scrolling pages keep their full height. On phones, the footer is hidden on fixed-height pages.
+- `app/(tourist)/(tabs)/_layout.tsx`: tab bar padding and icon sizes fixed.
+- `app/(tourist)/(tabs)/businesses.tsx` and `components/cards/KalawCard.tsx`: 1 column on phones, 2 on tablets and 3 on desktop, with equal-height cards and shorter photos.
+- `app/(web)/business/[id].tsx` (new): business details on the website now have the nav bar and a centered 860 px column.
+- `constants/tokens.ts` and `public/index.html`: web fonts load from Google Fonts, with a sans-serif fallback. Native uses the system font.
+- `components/web/WebNav.tsx`: the tourist menu collapses below 1320 px. `components/web/InstallAppBanner.tsx`: on wide screens, the banner is a small card in the bottom-left corner.
+
+**Checked:** in Chrome, admin pages at desktop and phone width (390 px), and the tourist Businesses grid at desktop width. A layout script measured overlapping text before and after the footer fix. Typecheck and the 177 tests pass.
+**Not verified:** the APK itself (needs a new EAS build). Chrome stopped responding before the business-owner web pages could be re-checked visually, so those were reviewed in code.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -807,3 +833,4 @@ Kalaw Assistance cloud AI (Gemini free tier) + local AI with offline data sync (
 Cloud AI guardrails: replies checked against KalawGuide data (2026-11-17).
 Installable website (PWA) for iPhone and Android (2026-11-17).
 Fix: "Invalid VFS state" on Google sign-in in the web app/PWA (2026-11-17).
+Category icons, overlap fixes, business list grid and web business page (2026-11-17).

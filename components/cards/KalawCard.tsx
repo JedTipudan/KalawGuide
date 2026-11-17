@@ -21,6 +21,10 @@ interface Props {
   badgeColor?: string;
   onPress?: () => void;
   style?: ViewStyle;
+  /** Photo height; defaults to 160. */
+  imageHeight?: number;
+  /** Stretch to the parent's height (equal-height cards in a grid row). */
+  fill?: boolean;
   children?: React.ReactNode;
 }
 
@@ -33,6 +37,8 @@ export function KalawCard({
   badgeColor,
   onPress,
   style,
+  imageHeight,
+  fill,
   children,
 }: Props) {
   const { colors, isDark } = useTheme();
@@ -42,6 +48,7 @@ export function KalawCard({
     <View
       style={[
         styles.card,
+        fill && { flex: 1 },
         { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, ...shadow },
         style,
       ]}
@@ -49,7 +56,7 @@ export function KalawCard({
       {(image || imageUrl) && (
         <Image
           source={image ?? { uri: imageUrl }}
-          style={styles.image}
+          style={[styles.image, imageHeight ? { height: imageHeight } : null]}
           resizeMode="cover"
         />
       )}
@@ -89,7 +96,7 @@ export function KalawCard({
 
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={fill ? { flex: 1 } : undefined}>
         {content}
       </TouchableOpacity>
     );

@@ -62,9 +62,16 @@ export function statusLabel(fill: string): string {
   return DARK_LABEL_FILLS.includes(fill) ? '#171717' : '#FFFFFF';
 }
 
+// Web: the browser only knows these fonts through the Google Fonts link in public/index.html, so
+// give it a sans-serif fallback; a bare 'Inter' fell back to Times when the font wasn't loaded.
+// Native: these names aren't registered, so use the platform's system font (undefined).
+const webStack = (name: string) =>
+  `${name}, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`;
+const isWebPlatform = typeof document !== 'undefined';
+
 export const Typography = {
-  fontFamilyHeading: 'Manrope',
-  fontFamilyBody: 'Inter',
+  fontFamilyHeading: (isWebPlatform ? webStack('Manrope') : undefined) as string | undefined,
+  fontFamilyBody: (isWebPlatform ? webStack('Inter') : undefined) as string | undefined,
   size: {
     h1: 48,
     h2: 36,

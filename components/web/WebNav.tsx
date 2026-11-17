@@ -16,7 +16,8 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
-  const compact = width < 1024; // 8 tourist links don't fit in one row below this
+  // The 9 tourist links + theme + sign out need ~1300px; below that they crowded into the logo.
+  const compact = width < (variant === 'tourist' ? 1320 : 1024);
   const [menuOpen, setMenuOpen] = useState(false);
 
   function goHome() {
@@ -206,7 +207,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 64,
+    gap: Spacing.lg,
+    paddingHorizontal: 48,
     paddingVertical: 18,
     borderBottomWidth: 1,
   },

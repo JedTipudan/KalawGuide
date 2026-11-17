@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList,
-  TextInput, TouchableOpacity, ActivityIndicator, Platform,
+  View, Text, StyleSheet, FlatList, ScrollView,
+  TextInput, TouchableOpacity, ActivityIndicator, Platform, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -43,6 +43,10 @@ export default function BusinessesScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  // Phones get one column; wider screens (tablet, desktop browser) get a grid of smaller cards
+  // instead of one card stretched across the whole page.
+  const { width } = useWindowDimensions();
+  const columns = width >= 1024 ? 3 : width >= 640 ? 2 : 1;
 
   const load = useCallback(async () => {
     try {
@@ -72,6 +76,24 @@ export default function BusinessesScreen() {
   }, [selectedCategory, search]);
 
   useEffect(() => { load(); }, [load]);
+
+
+  function renderCard(item: BusinessRow) {
+    return (
+      <KalawCard
+        title={item.name}
+        subtitle={`${CATEGORIES.find(c => c.id === item.category)?.icon ?? '🏪'} ${item.category.replace('_', ' ')} · ${item.address}`}
+        image={placeImage(item.name, item.cover_image_url, item.category)}
+        badge="Verified"
+        badgeColor={colors.success + '30'}
+        imageHeight={columns > 1 ? 150 : 140}
+        fill={columns > 1}
+        onPress={() => router.push({ pathname: Platform.OS === 'web' ? '/(web)/business/[id]' : '/(tourist)/business/[id]', params: { id: item.id } } as any)}
+      >
+        <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{fromPriceLabel(item.min_price, item.min_unit)}</Text>
+      </KalawCard>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -125,35 +147,31 @@ export default function BusinessesScreen() {
         <View style={styles.loadingState}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
+      ) : businesses.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyIcon}>🏪</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No businesses found</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
+            {search || selectedCategory
+              ? 'Try a different search or category.'
+              : 'Approved businesses will appear here once verified by an administrator.'}
+          </Text>
+        </View>
+      ) : columns > 1 ? (
+        <ScrollView contentContainerStyle={[styles.list, styles.grid]} showsVerticalScrollIndicator={false}>
+          {businesses.map(item => (
+            <View key={item.id} style={{ width: `${100 / columns}%` as any, padding: Spacing.sm }}>
+              {renderCard(item)}
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         <FlatList
           data={businesses}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>🏪</Text>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No businesses found</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
-                {search || selectedCategory
-                  ? 'Try a different search or category.'
-                  : 'Approved businesses will appear here once verified by an administrator.'}
-              </Text>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <KalawCard
-              title={item.name}
-              subtitle={`${CATEGORIES.find(c => c.id === item.category)?.icon ?? '🏪'} ${item.category.replace('_', ' ')} · ${item.address}`}
-              image={placeImage(item.name, item.cover_image_url, item.category)}
-              badge="Verified"
-              badgeColor={colors.success + '30'}
-              onPress={() => router.push({ pathname: '/(tourist)/business/[id]', params: { id: item.id } } as any)}
-            >
-              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{fromPriceLabel(item.min_price, item.min_unit)}</Text>
-            </KalawCard>
-          )}
+          renderItem={({ item }) => renderCard(item)}
         />
       )}
       {Platform.OS !== 'web' && <KalawAssistanceFAB />}
@@ -180,6 +198,8 @@ const styles = StyleSheet.create({
   chipIcon: { fontSize: 14 },
   chipLabel: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body, fontWeight: Typography.weight.medium },
   list: { padding: Spacing.base, gap: Spacing.md, paddingBottom: 100 },
+  // Wide screens: cards wrap into columns (each cell sets its own width and gutter).
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 0, paddingHorizontal: Spacing.sm },
   loadingState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: Spacing.md },
   emptyIcon: { fontSize: 48 },

@@ -72,12 +72,12 @@ async function seedBase(db: SQLiteDatabase, needsAdmin: boolean, needsSeed: bool
     if (needsSeed) {
       const catIds = Array.from({ length: 6 }, () => generateId());
 
-      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[0],'Beach','waves','#075C73']);
-      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[1],'Nature','tree','#197151']);
-      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[2],'Cultural','landmark','#956112']);
-      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[3],'Adventure','mountain','#AC3545']);
-      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[4],'Food','utensils','#087F75']);
-      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[5],'Accommodation','bed','#57717A']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[0],'Beach','🌊','#075C73']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[1],'Nature','🌳','#197151']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[2],'Cultural','🏛','#956112']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[3],'Adventure','⛰','#AC3545']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[4],'Food','🍽','#087F75']);
+      await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[5],'Accommodation','🛏','#57717A']);
 
       const dests: [string, string, string, string, number, number, number, number, number][] = [
         [generateId(),'Dahican Beach','A pristine white-sand beach in Mati City, famous for surfing and skimboarding. Beachfront resorts charge a consumable entrance.',catIds[0],6.9243,126.2809,100,0,1],

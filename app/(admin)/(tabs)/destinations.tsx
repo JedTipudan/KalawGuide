@@ -13,6 +13,7 @@ import { getDatabase } from '../../../database/migrations/init';
 import { logActivity } from '../../../services/admin/activityLog';
 import { generateId, now } from '../../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
+import { categoryEmoji } from '../../../utils/categoryIcon';
 
 interface DestRow { id: string; name: string; location: string; category_name: string; is_featured: number; is_active: number; estimated_fee: number | null; fee_verified: number; }
 interface CatRow { id: string; name: string; icon: string; }
@@ -167,7 +168,7 @@ export default function AdminDestinationsScreen() {
                     style={[styles.catChip, { backgroundColor: categoryId === cat.id ? colors.primary + '20' : colors.surface, borderColor: categoryId === cat.id ? colors.primary : colors.border }]}
                     onPress={() => setCategoryId(cat.id)}
                   >
-                    <Text style={[styles.catLabel, { color: categoryId === cat.id ? colors.primary : colors.text }]}>{cat.icon} {cat.name}</Text>
+                    <Text style={[styles.catLabel, { color: categoryId === cat.id ? colors.primary : colors.text }]}>{categoryEmoji(cat.icon)} {cat.name}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

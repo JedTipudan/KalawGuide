@@ -454,6 +454,9 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
+- **Fix: category icons and overlaps.** Destination categories show real icons, not cut-off words ("bed", "mo", "wav"). On phones (website/PWA), pages no longer run under the footer. The APK's tourist tab bar has room for icons and labels again. The install banner no longer covers the Sign In button.
+- **Businesses list fits every screen.** 1 column on phones, 2 on tablets and 3 on desktop. On the website, business details now open in a centered page with the nav bar. Website text uses Inter/Manrope instead of falling back to Times.
+
 - **Fix: Google sign-in on the website showed "Invalid VFS state".** The sign-in popup no longer starts a second copy of the app. If KalawGuide really is open twice, a clear message explains what to do.
 
 - **Install the website as an app (PWA), no APK needed.** iPhone/iPad: Safari → Share → *Add to Home Screen*. Android/desktop Chrome: an *Install* button appears. It opens full-screen with its own icon, and pages it has loaded still open offline.

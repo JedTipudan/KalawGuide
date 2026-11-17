@@ -13,6 +13,7 @@ import { getDatabase } from '../../database/migrations/init';
 import { logActivity } from '../../services/admin/activityLog';
 import { generateId, now } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
+import { categoryEmoji } from '../../utils/categoryIcon';
 
 interface CategoryRow { id: string; name: string; icon: string; color: string; }
 
@@ -50,7 +51,7 @@ export default function AdminCategoryManagementScreen() {
   }
 
   function openEdit(cat: CategoryRow) {
-    setEditing(cat); setName(cat.name); setIcon(cat.icon); setColor(cat.color);
+    setEditing(cat); setName(cat.name); setIcon(categoryEmoji(cat.icon)); setColor(cat.color);
     setModalVisible(true);
   }
 
@@ -119,7 +120,7 @@ export default function AdminCategoryManagementScreen() {
         renderItem={({ item }) => (
           <View style={[styles.card, { backgroundColor: colors.surface, ...shadow }]}>
             <View style={[styles.iconBadge, { backgroundColor: item.color + '20' }]}>
-              <Text style={styles.catIcon}>{item.icon}</Text>
+              <Text style={styles.catIcon}>{categoryEmoji(item.icon)}</Text>
             </View>
             <View style={styles.cardInfo}>
               <Text style={[styles.catName, { color: colors.text }]}>{item.name}</Text>

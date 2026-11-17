@@ -15,6 +15,7 @@ export default function WebGroupLayout() {
       <Stack.Screen name="explore" options={hidden} />
       <Stack.Screen name="destination/[id]" options={hidden} />
       <Stack.Screen name="businesses" options={hidden} />
+      <Stack.Screen name="business/[id]" options={hidden} />
       <Stack.Screen name="budget" options={hidden} />
       <Stack.Screen name="budget-results" options={hidden} />
       <Stack.Screen name="trips" options={hidden} />
