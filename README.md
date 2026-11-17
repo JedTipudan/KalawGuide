@@ -102,6 +102,23 @@ Submits for verification       Manages destinations & contacts      Plans trips,
 
 ---
 
+## Install the website as an app (PWA)
+
+For people who don't want to download the APK, especially on iPhone, where APKs can't be installed.
+
+| Device | How to install |
+|---|---|
+| iPhone / iPad | Open the website in **Safari** → tap **Share** (square with ⬆) → **Add to Home Screen** → **Add**. A banner on the site shows these steps. |
+| Android | Open the website in **Chrome** → tap **Install** on the banner (or menu ⋮ → *Install app*). |
+| Desktop Chrome / Edge | Click **Install** on the banner, or the install icon in the address bar. |
+
+- It opens full-screen from its own home-screen icon (KalawGuide icon, navy splash), like a normal app.
+- **Updates are automatic:** pages always load fresh when online, so a new Vercel deploy reaches installed apps without reinstalling.
+- **Offline:** after one online visit, the app opens without internet and Kalaw Assistance uses its saved data.
+- **Files:** `public/index.html` (iOS tags, manifest link, service-worker registration), `public/manifest.json`, `public/sw.js`, `public/icons/`, and `components/web/InstallAppBanner.tsx`. The service worker is skipped on `localhost` and LAN addresses, so development always gets fresh code.
+
+---
+
 ## Kalaw Assistance
 
 A travel assistant with a **cloud AI** (online) and a **local AI** (offline). Both answer only from KalawGuide's own data and never make up places, prices or phone numbers. Everything is **free**: no paid AI and no server.
@@ -426,6 +443,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 | Google Sign-In fails | Check `EXPO_PUBLIC_GOOGLE_CLIENT_ID` and the authorized origins. Demo mode works without it. |
 | APK build fails with `AAPT: error: file failed to compile` on an image | The file is not really a PNG (often a JPEG renamed to `.png`). Give it the right extension and update its `require()`. |
 | Kalaw Assistance says `Online · On-device answers` instead of `Cloud AI` | `EXPO_PUBLIC_GEMINI_API_KEY` is missing. Add it to `.env` and restart Expo, or for the APK add it to the EAS environment and rebuild. |
+| iPhone: no *Add to Home Screen* option | Use **Safari** (on iOS 16.4+ other browsers work through their Share menu too). Scroll down the Share sheet to find it. |
+| Installed web app shows an old version | Close it fully and reopen while online. If it still looks old, delete the home-screen icon and add it again. |
 | Dependency or build errors | Run `npx expo-doctor`, then `npx expo install --fix`. |
 
 ---
@@ -433,6 +452,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Install the website as an app (PWA), no APK needed.** iPhone/iPad: Safari → Share → *Add to Home Screen*. Android/desktop Chrome: an *Install* button appears. It opens full-screen with its own icon, and pages it has loaded still open offline.
 
 - **Cloud AI guardrails:** Gemini replies are checked against KalawGuide's data (prices, phone numbers, place names, no links/code/off-topic) before they're shown; otherwise the local answer is used.
 - **Kalaw Assistance: cloud AI + local AI.** Online, a free Google Gemini key gives natural answers from KalawGuide's latest data. That data is saved on the device whenever there's internet, so offline the local assistant still answers from the latest update.

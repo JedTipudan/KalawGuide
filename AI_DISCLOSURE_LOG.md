@@ -736,6 +736,34 @@ AI tool: Claude Code (Anthropic). The user asked that the cloud AI never answer 
 
 ---
 
+## Installable Website (PWA) for iPhone and Android (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user wants iPhone users, and anyone who doesn't want the APK, to use the website as an app. The approach was left to the AI.
+
+**Decision:** make the existing Expo website a Progressive Web App, following Expo's PWA guide for `web.output: "single"`: a `public/index.html` template (made with `npx expo customize public/index.html`) plus `public/manifest.json`. The AI wrote a small service worker by hand instead of Expo's suggested Workbox. Pages are network-first, which avoids the stale-update problem Expo's guide warns about.
+
+**What the AI changed**
+- `public/index.html`: manifest link, `theme-color`, iOS tags (`apple-mobile-web-app-capable`, title, status bar style, `apple-touch-icon`), and service-worker registration (skipped on localhost and LAN).
+- `public/manifest.json`: name, standalone display, navy theme and background colors, icons.
+- `public/icons/`: 192, 512, maskable 512 and 180 (Apple) PNGs, made from `assets/icon.png` with Pillow.
+- `public/sw.js`:
+  - Pages are network-first, with a cached copy used offline.
+  - Same-origin built assets are cache-first.
+  - Other sites (Gemini, Turso, map tiles) are never cached.
+- `components/web/InstallAppBanner.tsx`, shown from `WebAppShell`:
+  - iOS gets *Share → Add to Home Screen* steps.
+  - Chrome/Edge get a real Install button (`beforeinstallprompt`).
+  - Hidden when already installed, and for 14 days after dismissal.
+- `vercel.json`: `no-cache` for `sw.js`, and the manifest content type.
+
+**Checks:** `npx tsc --noEmit` passes. `npx expo export -p web` puts the manifest, icons and `sw.js` in `dist/`, and the tags in `index.html`.
+
+**Limitations**
+- **Not tested on a real iPhone or Android browser.**
+- **Possible iPhone database problem (not confirmed):** the site's `Cross-Origin-Embedder-Policy: credentialless` header may not be supported by Safari, and on-device web SQLite needs it. With the shared Turso database set on Vercel, the website doesn't use on-device SQLite at all.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -763,3 +791,4 @@ Shared online database (Turso) for multi-device testing (2026-11-17).
 Phone layout for admin/business website and APK build fix (JPEGs named .png) (2026-11-17).
 Kalaw Assistance cloud AI (Gemini free tier) + local AI with offline data sync (2026-11-17).
 Cloud AI guardrails: replies checked against KalawGuide data (2026-11-17).
+Installable website (PWA) for iPhone and Android (2026-11-17).

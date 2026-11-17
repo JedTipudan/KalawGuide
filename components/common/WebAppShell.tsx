@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
+import { InstallAppBanner } from '../web/InstallAppBanner';
 
 interface Props {
   children: React.ReactNode;
@@ -252,6 +253,7 @@ export function WebAppShell({ children }: Props) {
         }
       `}</style>
       {children}
+      <InstallAppBanner />
     </>
   );
 }
