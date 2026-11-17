@@ -1,13 +1,29 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Platform } from 'react-native';
+import { Platform, Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { WebAppShell } from '../components/common/WebAppShell';
 
 const isWeb = Platform.OS === 'web';
+
+/**
+ * Web: Google sign-in returns to this site inside the sign-in popup. That popup must only hand the
+ * result back to the main window. If it booted the whole app, it would try to open the on-device
+ * database, which the main window already holds (the browser allows one at a time), and fail with
+ * "Invalid VFS state", so sign-in never finished. Checked once, before any provider mounts.
+ */
+const isAuthPopup = (() => {
+  if (!isWeb || typeof window === 'undefined' || !window.opener) return false;
+  try {
+    return WebBrowser.maybeCompleteAuthSession().type === 'success';
+  } catch {
+    return false;
+  }
+})();
 
 function RootNavigator() {
   const { user, isLoading } = useAuth();
@@ -82,6 +98,14 @@ function RootNavigator() {
 
 
 export default function RootLayout() {
+  if (isAuthPopup) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#072D4B' }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 16, textAlign: 'center' }}>Signing you in… you can close this window.</Text>
+      </View>
+    );
+  }
+
   const inner = (
     <SafeAreaProvider>
       <ThemeProvider>

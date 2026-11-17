@@ -764,6 +764,20 @@ AI tool: Claude Code (Anthropic). The user wants iPhone users, and anyone who do
 
 ---
 
+## Fix: "Invalid VFS state" on Google Sign-In (Web/PWA) (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user installed the PWA on Windows. Google sign-in showed "Invalid VFS state".
+
+**Cause:** on the web, expo-sqlite stores data with OPFS access handles (`AccessHandlePoolVFS`), and only one window can hold them at a time. After Google sign-in, the redirect loads the site inside the sign-in popup. That popup booted the whole app, tried to open the database the main window already held, and failed. It never sent the sign-in result back to the main window.
+
+**What the AI changed**
+- `app/_layout.tsx`: before any provider mounts, a window opened as the auth popup calls `WebBrowser.maybeCompleteAuthSession()`, sends the result to the main window, and shows only "Signing you in…". The database is never opened in the popup.
+- `database/migrations/init.ts`: VFS / access-handle errors become a clear message: KalawGuide is already open in another window or tab, so close it and reload.
+
+**Not verified:** the AI couldn't run a real Google sign-in. The fix follows the expo-sqlite and expo-web-browser source code in `node_modules`.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -792,3 +806,4 @@ Phone layout for admin/business website and APK build fix (JPEGs named .png) (20
 Kalaw Assistance cloud AI (Gemini free tier) + local AI with offline data sync (2026-11-17).
 Cloud AI guardrails: replies checked against KalawGuide data (2026-11-17).
 Installable website (PWA) for iPhone and Android (2026-11-17).
+Fix: "Invalid VFS state" on Google sign-in in the web app/PWA (2026-11-17).

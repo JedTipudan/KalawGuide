@@ -445,6 +445,7 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 | Kalaw Assistance says `Online · On-device answers` instead of `Cloud AI` | `EXPO_PUBLIC_GEMINI_API_KEY` is missing. Add it to `.env` and restart Expo, or for the APK add it to the EAS environment and rebuild. |
 | iPhone: no *Add to Home Screen* option | Use **Safari** (on iOS 16.4+ other browsers work through their Share menu too). Scroll down the Share sheet to find it. |
 | Installed web app shows an old version | Close it fully and reopen while online. If it still looks old, delete the home-screen icon and add it again. |
+| Website says "already open in another window or tab" (was "Invalid VFS state") | The browser lets only one window use the on-device database. Close the other KalawGuide tab or installed-app window, then reload. With the shared Turso database this can't happen. |
 | Dependency or build errors | Run `npx expo-doctor`, then `npx expo install --fix`. |
 
 ---
@@ -452,6 +453,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Fix: Google sign-in on the website showed "Invalid VFS state".** The sign-in popup no longer starts a second copy of the app. If KalawGuide really is open twice, a clear message explains what to do.
 
 - **Install the website as an app (PWA), no APK needed.** iPhone/iPad: Safari → Share → *Add to Home Screen*. Android/desktop Chrome: an *Install* button appears. It opens full-screen with its own icon, and pages it has loaded still open offline.
 

@@ -29,6 +29,12 @@ export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       .catch(e => {
         // Reset on failure so a future call can retry
         globalThis.__kalawguide_db_promise = undefined;
+        // Web: the browser lets only one window hold the on-device database. A second window
+        // (e.g. the installed app and a browser tab of the site) fails with "Invalid VFS state".
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/VFS|AccessHandle|NoModificationAllowed/i.test(msg)) {
+          throw new Error('KalawGuide is already open in another window or tab. Close the other one, then reload this page.');
+        }
         throw e;
       });
   }
