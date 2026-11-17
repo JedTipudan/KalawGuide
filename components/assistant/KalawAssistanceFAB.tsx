@@ -31,7 +31,8 @@ const SUGGESTIONS: AssistantSuggestion[] = [
   { id: '1', label: 'Budget for Dahican Beach', query: 'How much should I prepare for Dahican Beach?' },
   { id: '2', label: '3-day trip for 4', query: 'Plan a 3-day trip for 4 people.' },
   { id: '3', label: 'Where can I go with ₱2,000?', query: 'Where can I travel with ₱2,000?' },
-  { id: '4', label: 'Cheaper destinations', query: 'Which destinations are cheaper?' },
+  { id: '4', label: '💸 What is cheapest?', query: 'What is the cheapest trip for 2 people, 3 days?' },
+  { id: '7', label: 'Cheapest place to stay', query: 'What is the cheapest place to stay?' },
   { id: '5', label: 'Activities in Mati', query: 'What activities can I try in Mati?' },
   { id: '6', label: 'Accommodations', query: 'Find accommodations within my budget.' },
 ];

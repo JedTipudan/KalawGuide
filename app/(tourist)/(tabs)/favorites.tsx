@@ -9,6 +9,8 @@ import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { KalawCard } from '../../../components/cards/KalawCard';
+import { placeImage } from '../../../utils/placeImages';
+import { feeLabel, fromPriceLabel, LOWEST_PRICE_SQL } from '../../../utils/priceLabel';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
 import { Typography, Spacing, Radius } from '../../../constants/tokens';
@@ -24,6 +26,7 @@ interface DestFav {
 interface BizFav {
   id: string; entity_id: string; name: string; address: string;
   cover_image_url: string | null; category: string;
+  min_price: number | null; min_unit: string | null;
 }
 
 export default function FavoritesScreen() {
@@ -50,7 +53,7 @@ export default function FavoritesScreen() {
     setDestFavs(dests);
 
     const bizs = await db.getAllAsync<BizFav>(`
-      SELECT f.id, f.entity_id, b.name, b.address, b.cover_image_url, b.category
+      SELECT f.id, f.entity_id, b.name, b.address, b.cover_image_url, b.category, ${LOWEST_PRICE_SQL}
       FROM favorites f
       JOIN businesses b ON f.entity_id = b.id
       WHERE f.user_id = ? AND f.entity_type = 'business'
@@ -106,7 +109,7 @@ export default function FavoritesScreen() {
             </Text>
             <TouchableOpacity
               style={[styles.exploreBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push(tab === 'destinations' ? '/(tourist)/explore' : '/(tourist)/businesses')}
+              onPress={() => router.push(tab === 'destinations' ? '/(tourist)/(tabs)/explore' : '/(tourist)/(tabs)/businesses')}
             >
               <Text style={[styles.exploreBtnText, { color: colors.onPrimary }]}>
                 Explore {tab === 'destinations' ? 'Destinations' : 'Businesses'}
@@ -122,11 +125,11 @@ export default function FavoritesScreen() {
                 <KalawCard
                   title={d.name}
                   subtitle={`${d.category_name} · ${d.location}`}
-                  imageUrl={d.cover_image_url ?? undefined}
-                  badge={d.fee_verified ? `₱${d.estimated_fee}` : undefined}
-                  badgeColor={colors.success + '30'}
+                  image={placeImage(d.name, d.cover_image_url, d.category_name)}
                   onPress={() => router.push({ pathname: '/(tourist)/destination/[id]', params: { id: d.entity_id } } as any)}
-                />
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{feeLabel(d.estimated_fee, d.fee_verified)}</Text>
+                </KalawCard>
                 <TouchableOpacity
                   style={[styles.removeBtn, { backgroundColor: colors.danger + '15' }]}
                   onPress={() => removeFav(d.id)}
@@ -142,11 +145,13 @@ export default function FavoritesScreen() {
                 <KalawCard
                   title={b.name}
                   subtitle={`${b.category.replace('_', ' ')} · ${b.address}`}
-                  imageUrl={b.cover_image_url ?? undefined}
+                  image={placeImage(b.name, b.cover_image_url, b.category)}
                   badge="Verified"
                   badgeColor={colors.success + '30'}
                   onPress={() => router.push({ pathname: '/(tourist)/business/[id]', params: { id: b.entity_id } } as any)}
-                />
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{fromPriceLabel(b.min_price, b.min_unit)}</Text>
+                </KalawCard>
                 <TouchableOpacity
                   style={[styles.removeBtn, { backgroundColor: colors.danger + '15' }]}
                   onPress={() => removeFav(b.id)}

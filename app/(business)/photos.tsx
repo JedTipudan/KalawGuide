@@ -4,6 +4,7 @@ import {
   TouchableOpacity, Image, Alert, RefreshControl,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { pickImageAsDataUri } from '../../utils/pickImage';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
@@ -40,14 +41,11 @@ export default function OwnerPhotoGalleryScreen() {
       Alert.alert('Permission required', 'Allow access to your photo library to upload images.');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      const uri = result.assets[0].uri;
+    const picked = await pickImageAsDataUri({ allowsEditing: true, aspect: [16, 9], quality: 0.5 });
+    if (picked === 'too_large') { Alert.alert('Photo too large', 'Please choose a smaller photo or crop it, then try again.'); return; }
+    if (picked) {
+      // Saved as a data: URI so the photo shows on every device, not just this phone.
+      const uri = picked.uri;
       setCoverImage(uri);
       if (businessId) {
         const db = await getDatabase();

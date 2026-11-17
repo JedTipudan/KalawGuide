@@ -17,7 +17,7 @@ function RootNavigator() {
 
   useEffect(() => {
     if (isLoading) return;
-    if (segments.length === 0) return;
+    if ((segments as string[]).length === 0) return;
 
     const seg0 = segments[0] as string | undefined;
     const seg1 = segments[1] as string | undefined;

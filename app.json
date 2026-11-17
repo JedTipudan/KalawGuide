@@ -18,7 +18,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png",
         "backgroundColor": "#072D4B"
       },
-      "package": "com.kalawguide.app"
+      "package": "com.kalawguide.app",
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +36,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "KalawGuide needs access to your photos to upload business images."
+          "photosPermission": "KalawGuide needs access to your photos to upload business images.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       "expo-notifications",

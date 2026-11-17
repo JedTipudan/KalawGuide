@@ -71,9 +71,13 @@ export async function getAssistantReply(
   if (intent === 'unrelated' || intent === 'malicious_or_override_attempt') return refuse(intent);
 
   // Layer 3: retrieval + templates (permission checks live in each handler).
+  // "What is cheapest?" gets its own answer, unless it's a budget for one named place (handled by travel_budget).
+  const namedPlace = matchDestination(query, ctx.destinations.map(d => d.name));
+  const cheapestAsk = CHEAPEST.test(ctx.lower) && CHEAPEST_INTENTS.has(intent) && !(intent === 'travel_budget' && namedPlace);
+
   let answer: Answer;
   try {
-    answer = await HANDLERS[intent](ctx);
+    answer = cheapestAsk ? await cheapest(ctx) : await HANDLERS[intent](ctx);
   } catch {
     answer = { content: "Sorry, I couldn't read that information from KalawGuide right now. Please try again." };
   }
@@ -231,6 +235,139 @@ function affordable(req: BudgetRequest, ctx: Context): Answer {
     sources: ctx.destinations.map(d => `destinations:${d.id}`),
     cards: known.slice(0, 3).map(destCard),
     hasEstimates: ctx.destinations.some(d => !d.feeVerified),
+  };
+}
+
+// ─── Cheapest ("what is cheapest?", "cheapest place to stay") ─────────────────
+
+const CHEAPEST_INTENTS = new Set<AssistantIntent>([
+  'travel_budget', 'destination_search', 'destination_details', 'accommodation', 'food_recommendation',
+  'transportation', 'activity_search', 'business_information', 'itinerary_planning',
+]);
+
+export const CHEAPEST = /\b(cheap(est|er)?|lowest|least expensive|most affordable|affordable|budget[- ]friendly|tipid|(pinaka)?mura|barato)\b/;
+
+type CheapKind = 'stay' | 'food' | 'transport' | 'activity' | 'place';
+const CHEAP_KINDS: [CheapKind, RegExp][] = [
+  ['stay', /\b(stay|rooms?|hotels?|resorts?|accommodations?|lodg\w*|inns?|sleep|overnight|cabins?|matulog)\b/],
+  ['food', /\b(food|eat|meals?|restaurants?|eatery|kain|lunch|dinner|breakfast|carinderia)\b/],
+  ['transport', /\b(transport\w*|fares?|rides?|vans?|bus(es)?|tricycles?|habal\w*|get (to|around)|commute)\b/],
+  ['activity', /\b(activit(y|ies)|tours?|island hopping|surf\w*|snorkel\w*|things to do)\b/],
+  ['place', /\b(places?|destinations?|spots?|beach(es)?|visit|entrance|attractions?)\b/],
+];
+
+const KIND_TITLE: Record<Exclude<CheapKind, 'place'>, string> = {
+  stay: '🏨 Cheapest places to stay',
+  food: '🍽 Cheapest meals',
+  transport: '🚌 Cheapest transport',
+  activity: '🏄 Cheapest activities',
+};
+
+const cheapLine = (p: PriceInfo) =>
+  `• **${p.businessName}** — ${p.title}: ${formatCurrency(p.amount)} ${p.unit} (${p.verified ? 'verified' : 'estimate'})`;
+
+function pricesByKind(all: PriceInfo[]): Record<Exclude<CheapKind, 'place'>, PriceInfo[]> {
+  return {
+    stay: all.filter(p => p.businessCategory === 'accommodation' && unitToPricingModel(p.unit) === 'per_room'),
+    food: all.filter(p => p.businessCategory === 'restaurant' && unitToPricingModel(p.unit) === 'per_person'),
+    transport: all.filter(p => p.businessCategory === 'transport'),
+    activity: all.filter(p => p.category === 'activity_fee' || p.category === 'service'),
+  };
+}
+
+/** Lists the lowest published prices, or (when no type is named) builds the cheapest full trip. */
+async function cheapest(ctx: Context): Promise<Answer> {
+  const req = parseBudgetRequest(ctx.query, ctx.destinations.map(d => d.name));
+  const kinds = CHEAP_KINDS.filter(([, re]) => re.test(ctx.lower)).map(([k]) => k);
+  const all = await getPrices(ctx.businesses.map(b => b.id)); // sorted lowest first
+  const by = pricesByKind(all);
+
+  // Only destinations asked about → entrance fees, with the budget-fit check.
+  if (kinds.length === 1 && kinds[0] === 'place') return affordable(req, ctx);
+
+  if (kinds.length) {
+    const sections: string[] = [];
+    const used: PriceInfo[] = [];
+    for (const k of kinds) {
+      if (k === 'place') {
+        const cheapPlaces = [...ctx.destinations].filter(d => d.fee !== null).sort((a, b) => a.fee! - b.fee!).slice(0, 3);
+        if (cheapPlaces.length) sections.push(`🗺 **Cheapest places to visit**\n${cheapPlaces.map(d => `• **${d.name}** — ${feeText(d)}`).join('\n')}`);
+        continue;
+      }
+      const list = by[k].slice(0, 3);
+      used.push(...list);
+      sections.push(list.length
+        ? `**${KIND_TITLE[k]}**\n${list.map(cheapLine).join('\n')}`
+        : `**${KIND_TITLE[k]}**\nNo published prices in KalawGuide yet.`);
+    }
+    const best = used[0];
+    const tip = best ? `\n\n💡 Lowest of all: **${best.title}** at **${best.businessName}**, ${formatCurrency(best.amount)} ${best.unit}.` : '';
+    return {
+      content: `${sections.join('\n\n')}${tip}\n\nPrices go from lowest to highest. Contact the business to confirm before you go.\nAsk "What is the cheapest trip for 2 people, 3 days?" for a full budget.`,
+      sources: used.map(p => `businesses:${p.businessId}`),
+      hasEstimates: used.some(p => !p.verified),
+    };
+  }
+
+  // No type named → the cheapest complete trip from KalawGuide's own prices.
+  const travelers = req.travelers ?? 2;
+  const days = req.days ?? 2;
+  const nights = req.nights ?? days - 1;
+  const rooms = req.rooms ?? Math.ceil(travelers / 2);
+  const assumptions: string[] = [];
+  if (req.travelers === undefined) assumptions.push(`${travelers} travelers`);
+  if (req.days === undefined) assumptions.push(`${days} days, ${nights} night${nights === 1 ? '' : 's'}`);
+
+  const items: TripCostItem[] = [];
+  const picks: string[] = [];
+  const toMati = by.transport.find(p => /davao/i.test(p.title) && unitToPricingModel(p.unit) === 'per_person');
+  if (toMati) {
+    items.push({ category: 'transportation', label: `${toMati.title} (round trip) — ${toMati.businessName}`, amount: toMati.amount * 2, model: 'per_person', verified: toMati.verified, source: `businesses:${toMati.businessId}` });
+    picks.push(`🚌 Getting there: **${toMati.title}**, ${formatCurrency(toMati.amount)} each way (${toMati.businessName})`);
+  }
+  const local = by.transport.find(p => p !== toMati && unitToPricingModel(p.unit) === 'per_person');
+  if (local) {
+    items.push({ category: 'transportation', label: `${local.title} (round trip) — ${local.businessName}`, amount: local.amount * 2, model: 'per_person', verified: local.verified, source: `businesses:${local.businessId}` });
+    picks.push(`🛵 Getting around: **${local.title}**, ${formatCurrency(local.amount)} each way`);
+  }
+  const room = nights > 0 ? by.stay[0] : undefined;
+  if (room) {
+    items.push({ category: 'accommodation', label: `${room.title} — ${room.businessName}`, amount: room.amount, model: 'per_room', verified: room.verified, source: `businesses:${room.businessId}` });
+    picks.push(`🏨 Stay: **${room.businessName}**, ${room.title}, ${formatCurrency(room.amount)} ${room.unit}`);
+    if (req.rooms === undefined) assumptions.push(`${rooms} room${rooms > 1 ? 's' : ''}`);
+  }
+  const meal = by.food[0];
+  if (meal) {
+    items.push({ category: 'food', label: `3 meals a day at ~${formatCurrency(meal.amount)} (${meal.title}, ${meal.businessName})`, amount: meal.amount * 3, model: 'per_day', perTraveler: true, verified: meal.verified, source: `businesses:${meal.businessId}` });
+    picks.push(`🍽 Food: **${meal.title}** at ${meal.businessName}, ${formatCurrency(meal.amount)} per meal`);
+  }
+  const free = ctx.destinations.filter(d => d.fee === 0).slice(0, 3);
+  const cheapPaid = ctx.destinations.filter(d => d.fee !== null && d.fee > 0).sort((a, b) => a.fee! - b.fee!)[0];
+  const spots = free.length ? free : cheapPaid ? [cheapPaid] : [];
+  for (const d of spots) {
+    items.push({ category: 'entrance_fees', label: `${d.name} entrance`, amount: d.fee, model: 'per_person', verified: d.feeVerified, source: `destinations:${d.id}` });
+  }
+  if (spots.length) picks.push(`🗺 See: ${spots.map(d => `**${d.name}** (${d.fee === 0 ? 'free' : formatCurrency(d.fee!)})`).join(', ')}`);
+
+  if (items.length === 0) return { content: NO_DATA('any published prices') };
+
+  const result = calculateTripBudget({ travelers, days, nights, rooms, items });
+  let content = `💸 **Cheapest trip to Mati in KalawGuide**\n${travelers} traveler(s) · ${days} day(s) · ${result.nights} night(s)\n\n${picks.join('\n')}`;
+  content += `\n\n${result.lines.map(l => `• ${l.label}: ${formatCurrency(l.subtotal)}`).join('\n')}\n• Contingency (10%): ${formatCurrency(result.contingency)}`;
+  content += `\n\n**Group total: ${formatCurrency(result.groupTotal)}**\nPer person: ${formatCurrency(result.perPerson)}`;
+  if (req.budgetCap !== undefined) {
+    content += result.groupTotal <= req.budgetCap
+      ? `\n\n✅ Fits your ${formatCurrency(req.budgetCap)} budget, with ${formatCurrency(req.budgetCap - result.groupTotal)} left.`
+      : `\n\n❌ ${formatCurrency(result.groupTotal - req.budgetCap)} over your ${formatCurrency(req.budgetCap)} budget. Try fewer nights or a day trip.`;
+  }
+  if (assumptions.length) content += `\n\nAssumed: ${assumptions.join(', ')}. Tell me your group size and days to adjust.`;
+  content += `\n\nWant to compare? Ask "cheapest place to stay", "cheapest food" or "cheapest activities".\n\n${ESTIMATE_NOTE}`;
+
+  return {
+    content,
+    sources: items.map(i => i.source!).filter(Boolean),
+    cards: [{ type: 'budget', data: result }, ...spots.slice(0, 2).map(destCard)],
+    hasEstimates: result.hasEstimates,
   };
 }
 

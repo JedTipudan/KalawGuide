@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { pickImageAsDataUri } from '../../utils/pickImage';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { KalawButton } from '../../components/common/KalawButton';
@@ -149,13 +150,10 @@ export default function BusinessProfileScreen() {
     }
     setUploadingType(docType);
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        allowsEditing: false,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const asset = result.assets[0];
+      // Saved as a data: URI so the administrator can review it from any device.
+      const asset = await pickImageAsDataUri({ quality: 0.4 });
+      if (asset === 'too_large') { Alert.alert('Photo too large', 'Please choose a smaller photo or crop it, then try again.'); return; }
+      if (!asset) return;
       const db = await getDatabase();
       // Replace existing doc of same type
       await db.runAsync('DELETE FROM business_documents WHERE business_id = ? AND document_type = ?', [bizId, docType]);

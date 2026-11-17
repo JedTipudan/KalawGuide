@@ -6,6 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { WebLayout } from '../../components/web/WebLayout';
 import { KalawAssistanceFAB } from '../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../database/migrations/init';
+import { placeImage, distinctByPhoto } from '../../utils/placeImages';
+import { feeLabel } from '../../utils/priceLabel';
 import { Typography } from '../../constants/tokens';
 import { rw } from '../../utils/responsive';
 
@@ -21,16 +23,17 @@ interface TripRow {
 const CATEGORIES = ['Beaches', 'Mountains', 'Nature', 'Food', 'Adventure'];
 
 const PLACEHOLDER_DESTS: DestRow[] = [
-  { id: '', name: 'Dahican Beach', description: 'Coastal days, at your pace.', location: 'Mati City, Davao Oriental', cover_image_url: null, estimated_fee: 0, fee_verified: 0 },
-  { id: '', name: 'Waniban Island', description: 'Find your island moment.', location: 'Mati City, Davao Oriental', cover_image_url: null, estimated_fee: null, fee_verified: 0 },
-  { id: '', name: 'Sleeping Dinosaur', description: 'A different point of view.', location: 'Mati City, Davao Oriental', cover_image_url: null, estimated_fee: null, fee_verified: 0 },
+  { id: '', name: 'Dahican Beach', description: 'Coastal days, at your pace.', location: 'Mati City, Davao Oriental', cover_image_url: null, estimated_fee: 100, fee_verified: 0 },
+  { id: '', name: 'Waniban Island', description: 'Find your island moment.', location: 'Mati City, Davao Oriental', cover_image_url: null, estimated_fee: 50, fee_verified: 0 },
+  { id: '', name: 'Sleeping Dinosaur', description: 'A different point of view.', location: 'Mati City, Davao Oriental', cover_image_url: null, estimated_fee: 10, fee_verified: 0 },
 ];
 
 const HERO_SLIDES = [
-  { src: require('../../assets/images/hero-coast.png'), label: 'Mati Coastline' },
-  { src: require('../../assets/images/dest-waniban.png'), label: 'Waniban Island' },
-  { src: require('../../assets/images/dest-sleeping-dinosaur.png'), label: 'Sleeping Dinosaur' },
   { src: require('../../assets/images/hero-bg.png'), label: 'Dahican Beach' },
+  { src: require('../../assets/images/dest-waniban.png'), label: 'Waniban Island' },
+  { src: require('../../assets/images/places/sleeping-dinosaur.jpg'), label: 'Sleeping Dinosaur' },
+  { src: require('../../assets/images/dest-sleeping-dinosaur.png'), label: 'Pujada Bay' },
+  { src: require('../../assets/images/places/somewhere-in-dahican.jpg'), label: 'Somewhere in Dahican' },
 ];
 
 export default function WebHomeScreen() {
@@ -48,9 +51,9 @@ export default function WebHomeScreen() {
       try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<DestRow>(
-          'SELECT id, name, description, location, cover_image_url, estimated_fee, fee_verified FROM destinations WHERE is_featured = 1 AND is_active = 1 LIMIT 3'
+          'SELECT id, name, description, location, cover_image_url, estimated_fee, fee_verified FROM destinations WHERE is_active = 1 ORDER BY is_featured DESC, name LIMIT 12'
         );
-        setFeatured(rows);
+        setFeatured(distinctByPhoto(rows, 3));
         if (user) {
           const trip = await db.getFirstAsync<TripRow>(
             'SELECT id, title, start_date, end_date FROM itineraries WHERE user_id = ? ORDER BY start_date ASC LIMIT 1',
@@ -182,19 +185,13 @@ export default function WebHomeScreen() {
                   onPress={() => d.id ? router.push(`/(web)/destination/${d.id}` as any) : undefined}
                   activeOpacity={0.85}
                 >
-                  {d.cover_image_url ? (
-                    <Image source={{ uri: d.cover_image_url }} style={styles.destImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.destImagePlaceholder, { backgroundColor: colors.subtle }]}>
-                      <Text style={{ fontSize: 48 }}>🏝</Text>
-                    </View>
-                  )}
+                  <Image source={placeImage(d.name, d.cover_image_url)} style={styles.destImage} resizeMode="cover" />
                   <View style={styles.destInfo}>
                     <Text style={[styles.destLocation, { color: colors.accent }]}>MATI CITY · DAVAO ORIENTAL</Text>
                     <Text style={[styles.destName, { color: colors.text }]}>{d.name}</Text>
                     <Text style={[styles.destDesc, { color: colors.muted }]} numberOfLines={1}>{d.description}</Text>
                     <Text style={[styles.destFeeText, { color: colors.muted }]}>
-                      {d.fee_verified ? `Entrance fee: ₱${d.estimated_fee}` : 'Entrance fee: needs verification'}
+                      {feeLabel(d.estimated_fee, d.fee_verified)}
                     </Text>
                     <Text style={[styles.viewLink, { color: colors.primary }]}>View Details  ↗</Text>
                   </View>

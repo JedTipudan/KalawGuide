@@ -7,6 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { KalawCard } from '../../../components/cards/KalawCard';
+import { placeImage } from '../../../utils/placeImages';
+import { fromPriceLabel, LOWEST_PRICE_SQL } from '../../../utils/priceLabel';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
 import { Typography, Spacing, Radius } from '../../../constants/tokens';
@@ -20,6 +22,8 @@ interface BusinessRow {
   address: string;
   cover_image_url: string | null;
   verification_status: string;
+  min_price: number | null;
+  min_unit: string | null;
 }
 
 const CATEGORIES = [
@@ -43,8 +47,8 @@ export default function BusinessesScreen() {
   const load = useCallback(async () => {
     try {
       const db = await getDatabase();
-      let query = `SELECT id, name, description, category, address, cover_image_url, verification_status
-                   FROM businesses WHERE verification_status = 'approved' AND is_active = 1`;
+      let query = `SELECT id, name, description, category, address, cover_image_url, verification_status, ${LOWEST_PRICE_SQL}
+                   FROM businesses b WHERE verification_status = 'approved' AND is_active = 1`;
       const params: (string | number)[] = [];
 
       if (selectedCategory) {
@@ -142,11 +146,13 @@ export default function BusinessesScreen() {
             <KalawCard
               title={item.name}
               subtitle={`${CATEGORIES.find(c => c.id === item.category)?.icon ?? '🏪'} ${item.category.replace('_', ' ')} · ${item.address}`}
-              imageUrl={item.cover_image_url ?? undefined}
+              image={placeImage(item.name, item.cover_image_url, item.category)}
               badge="Verified"
               badgeColor={colors.success + '30'}
               onPress={() => router.push({ pathname: '/(tourist)/business/[id]', params: { id: item.id } } as any)}
-            />
+            >
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{fromPriceLabel(item.min_price, item.min_unit)}</Text>
+            </KalawCard>
           )}
         />
       )}

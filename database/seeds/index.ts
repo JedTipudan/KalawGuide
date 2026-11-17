@@ -1,5 +1,9 @@
 import { getDatabase } from '../migrations/init';
+import type { SQLiteDatabase } from 'expo-sqlite';
 import { generateId, now } from '../../utils/helpers';
+import { seedDemoContent } from './demoContent';
+import { storage } from '../../utils/storage';
+import { hashPassword as saltedHash } from '../../services/auth/passwords';
 
 const ADMIN_EMAIL = 'admin@kalawguide.app';
 const ADMIN_PASSWORD = 'admin2024!';
@@ -19,8 +23,8 @@ function hashPassword(password: string): string {
 
 export async function seedDatabase(): Promise<void> {
   const db = await getDatabase();
-  const { storage } = await import('../../utils/storage');
 
+  // Kept for older on-device installs; the database copy below is what sign-in reads first.
   await storage.setItem('pwd_admin_kalawguide_001', hashPassword(ADMIN_PASSWORD));
 
   const adminExists = await db.getFirstAsync<{ id: string }>(
@@ -33,10 +37,28 @@ export async function seedDatabase(): Promise<void> {
   const needsAdmin = !adminExists;
   const needsSeed = !catCount || catCount.count === 0;
 
-  if (!needsAdmin && !needsSeed) return;
-
   const ts = now();
 
+  if (needsAdmin || needsSeed) await seedBase(db, needsAdmin, needsSeed, ts);
+
+  // The default admin can sign in from any device (its hash lives in the database).
+  await db.runAsync(
+    "UPDATE users SET password_hash = ? WHERE id = 'admin_kalawguide_001' AND password_hash IS NULL",
+    [await saltedHash(ADMIN_PASSWORD)]
+  );
+
+  // Demo resorts, food, transport and tours with sample prices (idempotent; also reaches existing installs).
+  await db.execAsync('BEGIN;');
+  try {
+    await seedDemoContent(db, ts);
+    await db.execAsync('COMMIT;');
+  } catch (e) {
+    await db.execAsync('ROLLBACK;');
+    throw e;
+  }
+}
+
+async function seedBase(db: SQLiteDatabase, needsAdmin: boolean, needsSeed: boolean, ts: string): Promise<void> {
   await db.execAsync('BEGIN;');
   try {
     if (needsAdmin) {
@@ -58,14 +80,14 @@ export async function seedDatabase(): Promise<void> {
       await db.runAsync('INSERT OR IGNORE INTO destination_categories (id,name,icon,color) VALUES (?,?,?,?)', [catIds[5],'Accommodation','bed','#57717A']);
 
       const dests: [string, string, string, string, number, number, number, number, number][] = [
-        [generateId(),'Dahican Beach','A pristine white-sand beach in Mati City, famous for surfing and skimboarding.',catIds[0],6.9333,126.2167,0,0,1],
-        [generateId(),'Cape San Agustin','A scenic cape at the southeastern tip of Mindanao offering stunning ocean views.',catIds[1],6.8167,126.2333,0,0,1],
-        [generateId(),'Pujada Bay','A protected bay with crystal-clear waters and diverse marine life.',catIds[0],6.9500,126.2500,0,0,1],
-        [generateId(),'Mount Hamiguitan Range','A UNESCO World Heritage Site and wildlife sanctuary.',catIds[3],7.0833,126.1667,500,0,1],
-        [generateId(),'Aliwagwag Falls','A spectacular series of cascading waterfalls in Cateel.',catIds[1],7.7833,126.4500,50,0,0],
-        [generateId(),'Mati City Public Market','The central market offering fresh local produce and seafood.',catIds[4],6.9500,126.2167,0,0,0],
+        [generateId(),'Dahican Beach','A pristine white-sand beach in Mati City, famous for surfing and skimboarding. Beachfront resorts charge a consumable entrance.',catIds[0],6.9243,126.2809,100,0,1],
+        [generateId(),'Cape San Agustin','A scenic cape at the southeastern tip of Mindanao offering stunning ocean views.',catIds[1],6.2693,126.1930,0,0,1],
+        [generateId(),'Pujada Bay','A protected bay with crystal-clear waters and diverse marine life.',catIds[0],6.8537,126.2418,0,0,1],
+        [generateId(),'Mount Hamiguitan Range','A UNESCO World Heritage Site and wildlife sanctuary.',catIds[3],6.7400,126.1819,500,0,1],
+        [generateId(),'Aliwagwag Falls','A spectacular series of cascading waterfalls in Cateel.',catIds[1],7.7405,126.3015,50,0,0],
+        [generateId(),'Mati City Public Market','The central market offering fresh local produce and seafood.',catIds[4],6.9568,126.2075,0,0,0],
       ];
-      const locs = ['Mati City, Davao Oriental','Mati City, Davao Oriental','Mati City, Davao Oriental','San Isidro, Davao Oriental','Cateel, Davao Oriental','Mati City, Davao Oriental'];
+      const locs = ['Dahican, Mati City','Governor Generoso, Davao Oriental','Mati City, Davao Oriental','San Isidro, Davao Oriental','Cateel, Davao Oriental','Mati City, Davao Oriental'];
       for (let i = 0; i < dests.length; i++) {
         const [id, name, desc, catId, lat, lng, fee, feeV, featured] = dests[i];
         await db.runAsync(

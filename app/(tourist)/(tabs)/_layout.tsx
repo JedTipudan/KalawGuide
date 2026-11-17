@@ -37,27 +37,27 @@ export default function TouristTabsLayout() {
     >
       <Tabs.Screen
         name="home"
-        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="home" label="Home" focused={focused} color={color} /> }}
+        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="home" label="Home" focused={focused} color={color as string} /> }}
       />
       <Tabs.Screen
         name="explore"
-        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="explore" label="Explore" focused={focused} color={color} /> }}
+        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="explore" label="Explore" focused={focused} color={color as string} /> }}
       />
       <Tabs.Screen
         name="trips"
-        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="trips" label="My Trips" focused={focused} color={color} /> }}
+        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="trips" label="My Trips" focused={focused} color={color as string} /> }}
       />
       <Tabs.Screen
         name="businesses"
-        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="businesses" label="Businesses" focused={focused} color={color} /> }}
+        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="businesses" label="Businesses" focused={focused} color={color as string} /> }}
       />
       <Tabs.Screen
         name="favorites"
-        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="favorites" label="Favorites" focused={focused} color={color} /> }}
+        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="favorites" label="Favorites" focused={focused} color={color as string} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="profile" label="Profile" focused={focused} color={color} /> }}
+        options={{ tabBarIcon: ({ focused, color }) => <TabIcon name="profile" label="Profile" focused={focused} color={color as string} /> }}
       />
     </Tabs>
   );

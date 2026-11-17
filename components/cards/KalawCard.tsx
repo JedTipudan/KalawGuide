@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ViewStyle,
+  ImageSourcePropType,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
@@ -14,6 +15,8 @@ interface Props {
   title: string;
   subtitle?: string;
   imageUrl?: string;
+  /** Bundled or remote image; takes priority over imageUrl. */
+  image?: ImageSourcePropType;
   badge?: string;
   badgeColor?: string;
   onPress?: () => void;
@@ -25,6 +28,7 @@ export function KalawCard({
   title,
   subtitle,
   imageUrl,
+  image,
   badge,
   badgeColor,
   onPress,
@@ -42,9 +46,9 @@ export function KalawCard({
         style,
       ]}
     >
-      {imageUrl && (
+      {(image || imageUrl) && (
         <Image
-          source={{ uri: imageUrl }}
+          source={image ?? { uri: imageUrl }}
           style={styles.image}
           resizeMode="cover"
         />

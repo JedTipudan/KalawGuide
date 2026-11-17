@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
+import { placeImage } from '../../utils/placeImages';
 import { generateId, now, formatCurrency } from '../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
@@ -244,13 +245,7 @@ export default function RecommendationsScreen() {
                 </View>
 
                 {/* Cover image */}
-                {item.coverImageUrl ? (
-                  <Image source={{ uri: item.coverImageUrl }} style={styles.coverImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.coverPlaceholder, { backgroundColor: colors.subtle }]}>
-                    <Text style={styles.coverIcon}>🏪</Text>
-                  </View>
-                )}
+                <Image source={placeImage(item.name, item.coverImageUrl, item.category)} style={styles.coverImage} resizeMode="cover" />
 
                 <View style={styles.cardBody}>
                   {/* Name + favorite */}

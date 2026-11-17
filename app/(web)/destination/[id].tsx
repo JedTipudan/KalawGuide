@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { WebLayout } from '../../../components/web/WebLayout';
 import { getDatabase } from '../../../database/migrations/init';
+import { placeImage } from '../../../utils/placeImages';
 import { generateId, now } from '../../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
 import { rw } from '../../../utils/responsive';
@@ -83,9 +84,7 @@ export default function WebDestinationDetailScreen() {
           <View {...rw('stack')} style={styles.twoCol}>
             {/* Left: cover only */}
             <View {...rw('full')} style={styles.leftCol}>
-              <View style={[styles.coverPlaceholder, { backgroundColor: colors.subtle }]}>
-                <Text style={styles.coverIcon}>🏝</Text>
-              </View>
+              <Image source={placeImage(dest.name, dest.cover_image_url)} style={[styles.coverPlaceholder, { backgroundColor: colors.subtle }]} resizeMode="cover" />
             </View>
 
             {/* Right: meta + description + map + actions */}

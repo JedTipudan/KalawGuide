@@ -9,6 +9,8 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
+import { placeImage } from '../../../utils/placeImages';
+import { feeLabel } from '../../../utils/priceLabel';
 import { Typography, Spacing } from '../../../constants/tokens';
 import { BrandLogo, Kiko } from '../../../components/brand/Kiko';
 
@@ -133,18 +135,12 @@ export default function HomeScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.destImageBox}>
-                  {dest.cover_image_url ? (
-                    <Image source={{ uri: dest.cover_image_url }} style={styles.destImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.destImagePlaceholder, { backgroundColor: colors.subtle }]}>
-                      <Text style={styles.destImageEmoji}>🏝</Text>
-                    </View>
-                  )}
+                  <Image source={placeImage(dest.name, dest.cover_image_url)} style={styles.destImage} resizeMode="cover" />
                 </View>
                 <View style={styles.destInfo}>
                   <Text style={[styles.destName, { color: colors.text }]} numberOfLines={1}>{dest.name}</Text>
-                  <Text style={[styles.destLocation, { color: colors.primary }]}>
-                    Mati City · Explore ↗
+                  <Text style={[styles.destLocation, { color: colors.primary }]} numberOfLines={1}>
+                    {feeLabel(dest.estimated_fee, dest.fee_verified).replace(' / person', '')}
                   </Text>
                 </View>
               </TouchableOpacity>

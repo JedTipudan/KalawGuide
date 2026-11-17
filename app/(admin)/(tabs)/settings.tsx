@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getDatabase } from '../../../database/migrations/init';
+import { getDatabase, DATABASE_MODE } from '../../../database/migrations/init';
 import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
 import { ThemeMode } from '../../../types';
 
@@ -137,7 +137,7 @@ export default function AdminSettingsScreen() {
           {[
             ['App version', '1.0.0'],
             ['Coverage', 'Mati City, Davao Oriental'],
-            ['Data', 'Stored on this device (offline-first)'],
+            ['Data', DATABASE_MODE === 'online' ? 'Shared online database (all devices)' : 'Stored on this device (offline-first)'],
           ].map(([k, v], i) => (
             <View key={k}>
               {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}

@@ -1,5 +1,13 @@
 import * as SQLite from 'expo-sqlite';
-import { Platform } from 'react-native';
+import { TursoDatabase, remoteConfigFromEnv } from '../remote/tursoDatabase';
+
+/**
+ * Two modes, same SQL:
+ *  • Shared online database (Turso) when EXPO_PUBLIC_TURSO_DATABASE_URL + EXPO_PUBLIC_TURSO_AUTH_TOKEN
+ *    are set — every phone, the APK and the website see the same users, businesses and approvals.
+ *  • On-device SQLite otherwise (each device/browser keeps its own copy, works fully offline).
+ */
+export const DATABASE_MODE: 'online' | 'device' = remoteConfigFromEnv() ? 'online' : 'device';
 
 // Single shared promise stored on globalThis so it survives across module
 // re-evaluations on web (HMR). This guarantees openDatabaseAsync is called
@@ -8,7 +16,12 @@ declare const globalThis: { __kalawguide_db_promise?: Promise<SQLite.SQLiteDatab
 
 export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (!globalThis.__kalawguide_db_promise) {
-    globalThis.__kalawguide_db_promise = SQLite.openDatabaseAsync('kalawguide.db')
+    const remote = remoteConfigFromEnv();
+    const open: Promise<SQLite.SQLiteDatabase> = remote
+      // TursoDatabase implements the four methods the app uses (getAll/getFirst/run/exec).
+      ? Promise.resolve(new TursoDatabase(remote) as unknown as SQLite.SQLiteDatabase)
+      : SQLite.openDatabaseAsync('kalawguide.db');
+    globalThis.__kalawguide_db_promise = open
       .then(async db => {
         await runMigrations(db);
         return db;
@@ -160,6 +173,13 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   await db.execAsync(
     'CREATE INDEX IF NOT EXISTS idx_assistant_messages_user ON assistant_messages(user_id, timestamp);'
   );
+
+  // Password hashes live in the database (not only on the device that registered), so an account
+  // created on one phone can sign in on any other phone or on the website.
+  const userCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(users)');
+  if (!userCols.some(c => c.name === 'password_hash')) {
+    await db.execAsync('ALTER TABLE users ADD COLUMN password_hash TEXT;');
+  }
 
   await db.execAsync('PRAGMA foreign_keys = ON;');
 }

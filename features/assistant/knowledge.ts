@@ -24,7 +24,7 @@ export interface BusinessInfo {
 export interface PriceInfo {
   businessId: string; businessName: string; businessCategory: string;
   title: string; amount: number; unit: string; category: string;
-  /** listing prices are published by an approved business; services/products carry their own flag */
+  /** listing prices are published by an approved business (demo sample prices count as estimates); services/products carry their own flag */
   verified: boolean;
 }
 
@@ -87,7 +87,8 @@ export async function getPrices(businessIds: string[]): Promise<PriceInfo[]> {
   const ids = placeholders(businessIds.length);
   type Row = { business_id: string; business_name: string; business_category: string; title: string; amount: number; unit: string; category: string; verified: number };
   const listing = await db.getAllAsync<Row>(
-    `SELECT p.business_id, b.name AS business_name, b.category AS business_category, p.title, p.amount, p.unit, p.category, 1 AS verified
+    `SELECT p.business_id, b.name AS business_name, b.category AS business_category, p.title, p.amount, p.unit, p.category,
+            CASE WHEN p.conditions LIKE 'Sample price%' THEN 0 ELSE 1 END AS verified
      FROM listing_prices p JOIN businesses b ON b.id = p.business_id
      WHERE p.is_active = 1 AND ${APPROVED} AND p.business_id IN (${ids})`,
     businessIds

@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeMode } from '../../types';
 import { rw } from '../../utils/responsive';
+import { DATABASE_MODE } from '../../database/migrations/init';
 
 export default function WebAdminSettingsScreen() {
   const { colors, mode, setMode } = useTheme();
@@ -19,7 +20,7 @@ export default function WebAdminSettingsScreen() {
   const INFO_ROWS = [
     { label: 'App Version', value: '1.0.0' },
     { label: 'Platform', value: 'Web' },
-    { label: 'Database', value: 'SQLite (local)' },
+    { label: 'Database', value: DATABASE_MODE === 'online' ? 'Shared online (Turso, all devices)' : 'SQLite on this browser (local)' },
     { label: 'Location', value: 'Mati City, Davao Oriental' },
   ];
 

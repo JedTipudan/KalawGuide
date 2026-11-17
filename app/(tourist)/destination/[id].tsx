@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams, Redirect } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getDatabase } from '../../../database/migrations/init';
+import { placeImage } from '../../../utils/placeImages';
 import { generateId, now } from '../../../utils/helpers';
 import { Typography } from '../../../constants/tokens';
 import { LiveMap } from '../../../components/map/LiveMap';
@@ -135,22 +136,7 @@ export default function DestinationDetailScreen() {
           </View>
 
           {/* Hero image */}
-          {dest.cover_image_url ? (
-            <Image source={{ uri: dest.cover_image_url }} style={styles.heroImage} resizeMode="cover" />
-          ) : (
-            <View style={[styles.heroPlaceholder, { backgroundColor: colors.subtle }]}>
-              <Text style={styles.heroEmoji}>🏝</Text>
-            </View>
-          )}
-
-          {/* Thumbnail gallery */}
-          <View style={styles.thumbRow}>
-            {[dest.cover_image_url, null, null].map((url, i) => (
-              <View key={i} style={[styles.thumb, { backgroundColor: colors.subtle }]}>
-                {url ? <Image source={{ uri: url }} style={styles.thumbImage} resizeMode="cover" /> : null}
-              </View>
-            ))}
-          </View>
+          <Image source={placeImage(dest.name, dest.cover_image_url, dest.category_name)} style={styles.heroImage} resizeMode="cover" />
 
           {/* Entrance fee card */}
           <View style={[styles.feeCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>

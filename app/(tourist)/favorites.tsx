@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { KalawCard } from '../../components/cards/KalawCard';
+import { placeImage } from '../../utils/placeImages';
+import { feeLabel, fromPriceLabel, LOWEST_PRICE_SQL } from '../../utils/priceLabel';
 import { getDatabase } from '../../database/migrations/init';
 import { now } from '../../utils/helpers';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
@@ -12,6 +14,7 @@ import { Typography, Spacing, Radius } from '../../constants/tokens';
 interface FavRow {
   id: string; entity_type: string; entity_id: string;
   name: string; location: string; cover_image_url: string | null; category: string;
+  estimated_fee?: number | null; fee_verified?: number; min_price?: number | null; min_unit?: string | null;
 }
 
 export default function FavoritesScreen() {
@@ -26,14 +29,14 @@ export default function FavoritesScreen() {
     if (!user) return;
     const db = await getDatabase();
     const dests = await db.getAllAsync<FavRow>(`
-      SELECT f.id, f.entity_type, f.entity_id, d.name, d.location, d.cover_image_url, c.name as category
+      SELECT f.id, f.entity_type, f.entity_id, d.name, d.location, d.cover_image_url, c.name as category, d.estimated_fee, d.fee_verified
       FROM favorites f
       JOIN destinations d ON f.entity_id = d.id
       LEFT JOIN destination_categories c ON d.category_id = c.id
       WHERE f.user_id = ? AND f.entity_type = 'destination'
       ORDER BY f.created_at DESC`, [user.id]);
     const bizs = await db.getAllAsync<FavRow>(`
-      SELECT f.id, f.entity_type, f.entity_id, b.name, b.address as location, b.cover_image_url, b.category
+      SELECT f.id, f.entity_type, f.entity_id, b.name, b.address as location, b.cover_image_url, b.category, ${LOWEST_PRICE_SQL}
       FROM favorites f
       JOIN businesses b ON f.entity_id = b.id
       WHERE f.user_id = ? AND f.entity_type = 'business' AND b.verification_status = 'approved'
@@ -90,12 +93,16 @@ export default function FavoritesScreen() {
             <KalawCard
               title={item.name}
               subtitle={`${item.category} · ${item.location}`}
-              imageUrl={item.cover_image_url ?? undefined}
+              image={placeImage(item.name, item.cover_image_url, item.category)}
               onPress={() => {
                 if (tab === 'destination') router.push({ pathname: '/(tourist)/destination/[id]', params: { id: item.entity_id } } as any);
                 else router.push({ pathname: '/(tourist)/business/[id]', params: { id: item.entity_id } } as any);
               }}
-            />
+            >
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>
+                {item.entity_type === 'destination' ? feeLabel(item.estimated_fee, item.fee_verified) : fromPriceLabel(item.min_price, item.min_unit)}
+              </Text>
+            </KalawCard>
             <TouchableOpacity style={[styles.removeBtn, { borderColor: colors.danger }]} onPress={() => removeFavorite(item.entity_id)}>
               <Text style={[styles.removeBtnText, { color: colors.danger }]}>♡ Remove from favorites</Text>
             </TouchableOpacity>

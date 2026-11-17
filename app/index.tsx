@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Platform, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Platform, View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,18 +10,18 @@ export default function IndexScreen() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  if (Platform.OS === 'web') {
-    return <Redirect href={'/(web)/landing' as any} />;
-  }
-
   useEffect(() => {
-    if (isLoading) return;
+    if (Platform.OS === 'web' || isLoading) return;
     if (!user) router.replace('/(auth)/welcome');
     else if (user.role === 'tourist') router.replace('/(tourist)/(tabs)/home');
     else if (user.role === 'business_owner') router.replace('/(business)/dashboard');
     else if (user.role === 'admin') router.replace('/(admin)/(tabs)/dashboard');
     else router.replace('/(auth)/welcome');
-  }, [isLoading, user]);
+  }, [isLoading, user, router]);
+
+  if (Platform.OS === 'web') {
+    return <Redirect href={'/(web)/landing' as any} />;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -36,10 +36,7 @@ export default function IndexScreen() {
         </Text>
         <Text style={[styles.tagline, { color: colors.muted }]}>Discover. Plan. Go.</Text>
 
-        {/* Hero image placeholder */}
-        <View style={[styles.heroImage, { backgroundColor: colors.subtle }]}>
-          <Text style={styles.heroEmoji}>🏖</Text>
-        </View>
+        <Image source={require('../assets/images/hero-bg.png')} style={[styles.heroImage, { backgroundColor: colors.subtle }]} resizeMode="cover" />
 
         <Text style={[styles.locationLabel, { color: colors.accent }]}>MATI CITY · DAVAO ORIENTAL</Text>
         <Text style={[styles.loadingText, { color: colors.muted }]}>Getting your next journey ready…</Text>
@@ -58,9 +55,7 @@ const styles = StyleSheet.create({
   tagline: { fontFamily: Typography.fontFamilyBody, fontSize: 16 },
   heroImage: {
     width: '100%', height: 300, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
   },
-  heroEmoji: { fontSize: 80 },
   locationLabel: { fontFamily: Typography.fontFamilyBody, fontSize: 12, fontWeight: Typography.weight.semiBold },
   loadingText: { fontFamily: Typography.fontFamilyBody, fontSize: 14 },
 });

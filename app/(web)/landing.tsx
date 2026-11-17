@@ -5,27 +5,37 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
 import { rw } from '../../utils/responsive';
 import { BrandLogo, Kiko } from '../../components/brand/Kiko';
+import { placeImage, distinctByPhoto } from '../../utils/placeImages';
+import { feeLabel, fromPriceLabel, LOWEST_PRICE_SQL } from '../../utils/priceLabel';
 
+// Four different photos (hero-coast.png was a byte-for-byte copy of hero-bg.png).
 const HERO_SLIDES = [
   require('../../assets/images/hero-bg.png'),
-  require('../../assets/images/hero-coast.png'),
+  require('../../assets/images/places/sleeping-dinosaur.jpg'),
   require('../../assets/images/dest-waniban.png'),
-  require('../../assets/images/dest-sleeping-dinosaur.png'),
+  require('../../assets/images/places/somewhere-in-dahican.jpg'),
 ];
 
 export default function WebLandingScreen() {
   const { colors, mode, setMode, isDark } = useTheme();
   const router = useRouter();
-  const [destinations, setDestinations] = useState<{ id: string; name: string; location: string; estimated_fee: number | null }[]>([]);
+  const [destinations, setDestinations] = useState<{ id: string; name: string; location: string; estimated_fee: number | null; fee_verified?: number }[]>([]);
   const [search, setSearch] = useState('');
   const [slideIndex, setSlideIndex] = useState(0);
 
+  const [businesses, setBusinesses] = useState<{ id: string; name: string; type: string; cover_image_url: string | null; price: string }[]>([]);
+
   useEffect(() => {
-    getDatabase().then(db =>
-      db.getAllAsync<{ id: string; name: string; location: string; estimated_fee: number | null }>(
-        'SELECT id, name, location, estimated_fee FROM destinations WHERE is_featured = 1 AND is_active = 1 LIMIT 3'
-      )
-    ).then(setDestinations).catch(() => {});
+    getDatabase().then(async db => {
+      const dests = await db.getAllAsync<{ id: string; name: string; location: string; estimated_fee: number | null; fee_verified: number; cover_image_url: string | null }>(
+        'SELECT id, name, location, estimated_fee, fee_verified, cover_image_url FROM destinations WHERE is_active = 1 ORDER BY is_featured DESC, name LIMIT 12'
+      );
+      setDestinations(distinctByPhoto(dests, 3));
+      const biz = await db.getAllAsync<{ id: string; name: string; category: string; municipality: string | null; cover_image_url: string | null; min_price: number | null; min_unit: string | null }>(
+        `SELECT id, name, category, municipality, cover_image_url, ${LOWEST_PRICE_SQL} FROM businesses b WHERE verification_status = 'approved' AND is_active = 1 AND category = 'accommodation' ORDER BY name LIMIT 12`
+      );
+      setBusinesses(distinctByPhoto(biz, 3).map(b => ({ id: b.id, name: b.name, cover_image_url: b.cover_image_url, type: `Verified stay · ${b.municipality ?? 'Mati City'}`, price: fromPriceLabel(b.min_price, b.min_unit) })));
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -168,14 +178,12 @@ export default function WebLandingScreen() {
                 onPress={() => d.id ? router.push(`/(web)/destination/${d.id}` as any) : router.push('/(web)/explore' as any)}
                 activeOpacity={0.85}
               >
-                <View style={[s.destImg, { backgroundColor: colors.subtle }]}>
-                  <Text style={s.destImgIcon}>{DEST_ICONS[i % DEST_ICONS.length]}</Text>
-                </View>
+                <Image source={placeImage(d.name, (d as { cover_image_url?: string | null }).cover_image_url)} style={[s.destImg, { backgroundColor: colors.subtle }]} resizeMode="cover" />
                 <View style={s.destBody}>
                   <Text style={[s.destName, { color: colors.text }]} numberOfLines={1}>{d.name}</Text>
                   <Text style={[s.destLoc, { color: colors.muted }]}>📍 {d.location}</Text>
-                  <Text style={[s.destFee, { color: colors.muted }]}>
-                    {d.estimated_fee != null ? (d.estimated_fee === 0 ? 'Free' : `₱${d.estimated_fee}`) : 'Free'}
+                  <Text style={[s.destFee, { color: colors.primary, fontWeight: '700' }]}>
+                    {feeLabel(d.estimated_fee, 'fee_verified' in d ? d.fee_verified : 0)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -247,15 +255,14 @@ export default function WebLandingScreen() {
         <div className="reveal"><Text {...rw('h2')} style={[s.sectionTitle, { color: colors.text }]}>Meet the people behind the places.</Text></div>
         <div className="reveal"><Text style={[s.sectionSub, { color: colors.muted }]}>Find a stay, a great meal, or help getting around.</Text></div>
         <div className="dest-grid reveal-group">
-          {BIZ_PLACEHOLDERS.map((b, i) => (
+          {(businesses.length > 0 ? businesses : BIZ_PLACEHOLDERS).map((b, i) => (
             <div key={i} className="reveal hover-lift">
               <TouchableOpacity style={[s.destCard, { backgroundColor: colors.surface }]} onPress={() => router.push('/(web)/businesses' as any)} activeOpacity={0.85}>
-                <View style={[s.destImg, { backgroundColor: colors.subtle }]}>
-                  <Text style={s.destImgIcon}>{b.icon}</Text>
-                </View>
+                <Image source={placeImage(b.name, (b as { cover_image_url?: string | null }).cover_image_url, b.type)} style={[s.destImg, { backgroundColor: colors.subtle }]} resizeMode="cover" />
                 <View style={s.destBody}>
                   <Text style={[s.destName, { color: colors.text }]}>{b.name}</Text>
                   <Text style={[s.destLoc, { color: colors.muted }]}>{b.type}</Text>
+                  {'price' in b && <Text style={[s.destFee, { color: colors.primary, fontWeight: '700' }]}>{(b as { price: string }).price}</Text>}
                 </View>
               </TouchableOpacity>
             </div>
@@ -308,7 +315,7 @@ export default function WebLandingScreen() {
             <Text key={l} style={[s.footerLink, { color: colors.muted }]}>{l}</Text>
           ))}
         </View>
-        <Text style={[s.footerCopy, { color: colors.muted }]}>© KalawGuide · Concept design · Destination photography is illustrative.</Text>
+        <Text style={[s.footerCopy, { color: colors.muted }]}>© KalawGuide · Concept design · Some photos are illustrative. Place photos: Wikimedia Commons contributors (CC BY / CC BY-SA), resort photos by the team.</Text>
       </View>
 
     </ScrollView>
@@ -316,16 +323,15 @@ export default function WebLandingScreen() {
 }
 
 const PLACEHOLDER_DESTS = [
-  { id: '', name: 'Dahican Beach', location: 'Mati City', estimated_fee: 0 },
-  { id: '', name: 'Waniban Island', location: 'Mati City', estimated_fee: null },
-  { id: '', name: 'Sleeping Dinosaur', location: 'Mati City', estimated_fee: null },
+  { id: '', name: 'Dahican Beach', location: 'Mati City', estimated_fee: 100 },
+  { id: '', name: 'Waniban Island', location: 'Mati City', estimated_fee: 50 },
+  { id: '', name: 'Sleeping Dinosaur', location: 'Mati City', estimated_fee: 10 },
 ];
-const DEST_ICONS = ['🏖', '🏝', '⛰', '💧', '🌿', '🏛'];
 const CATEGORIES = ['Beaches', 'Mountains', 'Nature', 'Historical Places', 'Food and Restaurants', 'Adventure Activities'];
 const BIZ_PLACEHOLDERS = [
-  { name: 'Coastal Table', type: 'Restaurant · Demo listing', icon: '🍽' },
-  { name: 'Palm House Stay', type: 'Accommodation · Demo listing', icon: '🏡' },
-  { name: 'Coastline Tours', type: 'Tour operator · Demo listing', icon: '⛵' },
+  { name: 'Somewhere in Dahican', type: 'Accommodation · Dahican, Mati' },
+  { name: 'PRAIA VISTA', type: 'Accommodation · Mati City' },
+  { name: "Sheepy's Surfside Beach Resort", type: 'Accommodation · Dahican, Mati' },
 ];
 const STEPS = [
   { title: 'Discover your destination.', desc: 'Find places that fit your pace and interests.' },
@@ -381,7 +387,7 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: 36, fontWeight: '700', lineHeight: 52 },
   sectionSub: { fontSize: 16, lineHeight: 26 },
   // Destination cards
-  destImg: { height: 200, alignItems: 'center', justifyContent: 'center' },
+  destImg: { width: '100%' as any, height: 200 },
   destImgIcon: { fontSize: 56 },
   destCard: { borderRadius: 20, overflow: 'hidden' },
   destBody: { padding: 20, gap: 6 },

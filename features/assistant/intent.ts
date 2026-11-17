@@ -12,7 +12,7 @@ type Scored = Exclude<AssistantIntent, 'unrelated' | 'malicious_or_override_atte
 const KEYWORDS: [Scored, RegExp[]][] = [
   ['emergency_information', [/\bemergenc/, /\bpolice\b/, /\bhospital/, /\bambulance\b/, /\bfire\b/, /\brescue\b/, /\bcoast ?guard\b/, /\bhotline/, /\b911\b/, /\baccident/, /\binjur/]],
   ['business_contact', [/\bbook(ing|ings|ed)?\b/, /\breserv/, /\bcontact (the |a )?(business|owner|resort|hotel)/, /\bphone number of\b/]],
-  ['travel_budget', [/\bbudget\b/, /\bhow much\b/, /\bcost/, /\bprepare\b/, /\bspend/, /\bafford/, /\bcheap/, /₱\s?\d|\bphp\b|\bpesos?\b/]],
+  ['travel_budget', [/\bbudget\b/, /\bhow much\b/, /\bcost/, /\bprepare\b/, /\bspend/, /\bafford/, /\bcheap/, /\blowest\b/, /\b(pinaka)?mura\b|\bbarato\b|\btipid\b/, /₱\s?\d|\bphp\b|\bpesos?\b/]],
   ['itinerary_planning', [/\bitinerar/, /\bplan (a|my|our)\b/, /\bschedule\b/, /\b\d+[- ]?days?\b/, /\b(day|weekend) trip\b/]],
   ['accommodation', [/\baccommodation/, /\bhotels?\b/, /\bresorts?\b/, /\bstay\b/, /\brooms?\b/, /\blodg/, /\binns?\b/, /\bhomestay/, /\bcottages?\b/, /\bovernight\b/]],
   ['transportation', [/\btransport/, /\bbus(es)?\b/, /\bvans?\b/, /\bjeep/, /\btricycle/, /\bhabal/, /\bget(ting)? (to|around)\b/, /\bfares?\b/, /\bhow (do i|to) (go|get)\b/, /\bride\b/]],

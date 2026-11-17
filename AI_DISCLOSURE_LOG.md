@@ -435,6 +435,242 @@ AI tool: Claude Code (Anthropic). The user reported that the admin Reports, Acti
 
 ---
 
+## Demo Prices, "What Is Cheapest?", Photos Everywhere, Deploy & APK Guide (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user asked: why the map seemed to need an API on mobile; a guide to deploy everything online and to build an APK that Android doesn't flag as unsafe; seed data with prices to demonstrate budgeting; the assistant to suggest the cheapest options; their own resort photos to be used; the duplicate landing photo fixed; and pictures on list items that had none.
+
+**Findings**
+- **Map:** it never needed an API key (Leaflet + free CARTO/OpenStreetMap tiles + phone GPS). The confusion came from an unused `EXPO_PUBLIC_API_BASE_URL` in `.env.example`, which has been removed. The map now falls back to jsDelivr/cdnjs if unpkg is blocked, and shows "needs an internet connection, no API key required" instead of a grey box.
+- **Landing duplicate:** `hero-coast.png` was a byte-for-byte copy of `hero-bg.png`. The `onboarding-1/2/3.png` files were also copies of other images. All four duplicates were deleted, which makes the APK smaller.
+- **Kalaw Assistance guard:** the prompt-injection guard drops any business text containing the word "terminal", so a "Van Terminal" listing silently disappeared. The listing was renamed and the guard was not weakened.
+- **Route bug:** the Favorites empty-state buttons pushed `/(tourist)/explore`, which doesn't exist. They now push `/(tourist)/(tabs)/explore` and `/(tourist)/(tabs)/businesses`.
+
+**What the AI changed**
+- **Photos:**
+  - The user's 9 resort photos were converted (AVIF/PNG/JPG → JPEG, max 960 px, about 70–200 KB each) into `assets/images/places/`.
+  - New `utils/placeImages.ts` resolves a picture in this order: uploaded photo, then a photo matched by name, then a photo that fits the category. The helper `distinctByPhoto` keeps a row of cards from repeating a picture.
+  - It is used on mobile and web Explore, Home, Businesses, Favorites, Recommendations, destination and business details, the landing page, assistant destination cards, and the mobile splash screen.
+  - `KalawCard` gained an `image` prop.
+- **Demo seed:** `database/seeds/demoContent.ts` is idempotent, uses stable IDs, and runs on every launch, so it also reaches existing installs. It adds:
+  - 4 destinations: Sleeping Dinosaur, Waniban Island, Pujada Island and Subangan Museum.
+  - 13 approved businesses owned by a demo owner account that can't sign in: 8 resorts from the user's photos, 2 food, 2 transport and 1 island-hopping operator.
+  - Sample prices and facilities.
+  - Prices are marked `Sample price…` in `conditions`. `knowledge.ts` then reports them as **estimate**, not verified. No phone numbers were invented.
+- **"What is cheapest?":**
+  - `assistantEngine.ts` adds a `cheapest` answer. It lists the lowest stay, food, transport, activity or place prices, or, when no type is named, builds the cheapest complete trip (fare, room, meals, free spots) with a total and a check against the user's budget.
+  - Bisaya/Tagalog "mura / pinakamura / barato / tipid" are recognised.
+  - New suggestion chips were added.
+- **Budget planner:** "Quick fill from KalawGuide prices" with Cheapest / Mid-range / Comfort presets (`services/budget/budgetPresets.ts`). Each preset shows where every amount came from.
+- **Android:** `app.json` blocks the CAMERA and RECORD_AUDIO permissions, which the image picker added by default but the app never uses. It also sets `versionCode`. `eas.json` sets `appVersionSource: remote` and makes production an app bundle.
+- **Docs:**
+  - `guide.html` was rewritten: why the map needs no API key, pre-deploy checks, Vercel, the EAS APK, avoiding Play Protect warnings (release signing, minimal permissions, the appeal form, Play internal testing), Android developer verification, and a demo script.
+  - `.env.example` was cleaned up.
+  - README was updated.
+- **Pre-existing type errors fixed:** tab icon color types and the root layout segment check. `app/index.tsx` now calls its hook before the early return.
+
+**Verification:**
+- `npx tsc --noEmit` shows **0 errors** (previously 8).
+- `npx jest` passes all suites, including new tests for the cheapest answers, the demo seed, budget presets and the map HTML.
+- `npx expo lint` shows the same 102 pre-existing problems; no new ones.
+- `npx expo export -p web` builds, with all photos bundled.
+- `npx expo export -p android` compiles the native bundle.
+- **Not run on a phone or in a browser during this session.** The user should check the screens visually and install the APK. Android rules for developer verification were checked against Google's announcements (enforcement started 30 Sep 2026 in Brazil, Indonesia, Singapore and Thailand, with a global rollout planned for 2027).
+
+---
+
+## Prices on Every List, Based on Mati Travel Guides (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user asked for a PHP price on every list item in the app, based on real Mati, Davao Oriental prices where available.
+
+**Research:** a web search found no official fee list from Mati City or Davao Oriental. Travel blogs and guides (2013–2025) report:
+- a ₱100–150 consumable entrance at Dahican beachfront resorts;
+- about ₱5–10 at the Sleeping Dinosaur viewing deck;
+- ₱50 each at Subangan Museum and Menzi Beach Park;
+- ₱10 at Pangyan Falls;
+- Pujada Bay island hopping from Brgy. Tam-isan at about ₱200 per person on weekends, or ₱4,000 for a whole boat.
+
+Those figures were used. Everything else stays a typical local rate, and every price is labelled "estimate".
+
+**What the AI changed**
+- New `utils/priceLabel.ts`:
+  - `feeLabel` gives "Entrance ₱50 / person · estimate", "Free entrance", or "not recorded yet".
+  - `fromPriceLabel` gives "From ₱1,200 / room / night".
+  - `LOWEST_PRICE_SQL` finds a business's lowest price; for stays it is the cheapest room, not a day pass.
+- Prices now appear on:
+  - mobile Explore, Home and the trip picker;
+  - the Businesses list (mobile and web);
+  - both Favorites screens;
+  - web Explore and Home;
+  - the landing page destination and resort cards.
+
+  Before this, mobile Explore always said "needs verification", and web Explore showed "Free" when a fee was simply unknown.
+- **Seed data:**
+  - Fee updates: Dahican Beach ₱100, Sleeping Dinosaur ₱10, Waniban Island ₱50.
+  - New destinations: Menzi Beach Park & Campsite (₱50) and Pangyan Falls (₱10).
+  - Dahican Surf Resort has a ₱100 consumable entrance.
+  - Island hopping is ₱250 per person, or ₱4,000 for a private boat.
+  - Existing installs get these updates. Only rows still marked as sample prices, or fees nobody has verified or changed, are touched.
+- **Tests:** label formatting, the v2 update, and a check that an admin-verified fee is left alone.
+
+**Verification:**
+- `npx tsc --noEmit` shows 0 errors.
+- `npx jest` passes 143/143 tests.
+- The web and Android production bundles build.
+- ESLint shows only the existing setState-in-effect pattern in the edited files.
+- **Not checked on a phone or in a browser.**
+
+---
+
+## Keyless Map, Resort Locations, Unique Mati Photos, .gitignore (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user saw "API KEY REQUIRED · carto.com/basemaps/apikey" on the map after opening a resort in Expo Go. They also asked for photos that don't repeat, taken from real images of Mati, and for unneeded files to stay off GitHub.
+
+**Findings**
+- CARTO began requiring an API key for its raster basemaps (enforced from 25 Sep 2026, per CARTO's FAQ). Without a key, every tile is a watermark. This affected Expo Go, the APK and the website.
+- With `curl`, Esri `server.arcgisonline.com` tiles (street, dark gray, imagery, labels) and `tile.openstreetmap.org` tiles returned real images without a key, with `Access-Control-Allow-Origin: *`. CARTO returned a 2 KB watermark.
+- A headless Edge render of the map showed some approximate demo pins in the wrong place, including one in the sea. OpenStreetMap's Nominatim search gave real positions for most places. It also showed that Cape San Agustin is in Governor Generoso and Pangyan Falls is in Lupon, not Mati.
+
+**What the AI changed**
+- **`components/map/mapHtml.ts`:**
+  - The default tiles are now Esri World Street Map (dark mode: Esri Dark Gray plus a labels overlay).
+  - It switches to OpenStreetMap automatically after repeated tile errors.
+  - A new 🛰 button shows Esri World Imagery with place labels.
+  - CARTO is used only if the optional `EXPO_PUBLIC_CARTO_KEY` is set.
+  - Tests cover the source order, dark mode and the key behaviour. A headless browser render confirmed the tiles load in light and dark mode.
+- **Business/resort detail page:** a location map with the user's live position, the distance, and Get directions.
+- **Positions:** seed coordinates corrected (OpenStreetMap where the place is mapped, otherwise approximate on the right stretch of coast), along with location labels.
+  - Existing installs are updated only where the old seeded position is unchanged, so a position an admin fixed is never overwritten.
+  - Demo-owned businesses are always kept current.
+- **Photos:**
+  - 14 photos were downloaded from Wikimedia Commons via its API, licensed CC BY 2.0, CC BY-SA 3.0 or CC BY-SA 4.0. They were resized to 960 px and stored in `assets/images/places/commons/`.
+  - Authors, licenses and source links are in `CREDITS.md`, and the landing footer credits them.
+  - `utils/placeImages.ts` now gives every seeded destination and business its own photo; a test enforces this.
+  - The photo for Pangyan Falls is illustrative (it shows Aliwagwag), as stated in the credits.
+- **`.gitignore`** now also blocks app builds (`*.apk`, `*.aab`, `*.ipa`), signing and credential files (`*.keystore`, `credentials.json`, `google-services.json`, …), every `.env.*` except `.env.example`, logs and caches, OS and editor files, `.vercel/` and local assistant settings. `git ls-files -ci --exclude-standard` confirmed that nothing already tracked is affected.
+- **`guide.html`, `README.md` and `.env.example`:**
+  - Why the CARTO error happened, and that no key is needed now.
+  - What to do in Expo Go, on Vercel and for the APK (rebuild).
+  - The optional CARTO key.
+  - A new "Keep junk off GitHub" section.
+
+**Verification:**
+- `npx tsc --noEmit` shows 0 errors.
+- `npx jest` passes all tests.
+- `npx expo export` builds for both web and Android.
+- **Not tested in Expo Go on a phone during this session.** The user should reload Expo Go and build a new APK.
+
+---
+
+## Real Map with a Free API Key (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user asked for a "real map" using a map API with a free tier, plus a guide so they can set it up themselves.
+
+**Research:**
+- MapTiler's free plan: 5,000 map sessions a month, non-commercial use, no credit card, and usage pauses instead of being billed.
+- Google Maps Platform: Dynamic Maps has a 10,000/month free cap and needs a billing account.
+
+These figures come from the pricing pages and third-party summaries, as of November 2026.
+
+**What the AI changed**
+- **New `components/map/realMapHtml.ts`:**
+  - A MapTiler engine (MapLibre GL 4.7.1 from unpkg, with jsDelivr as backup; streets-v2 / streets-v2-dark / hybrid styles; 3D tilt, compass, satellite toggle).
+  - A Google Maps JavaScript API engine (roadmap/hybrid, Street View, 45° tilt, dark style).
+  - Both use the same message protocol as the keyless map.
+  - A rejected key (HTTP 401/403 from MapTiler, or Google's `gm_authFailure`) sends `{type:'fallback'}`.
+- **`mapHtml.ts`:** `chooseMapProvider` reads `EXPO_PUBLIC_MAPTILER_KEY`, `EXPO_PUBLIC_GOOGLE_MAPS_KEY` and `EXPO_PUBLIC_MAP_PROVIDER`. `buildMapHtml` picks the engine.
+- **`LiveMap` (native and web):** on `fallback`, it redraws with the keyless map and logs `Map key problem (…)`. On native, links inside the map open in the browser instead of replacing the map. The map page's origin (`https://kalawguide.app/`) is a named constant, because key restrictions depend on it.
+- **Config:**
+  - `eas.json` profiles are linked to the EAS `development` / `preview` / `production` environments.
+  - `.env.example` documents the new keys.
+- **Docs:**
+  - A new `guide.html` section covers MapTiler and Google setup step by step: sign-up, key, origin and website restrictions including `kalawguide.app`, `.env` with `expo start -c`, Vercel, `eas env:create` plus rebuild, Google quota and budget caps, how to tell which map is showing, and troubleshooting.
+  - README updated.
+- **Tests:** provider selection, each engine's output (valid JavaScript, key in the URLs, escaping, fallback hooks), and `forceFree`.
+
+**Verification:**
+- Headless Edge with a fake MapTiler key and a fake Google key: both pages sent `fallback`.
+- The MapLibre engine rendered real tiles over Mati, with correct pins and the 3D / 🛰 / ⤢ / ◎ controls, when given a raster style. MapTiler's own vector tiles couldn't be rendered headlessly without a real key, and headless Edge also stalls MapLibre's vector workers.
+- `npx tsc --noEmit` shows 0 errors.
+- `npx jest` passes.
+- The web and Android bundles build.
+- **Not verified with a real MapTiler or Google key, or on a phone.** The user needs to create a key and follow `guide.html`.
+
+---
+
+## Guide Fix: MapTiler Key Steps Match the Real Dashboard (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user's MapTiler dashboard showed **API keys → New** and a "Create a new key" form (Name, Description, Allowed user-agent header, Allowed HTTP Origins). It did not show the "Account → API keys / Default key" the guide described.
+
+`guide.html` now walks through that form field by field:
+- Leave the user-agent field and the origins field empty at first.
+- Copy the key from the API keys list.
+- Once the map works, lock the key with `kalawguide.app`, the Vercel address, `localhost` and `?`. The `?` allows requests with no origin, which some Android WebViews send.
+- The troubleshooting row was updated to match.
+
+Documentation only; no code changed.
+
+---
+
+## Fix: MapTiler Map Blank (Only the Pins Showed) (2026-11-17)
+
+AI tool: Claude Code (Anthropic). After adding a MapTiler key, the user saw the pins but no map.
+
+**Diagnosis**
+- The key in `.env` was valid. With `curl`, all three styles, tiles.json, the vector tiles and the fonts returned 200, with `Access-Control-Allow-Origin: *`.
+- In real Chrome (driven through the Claude in Chrome extension), the same map page rendered fully when opened directly.
+- Inside an `about:srcdoc` iframe, which is how the website embeds the map, MapLibre's tiles stayed "loading" forever. This happened with or without the COOP/COEP headers, so the trigger is `srcdoc` itself. No error event fires in that case, so the bad-key fallback never triggered.
+- A `blob:` URL iframe under the same COOP/COEP headers rendered the full map.
+- Earlier, headless Edge had shown the same blank map, and it was wrongly put down to a headless limitation.
+
+**What the AI changed**
+- **`LiveMap.web.tsx`:** the map page is now loaded from a `blob:` URL (same origin, allowed under COEP) instead of `srcDoc`, and old blob URLs are released.
+- **`realMapHtml.ts`:** a 20-second safety net. If the MapTiler map hasn't finished loading, it reports `maptiler-timeout` and the app shows the keyless map, so the map can never stay blank.
+
+**Verification:**
+- In the user's running dev server, `/map` in Chrome showed the full MapTiler map (roads, towns and labels around Mati, dark mode), and the 3D tilt worked.
+- `npx tsc --noEmit` shows 0 errors.
+- `npx jest` passes.
+- The native phone app loads the page with a real base URL (`https://kalawguide.app/`), not `srcdoc`. Expo Go wasn't tested on a phone; the 20-second fallback covers it if anything else goes wrong there.
+
+---
+
+## Shared Online Database for Multi-Device Testing (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user's second course has an instructor who will create tourist and business accounts on their own devices and use the admin account. A business approved by the admin must therefore show on the tourist side across devices. With on-device SQLite, every device had its own copy, so that could not work.
+
+**Decision:** Turso, a hosted SQLite (libSQL) database with a free plan and no credit card, accessed over its HTTP API.
+- The app already used only four expo-sqlite calls with plain SQL (`getAllAsync` ×64, `getFirstAsync` ×67, `runAsync` ×161, `execAsync` ×13).
+- A drop-in adapter keeps all screens unchanged. Moving to Firebase or Supabase would have meant rewriting the queries.
+- The on-device mode stays as the default when no Turso settings are present.
+
+**What the AI changed**
+- **New `database/remote/tursoDatabase.ts`:**
+  - Turso "Hrana over HTTP" (`POST /v2/pipeline`) with typed arguments and values.
+  - Each `BEGIN … COMMIT` is buffered into one atomic request; reads flush pending writes first.
+  - `PRAGMA table_info` is answered from an empty `SELECT`, and local-only PRAGMAs are skipped.
+  - Clear errors for a missing connection and for a bad token.
+- **`init.ts`:** the online mode is used when `EXPO_PUBLIC_TURSO_DATABASE_URL` and `EXPO_PUBLIC_TURSO_AUTH_TOKEN` are set. `DATABASE_MODE` is exported, and a `users.password_hash` column is added.
+- **Accounts:**
+  - Password hashes move from device storage into the users table, so accounts sign in on any device.
+  - New `services/auth/passwords.ts` uses a salted SHA-256 hash (expo-crypto). Old hashes are still accepted and upgraded on sign-in.
+  - The admin's hash is seeded into the database.
+- **Uploads:** business cover photos and verification documents are stored as compressed `data:` URIs (`utils/pickImage.ts`, with a size cap), so the admin can see them from another device.
+- **Admin Settings** (mobile and web) shows "Shared online database" or "on this device".
+- **Docs:**
+  - A new `guide.html` section covers creating the database and token, connecting `.env`, Vercel and EAS, rehearsing the three-device test, backups, starting fresh, and security.
+  - `.env.example` and README updated.
+
+**Verification:**
+- New tests use a stand-in Turso server that speaks the same JSON protocol over Node's SQLite. Three isolated "devices" run the full scenario: a business registers with a document on phone A; the admin signs in and approves on laptop B (and sees the document); the owner signs in and a tourist sees the approved business on phone C; the shared seed runs only once.
+- `npx tsc --noEmit` shows 0 errors.
+- `npx jest` passes all tests.
+- The web and Android bundles build.
+- **Not tested against a real Turso database.** The user still has to create one. Turso's CORS behavior for browser use could not be checked without a real database, so the guide and the error messages cover it.
+
+**Security note (also in the guide):** the database token ships inside the app, as with map keys. That's acceptable for a class demo with no real personal data. A public launch would need a server API in between.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -452,3 +688,10 @@ Admin settings redesign, working reports & activity logs, bookings removed, READ
 Mascot (Kiko) and app icon added (2026-11-16).
 Google sign-in placement fix (2026-11-16).
 Mobile admin navigation and reports fix (2026-11-16).
+Demo prices, "what is cheapest?", photos on every list, deploy & APK guide (2026-11-17).
+Prices on every list, based on Mati travel guides (2026-11-17).
+Keyless map, resort locations, unique Mati photos, .gitignore (2026-11-17).
+Real map with a free API key (MapTiler / Google) and setup guide (2026-11-17).
+Guide fix: MapTiler key steps (2026-11-17).
+Fix: MapTiler map blank on web (srcdoc → blob iframe) + 20 s fallback (2026-11-17).
+Shared online database (Turso) for multi-device testing (2026-11-17).

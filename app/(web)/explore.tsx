@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,6 +10,8 @@ import { generateId, now } from '../../utils/helpers';
 import { Destination } from '../../types';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
 import { rw } from '../../utils/responsive';
+import { placeImage } from '../../utils/placeImages';
+import { feeLabel } from '../../utils/priceLabel';
 
 export default function WebExploreScreen() {
   const { colors } = useTheme();
@@ -120,21 +122,17 @@ export default function WebExploreScreen() {
 
             <div className="card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 } as any}>
               {(filtered.length > 0 ? filtered : PLACEHOLDER_DESTS).map((d, i) => {
-                const item = d as { id?: string; name: string; location: string; description?: string; estimatedFee?: number };
+                const item = d as { id?: string; name: string; location: string; description?: string; estimatedFee?: number; feeVerified?: boolean };
                 return (
                   <div key={item.id ?? i} style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: colors.surface, display: 'flex', flexDirection: 'column' } as any}>
                     {fromTrips ? (
                       <View>
-                        <View style={[styles.destImg, { backgroundColor: colors.subtle }]}>
-                          <Text style={styles.destImgIcon}>🏖</Text>
-                        </View>
+                        <Image source={placeImage(item.name, (item as { coverImageUrl?: string }).coverImageUrl)} style={[styles.destImg, { backgroundColor: colors.subtle }]} resizeMode="cover" />
                         <View style={styles.destBody}>
                           <Text style={[styles.destName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                           <Text style={[styles.destLoc, { color: colors.muted }]} numberOfLines={1}>📍 {item.location}</Text>
                           <Text style={[styles.destDesc, { color: colors.muted }]} numberOfLines={2}>{item.description ?? 'A beautiful destination in Davao Oriental.'}</Text>
-                          {item.estimatedFee !== undefined
-                            ? <Text style={[styles.destFee, { color: colors.primary }]}>₱{item.estimatedFee}</Text>
-                            : <Text style={[styles.destFee, { color: colors.muted }]}>Free</Text>}
+                          <Text style={[styles.destFee, { color: colors.primary }]}>{feeLabel(item.estimatedFee, item.feeVerified)}</Text>
                         </View>
                       </View>
                     ) : (
@@ -142,16 +140,12 @@ export default function WebExploreScreen() {
                         onPress={() => item.id ? router.push(`/(web)/destination/${item.id}` as any) : undefined}
                         activeOpacity={0.85}
                       >
-                        <View style={[styles.destImg, { backgroundColor: colors.subtle }]}>
-                          <Text style={styles.destImgIcon}>🏖</Text>
-                        </View>
+                        <Image source={placeImage(item.name, (item as { coverImageUrl?: string }).coverImageUrl)} style={[styles.destImg, { backgroundColor: colors.subtle }]} resizeMode="cover" />
                         <View style={styles.destBody}>
                           <Text style={[styles.destName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                           <Text style={[styles.destLoc, { color: colors.muted }]} numberOfLines={1}>📍 {item.location}</Text>
                           <Text style={[styles.destDesc, { color: colors.muted }]} numberOfLines={2}>{item.description ?? 'A beautiful destination in Davao Oriental.'}</Text>
-                          {item.estimatedFee !== undefined
-                            ? <Text style={[styles.destFee, { color: colors.primary }]}>₱{item.estimatedFee}</Text>
-                            : <Text style={[styles.destFee, { color: colors.muted }]}>Free</Text>}
+                          <Text style={[styles.destFee, { color: colors.primary }]}>{feeLabel(item.estimatedFee, item.feeVerified)}</Text>
                         </View>
                       </TouchableOpacity>
                     )}
@@ -201,7 +195,7 @@ const styles = StyleSheet.create({
   resultCount: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.body },
   destGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
   destCard: { width: 280, borderRadius: Radius.md, overflow: 'hidden' },
-  destImg: { height: 160, alignItems: 'center', justifyContent: 'center' },
+  destImg: { width: '100%' as any, height: 160 },
   destImgIcon: { fontSize: 48 },
   destBody: { padding: Spacing.base, gap: Spacing.xs },
   destName: { fontFamily: Typography.fontFamilyBody, fontSize: Typography.size.bodyLg, fontWeight: Typography.weight.semiBold },

@@ -9,11 +9,12 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
+import { feeLabel } from '../../utils/priceLabel';
 import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
 
 interface DestRow {
   id: string; name: string; description: string;
-  location: string; estimated_fee: number | null;
+  location: string; estimated_fee: number | null; fee_verified: number;
 }
 
 export default function ExploreForTripScreen() {
@@ -29,7 +30,7 @@ export default function ExploreForTripScreen() {
   useEffect(() => {
     getDatabase().then(db =>
       db.getAllAsync<DestRow>(
-        'SELECT id, name, description, location, estimated_fee FROM destinations WHERE is_active = 1 ORDER BY is_featured DESC, name ASC'
+        'SELECT id, name, description, location, estimated_fee, fee_verified FROM destinations WHERE is_active = 1 ORDER BY is_featured DESC, name ASC'
       )
     ).then(rows => { setDestinations(rows); setLoading(false); })
      .catch(() => setLoading(false));
@@ -108,11 +109,9 @@ export default function ExploreForTripScreen() {
                 <Text style={[styles.cardName, { color: colors.text }]}>{item.name}</Text>
                 <Text style={[styles.cardLoc, { color: colors.muted }]}>📍 {item.location}</Text>
                 <Text style={[styles.cardDesc, { color: colors.muted }]} numberOfLines={2}>{item.description}</Text>
-                {item.estimated_fee !== null && (
-                  <Text style={[styles.cardFee, { color: colors.primary }]}>
-                    {item.estimated_fee === 0 ? 'Free' : `₱${item.estimated_fee}`}
-                  </Text>
-                )}
+                <Text style={[styles.cardFee, { color: colors.primary }]}>
+                  {feeLabel(item.estimated_fee, item.fee_verified)}
+                </Text>
               </View>
               <TouchableOpacity
                 style={[styles.addBtn, { backgroundColor: colors.primary, opacity: addingId === item.id ? 0.7 : 1 }]}

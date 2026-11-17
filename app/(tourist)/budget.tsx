@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   KeyboardAvoidingView, Platform, TouchableOpacity, TextInput,
@@ -11,6 +11,14 @@ import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
 import { Typography } from '../../constants/tokens';
 import { BudgetPlan } from '../../types';
+import { buildBudgetPreset, BudgetLevel } from '../../services/budget/budgetPresets';
+import { getApprovedBusinesses, getPrices, PriceInfo } from '../../features/assistant/knowledge';
+
+const LEVELS: { id: BudgetLevel; label: string }[] = [
+  { id: 'cheapest', label: '💸 Cheapest' },
+  { id: 'mid', label: '⚖️ Mid-range' },
+  { id: 'comfort', label: '🌴 Comfort' },
+];
 
 export default function BudgetScreen() {
   const { colors } = useTheme();
@@ -28,6 +36,29 @@ export default function BudgetScreen() {
   const [other, setOther] = useState('1000');
   const [saving, setSaving] = useState(false);
   const [calculated, setCalculated] = useState(false);
+  const [prices, setPrices] = useState<PriceInfo[]>([]);
+  const [level, setLevel] = useState<BudgetLevel | null>(null);
+  const [presetNotes, setPresetNotes] = useState<string[]>([]);
+
+  // Published prices from verified businesses (and the demo seed) power the quick-fill presets.
+  useEffect(() => {
+    getApprovedBusinesses()
+      .then(list => getPrices(list.map(b => b.id)))
+      .then(setPrices)
+      .catch(() => setPrices([]));
+  }, []);
+
+  function applyPreset(l: BudgetLevel) {
+    const p = buildBudgetPreset(prices, l, Number(travelers) || 1, Number(days) || 1);
+    setTransportation(String(p.transportation));
+    setAccommodation(String(p.accommodation));
+    setFood(String(p.food));
+    setActivities(String(p.activities));
+    setOther(String(p.other));
+    setPresetNotes(p.notes);
+    setLevel(l);
+    setCalculated(true);
+  }
 
   const plan: Partial<BudgetPlan> = {
     travelers: Number(travelers) || 1,
@@ -100,6 +131,35 @@ export default function BudgetScreen() {
             {/* Inputs card */}
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>Your trip, your numbers</Text>
+              {prices.length > 0 && (
+                <View style={styles.presetBox}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Quick fill from KalawGuide prices</Text>
+                  <Text style={[styles.disclaimer, { color: colors.muted }]}>Set travelers and days first, then pick a style. You can edit any amount after.</Text>
+                  <View style={styles.presetRow}>
+                    {LEVELS.map(l => {
+                      const active = level === l.id;
+                      return (
+                        <TouchableOpacity
+                          key={l.id}
+                          style={[styles.presetChip, { backgroundColor: active ? colors.primary : colors.surface, borderColor: active ? colors.primary : colors.border }]}
+                          onPress={() => applyPreset(l.id)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: active }}
+                        >
+                          <Text style={[styles.presetChipText, { color: active ? colors.onPrimary : colors.text }]}>{l.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {presetNotes.length > 0 && (
+                    <View style={[styles.presetNotes, { backgroundColor: colors.subtle }]}>
+                      {presetNotes.map(n => (
+                        <Text key={n} style={[styles.presetNote, { color: colors.text }]}>{n}</Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
               {FIELDS.map(f => (
                 <View key={f.label} style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Text style={[styles.fieldLabel, { color: colors.text }]}>{f.label}</Text>
@@ -108,7 +168,7 @@ export default function BudgetScreen() {
                     placeholder={f.placeholder}
                     placeholderTextColor={colors.muted}
                     value={f.value}
-                    onChangeText={f.onChange}
+                    onChangeText={v => { f.onChange(v); if (level && !['Destination', 'Travel date'].includes(f.label)) setLevel(null); }}
                     keyboardType={['Destination', 'Travel date'].includes(f.label) ? 'default' : 'decimal-pad'}
                   />
                 </View>
@@ -143,7 +203,9 @@ export default function BudgetScreen() {
                 </Text>
               ))}
               <Text style={[styles.disclaimer, { color: colors.muted }]}>
-                Example traveler-entered amounts, not verified prices. Category amounts are totals for the whole trip.
+                {level
+                  ? 'Filled from prices published in KalawGuide (some are sample estimates). Category amounts are totals for the whole trip.'
+                  : 'Example traveler-entered amounts, not verified prices. Category amounts are totals for the whole trip.'}
               </Text>
               <TouchableOpacity
                 style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
@@ -204,4 +266,10 @@ const styles = StyleSheet.create({
   estimatePerPerson: { fontFamily: Typography.fontFamilyBody, fontSize: 14, marginTop: -8 },
   breakdownRow: { fontFamily: Typography.fontFamilyBody, fontSize: 15 },
   disclaimer: { fontFamily: Typography.fontFamilyBody, fontSize: 12, lineHeight: 18 },
+  presetBox: { gap: 8 },
+  presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presetChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  presetChipText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
+  presetNotes: { borderRadius: 12, padding: 12, gap: 4 },
+  presetNote: { fontFamily: Typography.fontFamilyBody, fontSize: 12, lineHeight: 18 },
 });

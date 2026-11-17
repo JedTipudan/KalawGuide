@@ -8,6 +8,8 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { KalawAssistanceFAB } from '../../../components/assistant/KalawAssistanceFAB';
 import { getDatabase } from '../../../database/migrations/init';
+import { placeImage } from '../../../utils/placeImages';
+import { feeLabel } from '../../../utils/priceLabel';
 import { Typography, Spacing } from '../../../constants/tokens';
 
 interface DestinationRow {
@@ -103,21 +105,15 @@ export default function ExploreScreen() {
                 onPress={() => router.push({ pathname: '/(tourist)/destination/[id]', params: { id: dest.id } } as any)}
                 activeOpacity={0.85}
               >
-                {dest.cover_image_url ? (
-                  <Image source={{ uri: dest.cover_image_url }} style={styles.destImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.destImagePlaceholder, { backgroundColor: colors.subtle }]}>
-                    <Text style={styles.destImageEmoji}>🏝</Text>
-                  </View>
-                )}
+                <Image source={placeImage(dest.name, dest.cover_image_url, dest.category_name)} style={styles.destImage} resizeMode="cover" />
                 <View style={styles.destInfo}>
                   <Text style={[styles.destRegion, { color: colors.accent }]}>MATI CITY · DAVAO ORIENTAL</Text>
                   <Text style={[styles.destName, { color: colors.text }]}>{dest.name}</Text>
                   <Text style={[styles.destDesc, { color: colors.muted }]} numberOfLines={1}>
                     {dest.description}
                   </Text>
-                  <Text style={[styles.destFee, { color: colors.muted }]}>
-                    Entrance fee: needs verification
+                  <Text style={[styles.destFee, { color: colors.primary, fontWeight: '700' }]}>
+                    {feeLabel(dest.estimated_fee, dest.fee_verified)}
                   </Text>
                   <Text style={[styles.destViewDetails, { color: colors.primary }]}>View Details  ↗</Text>
                 </View>

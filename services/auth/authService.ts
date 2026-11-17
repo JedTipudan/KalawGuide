@@ -2,22 +2,9 @@ import { getDatabase } from '../../database/migrations/init';
 import { User, AuthSession, SignInCredentials, RegisterCredentials } from '../../types';
 import { generateId, now } from '../../utils/helpers';
 import { storage } from '../../utils/storage';
+import { hashPassword, isLegacyHash, verifyPassword } from './passwords';
 
 const SESSION_KEY = 'kalawguide_session';
-
-// Pure-JS hash — crypto.subtle is unavailable on Hermes (React Native)
-function hashPassword(password: string): string {
-  const str = password + 'kalawguide_salt_2024';
-  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(16, '0');
-}
 
 export async function registerWithEmail(
   credentials: RegisterCredentials
@@ -30,18 +17,17 @@ export async function registerWithEmail(
   );
   if (existing) throw new Error('An account with this email already exists.');
 
-  const passwordHash = hashPassword(credentials.password);
+  const passwordHash = await hashPassword(credentials.password);
   const userId = generateId();
   const timestamp = now();
 
+  // The hash is stored with the user, so the account can sign in from any device that uses the
+  // same database (all devices, when the shared online database is configured).
   await db.runAsync(
-    `INSERT INTO users (id, email, display_name, role, provider, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 'email', ?, ?)`,
-    [userId, credentials.email.toLowerCase(), credentials.displayName, credentials.role, timestamp, timestamp]
+    `INSERT INTO users (id, email, display_name, role, provider, password_hash, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'email', ?, ?, ?)`,
+    [userId, credentials.email.toLowerCase(), credentials.displayName, credentials.role, passwordHash, timestamp, timestamp]
   );
-
-  // Store password hash separately (in production this lives on the backend)
-  await storage.setItem(`pwd_${userId}`, passwordHash);
 
   const user: User = {
     id: userId,
@@ -64,7 +50,7 @@ export async function signInWithEmail(
   const row = await db.getFirstAsync<{
     id: string; email: string; display_name: string;
     avatar_url: string | null; role: string; provider: string;
-    status: string; created_at: string; updated_at: string;
+    status: string; created_at: string; updated_at: string; password_hash: string | null;
   }>(
     'SELECT * FROM users WHERE email = ?',
     [credentials.email.toLowerCase()]
@@ -73,11 +59,20 @@ export async function signInWithEmail(
   if (!row) throw new Error('No account found with this email address.');
   if (row.status === 'blocked') throw new Error('This account has been restricted by an administrator. Please contact support.');
 
-  const storedHash = await storage.getItem(`pwd_${row.id}`);
-  if (!storedHash) throw new Error('Invalid credentials. Please try again.');
-
-  const inputHash = hashPassword(credentials.password);
-  if (inputHash !== storedHash) throw new Error('Incorrect password. Please try again.');
+  // Accounts made before passwords moved into the database kept their hash on the device.
+  const storedHash = row.password_hash ?? await storage.getItem(`pwd_${row.id}`);
+  if (!storedHash) {
+    throw new Error(row.provider === 'google'
+      ? 'This account uses Google. Tap "Continue with Google" instead.'
+      : 'Invalid credentials. Please try again.');
+  }
+  if (!(await verifyPassword(credentials.password, storedHash))) {
+    throw new Error('Incorrect password. Please try again.');
+  }
+  // Upgrade old or device-only hashes to the salted format, stored with the user.
+  if (!row.password_hash || isLegacyHash(row.password_hash)) {
+    await db.runAsync('UPDATE users SET password_hash = ? WHERE id = ?', [await hashPassword(credentials.password), row.id]);
+  }
 
   const user: User = {
     id: row.id,

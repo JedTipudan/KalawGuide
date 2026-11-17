@@ -5,6 +5,7 @@ import { WebLayout } from '../../components/web/WebLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
+import { placeImage } from '../../utils/placeImages';
 import { generateId, now, formatCurrency } from '../../utils/helpers';
 import { rw } from '../../utils/responsive';
 
@@ -178,13 +179,7 @@ export default function WebRecommendationsScreen() {
               {results.map((item, index) => (
                 <View {...rw('full')} key={item.id} style={[s.card, { backgroundColor: colors.surface }]}>
                   <View style={s.cardImgWrap}>
-                    {item.coverImageUrl ? (
-                      <Image source={{ uri: item.coverImageUrl }} style={s.cardImg} resizeMode="cover" />
-                    ) : (
-                      <View style={[s.cardImgPlaceholder, { backgroundColor: colors.subtle }]}>
-                        <Text style={s.cardImgIcon}>🏪</Text>
-                      </View>
-                    )}
+                    <Image source={placeImage(item.name, item.coverImageUrl, item.category)} style={s.cardImg} resizeMode="cover" />
                     <View style={[s.rankBadge, { backgroundColor: index === 0 ? colors.primary : colors.subtle }]}>
                       <Text style={[s.rankText, { color: index === 0 ? colors.onPrimary : colors.muted }]}>#{index + 1}</Text>
                     </View>

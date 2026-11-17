@@ -1,42 +1,68 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Anything listed here is never added by `git add -A`, so it never reaches GitHub.
+# (A file that was ALREADY committed stays tracked — remove it with `git rm --cached <file>`.)
 
-# dependencies
+# ─── Dependencies (reinstalled with `npm ci`) ────────────────────────────────
 node_modules/
 
-# Expo
+# ─── Expo / build output (rebuilt by Vercel and EAS) ─────────────────────────
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+.vercel/
+coverage/
 
-# Native
+# Generated native folders (Continuous Native Generation — never edit or commit)
+/ios
+/android
 .kotlin/
 *.orig.*
+
+# ─── App builds: share the expo.dev link instead of committing the file ──────
+*.apk
+*.aab
+*.ipa
+*.app
+*.tar.gz
+
+# ─── Secrets: signing keys, credentials, environment files ───────────────────
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
+*.pem
 *.mobileprovision
+credentials.json
+credentials/
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+.env
+.env.*
+!.env.example
 
-# Metro
-.metro-health-check*
-
-# debug
+# ─── Logs and caches ─────────────────────────────────────────────────────────
+*.log
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env
-.env*.local
-
-# typescript
+.metro-health-check*
 *.tsbuildinfo
+.eslintcache
+.cache/
+tmp/
+temp/
 
-# generated native folders
-/ios
-/android
+# ─── OS and editor files ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ─── Local AI-assistant settings (personal, not part of the project) ─────────
+.claude/settings.local.json

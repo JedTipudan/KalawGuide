@@ -7,6 +7,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getDatabase } from '../../../database/migrations/init';
+import { placeImage } from '../../../utils/placeImages';
+import { LiveMap } from '../../../components/map/LiveMap';
+import { useLiveLocation, distanceKm, formatDistance, directionsUrl } from '../../../features/map/useLiveLocation';
 import { formatCurrency, generateId, now } from '../../../utils/helpers';
 import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
 
@@ -14,6 +17,7 @@ interface BizDetail {
   id: string; name: string; description: string; category: string;
   address: string; contact_number: string | null; email: string | null;
   website: string | null; facebook: string | null; cover_image_url: string | null;
+  latitude: number | null; longitude: number | null;
 }
 interface PriceRow { id: string; title: string; amount: number; unit: string; category: string; description: string | null; }
 interface FacilityRow { id: string; name: string; icon: string | null; }
@@ -28,12 +32,13 @@ export default function BusinessDetailScreen() {
   const [facilities, setFacilities] = useState<FacilityRow[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
   const shadow = isDark ? Shadows.dark.sm : Shadows.light.sm;
+  const { coords, retry } = useLiveLocation();
 
   const load = useCallback(async () => {
     if (!id) return;
     const db = await getDatabase();
     const b = await db.getFirstAsync<BizDetail>(
-      'SELECT id, name, description, category, address, contact_number, email, website, facebook, cover_image_url FROM businesses WHERE id = ? AND verification_status = ? AND is_active = 1',
+      'SELECT id, name, description, category, address, contact_number, email, website, facebook, cover_image_url, latitude, longitude FROM businesses WHERE id = ? AND verification_status = ? AND is_active = 1',
       [id, 'approved']
     );
     if (b) setBiz(b);
@@ -87,13 +92,7 @@ export default function BusinessDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {biz.cover_image_url ? (
-          <Image source={{ uri: biz.cover_image_url }} style={styles.cover} resizeMode="cover" />
-        ) : (
-          <View style={[styles.coverPlaceholder, { backgroundColor: colors.subtle }]}>
-            <Text style={styles.coverIcon}>🏪</Text>
-          </View>
-        )}
+        <Image source={placeImage(biz.name, biz.cover_image_url, biz.category)} style={styles.cover} resizeMode="cover" />
 
         <TouchableOpacity onPress={() => router.back()} style={[styles.backBtnOverlay, { backgroundColor: colors.surface + 'E0' }]}>
           <Text style={[styles.backText, { color: colors.text }]}>← Back</Text>
@@ -121,6 +120,32 @@ export default function BusinessDetailScreen() {
 
           <Text style={[styles.address, { color: colors.muted }]}>📍 {biz.address}</Text>
           <Text style={[styles.description, { color: colors.text }]}>{biz.description}</Text>
+
+          {/* Location: keyless map (no API key), live distance and Google Maps directions */}
+          {biz.latitude != null && biz.longitude != null && (
+            <View style={[styles.contactCard, { backgroundColor: colors.surface, ...shadow }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>📍 Location</Text>
+              <LiveMap
+                style={styles.map}
+                markers={[{ id: biz.id, name: biz.name, lat: biz.latitude, lng: biz.longitude, subtitle: biz.address }]}
+                focusId={biz.id}
+                user={coords}
+                onRequestLocate={retry}
+              />
+              {coords && (
+                <Text style={[styles.contactItem, { color: colors.primary }]}>
+                  🧭 {formatDistance(distanceKm(coords.lat, coords.lng, biz.latitude, biz.longitude))} (straight line)
+                </Text>
+              )}
+              <TouchableOpacity
+                onPress={() => Linking.openURL(directionsUrl(biz.latitude!, biz.longitude!))}
+                style={[styles.directionsBtn, { backgroundColor: colors.primary }]}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.directionsText, { color: colors.onPrimary }]}>Get directions</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Contact */}
           {(biz.contact_number || biz.email || biz.website || biz.facebook) && (
@@ -197,6 +222,9 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.xxxl },
   cover: { width: '100%', height: 220 },
   coverPlaceholder: { width: '100%', height: 220, alignItems: 'center', justifyContent: 'center' },
+  map: { height: 220, borderRadius: 12, marginVertical: Spacing.sm },
+  directionsBtn: { borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, alignItems: 'center', marginTop: Spacing.xs },
+  directionsText: { fontFamily: Typography.fontFamilyBody, fontSize: 14, fontWeight: Typography.weight.semiBold },
   coverIcon: { fontSize: 64 },
   backBtnOverlay: { position: 'absolute', top: Spacing.base, left: Spacing.base, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.lg },
   backBtn: { padding: Spacing.base },

@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DestinationCardData, TripBudgetResult, TripCostCategory } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
 import { Icon } from '../common/Icon';
+import { placeImage } from '../../utils/placeImages';
 import { Radius, Spacing, Typography } from '../../constants/tokens';
 
 const CATEGORY_LABEL: Record<TripCostCategory, string> = {
@@ -34,6 +35,7 @@ export function DestinationCard({ data }: { data: DestinationCardData }) {
       accessible
       accessibilityLabel={`${data.name}, ${data.location}. Entrance fee ${data.fee === null ? 'not recorded' : formatCurrency(data.fee)}`}
     >
+      <Image source={placeImage(data.name)} style={styles.thumb} resizeMode="cover" accessibilityIgnoresInvertColors />
       <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{data.name}</Text>
       <View style={styles.row}>
         <Icon name="location" size={14} color={colors.muted} />
@@ -107,6 +109,7 @@ export function BudgetBreakdownCard({ data }: { data: TripBudgetResult }) {
 }
 
 const styles = StyleSheet.create({
+  thumb: { width: '100%', height: 96, borderRadius: Radius.sm, marginBottom: Spacing.xs },
   card: {
     borderWidth: 1,
     borderRadius: Radius.md,
