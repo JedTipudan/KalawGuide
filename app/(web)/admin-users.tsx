@@ -99,7 +99,7 @@ export default function WebAdminUsersScreen() {
       >
         <View style={s.pageHeader}>
           <View>
-            <Text style={[s.pageTitle, { color: colors.text }]}>User Management</Text>
+            <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>User Management</Text>
             <Text style={[s.pageSub, { color: colors.muted }]}>
               Manage roles and restrict accounts to keep the platform safe for tourists.
             </Text>
@@ -146,7 +146,7 @@ export default function WebAdminUsersScreen() {
             <Text style={[s.emptyText, { color: colors.muted }]}>No users found.</Text>
           </View>
         ) : (
-          <View style={[s.table, { borderColor: colors.border }]}>
+          <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
             {/* Header */}
             <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
               {['User', 'Email', 'Role', 'Status', 'Actions'].map(h => (

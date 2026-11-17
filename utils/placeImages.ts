@@ -22,9 +22,9 @@ const IMG = {
   matiCentral: require('../assets/images/places/commons/mati-central.jpg'),
   matiBaywalk: require('../assets/images/places/commons/mati-baywalk.jpg'),
   sleepingDinosaur: require('../assets/images/places/sleeping-dinosaur.jpg'),
-  waniban: require('../assets/images/dest-waniban.png'),
-  pujadaIsland: require('../assets/images/hero-bg.png'),
-  menzi: require('../assets/images/dest-sleeping-dinosaur.png'),
+  waniban: require('../assets/images/dest-waniban.jpg'),
+  pujadaIsland: require('../assets/images/hero-bg.jpg'),
+  menzi: require('../assets/images/dest-sleeping-dinosaur.jpg'),
   // Resorts (team photos)
   amery: require('../assets/images/places/amery-palm-villas.jpg'),
   calma: require('../assets/images/places/calma-mati.jpg'),

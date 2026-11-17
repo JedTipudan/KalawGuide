@@ -17,8 +17,10 @@ import { useNetworkState } from 'expo-network';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { AssistantMessage, AssistantSuggestion } from '../../types';
-import { generateId, now } from '../../utils/helpers';
+import { formatShortDate, generateId, now } from '../../utils/helpers';
 import { getAssistantReply } from '../../features/assistant/assistantEngine';
+import { CLOUD_AI_ENABLED } from '../../features/assistant/cloudModel';
+import { loadSnapshot, syncKnowledge } from '../../features/assistant/knowledge';
 import { clearHistory, loadHistory, saveMessage } from '../../features/assistant/history';
 import { ASSISTANT_NAME, ASSISTANT_PURPOSE } from '../../features/assistant/identity';
 import { MAX_INPUT_LENGTH } from '../../features/assistant/guard';
@@ -36,6 +38,17 @@ const SUGGESTIONS: AssistantSuggestion[] = [
   { id: '5', label: 'Activities in Mati', query: 'What activities can I try in Mati?' },
   { id: '6', label: 'Accommodations', query: 'Find accommodations within my budget.' },
 ];
+
+const SYNC_EVERY_MS = 2 * 60 * 1000;
+
+/** "5:42 PM" today, otherwise the short date. */
+function syncLabel(iso: string | null): string {
+  if (!iso) return 'not yet saved';
+  const d = new Date(iso);
+  return d.toDateString() === new Date().toDateString()
+    ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : formatShortDate(iso);
+}
 
 /** Renders **bold** segments from assistant templates. */
 function RichText({ content, style }: { content: string; style: object }) {
@@ -66,6 +79,26 @@ export function KalawAssistanceFAB() {
   // Unknown reachability (e.g. first render) is treated as online; the engine never needs the network anyway.
   const offline = network.isConnected === false || network.isInternetReachable === false;
 
+  // Keep a local copy of the latest KalawGuide data: refreshed while online (on start, when the
+  // connection comes back, when the chat opens, and every 2 minutes), used when offline.
+  const [syncedAt, setSyncedAt] = useState<string | null>(null);
+  const lastSync = useRef(0);
+  const refreshKnowledge = useCallback((force = false) => {
+    if (offline || (!force && Date.now() - lastSync.current < SYNC_EVERY_MS)) return;
+    lastSync.current = Date.now();
+    syncKnowledge().then(s => setSyncedAt(s.syncedAt)).catch(() => { lastSync.current = 0; });
+  }, [offline]);
+  useEffect(() => {
+    loadSnapshot().then(s => { if (s) setSyncedAt(prev => prev ?? s.syncedAt); }).catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshKnowledge(true);
+    if (offline) return;
+    const t = setInterval(() => refreshKnowledge(), SYNC_EVERY_MS);
+    return () => clearInterval(t);
+  }, [offline, refreshKnowledge]);
+  useEffect(() => { if (isOpen) refreshKnowledge(); }, [isOpen, refreshKnowledge]);
+
   // Signed-in users get persisted history; guests keep a session-only conversation.
   // Reset during render when the account changes so one user never sees another's chat.
   const userId = user?.id ?? null;
@@ -94,7 +127,8 @@ export function KalawAssistanceFAB() {
     setInput('');
     setIsTyping(true);
     try {
-      const reply = await getAssistantReply(trimmed, user, { offline });
+      const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
+      const reply = await getAssistantReply(trimmed, user, { offline, history });
       append({ id: generateId(), role: 'assistant', content: reply.content, timestamp: now(), metadata: reply.meta });
     } catch {
       // Never leave the user without an answer (e.g. the browser database failed to open).
@@ -108,7 +142,7 @@ export function KalawAssistanceFAB() {
       setIsTyping(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, [user, offline, isTyping, append]);
+  }, [user, offline, isTyping, append, messages]);
 
   // Web: Enter sends, Shift+Enter adds a new line. (react-native-web ignores submitBehavior on
   // multiline inputs, so Enter would otherwise just insert a newline.) Native uses submitBehavior="submit".
@@ -137,6 +171,9 @@ export function KalawAssistanceFAB() {
   }, [user]);
 
   const statusColor = offline ? colors.warning : colors.success;
+  const statusLabel = offline
+    ? `Offline · Local AI · data from ${syncLabel(syncedAt)}`
+    : CLOUD_AI_ENABLED ? 'Online · Cloud AI' : 'Online · On-device answers';
 
   return (
     <>
@@ -174,11 +211,11 @@ export function KalawAssistanceFAB() {
                     <View
                       style={[styles.statusPill, { borderColor: statusColor }]}
                       accessible
-                      accessibilityLabel={`${offline ? 'Offline' : 'Online'}. Answers come from on-device KalawGuide data.`}
+                      accessibilityLabel={statusLabel}
                     >
                       <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
                       <Text style={[styles.statusText, { color: colors.text }]}>
-                        {offline ? 'Offline' : 'Online'} · On-device answers
+                        {statusLabel}
                       </Text>
                     </View>
                   </View>
@@ -219,7 +256,7 @@ export function KalawAssistanceFAB() {
                       {`Hello${user ? `, ${user.displayName.split(' ')[0]}` : ''}! I'm Kiko.`}
                     </Text>
                     <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
-                      Your Mati travel buddy. Ask me about the best places to visit, verified businesses, itineraries and travel budgets. I work even without internet.
+                      Your Mati travel buddy. Ask me about the best places to visit, verified businesses, itineraries and travel budgets. Online I use cloud AI with the latest updates; offline I answer from the copy saved on your device.
                     </Text>
                     <View style={styles.suggestions}>
                       {SUGGESTIONS.map(s => (
@@ -258,6 +295,11 @@ export function KalawAssistanceFAB() {
                         c.type === 'budget'
                           ? <BudgetBreakdownCard key={i} data={c.data} />
                           : <DestinationCard key={i} data={c.data} />
+                      )}
+                      {!isUser && item.metadata?.dataSyncedAt && (
+                        <Text style={[styles.estimateNote, { color: colors.muted }]}>
+                          Offline answer · KalawGuide data saved {syncLabel(item.metadata.dataSyncedAt)}
+                        </Text>
                       )}
                       {!isUser && item.metadata?.hasEstimates && (
                         <Text style={[styles.estimateNote, { color: colors.warning }]}>

@@ -11,7 +11,7 @@ export default function WebAdminActivityLogsScreen() {
     <AdminShell activeLabel="Activity Logs">
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Text style={[s.eyebrow, { color: colors.primary }]}>PLATFORM / ACTIVITY</Text>
-        <Text style={[s.title, { color: colors.text }]}>Activity logs</Text>
+        <Text {...rw('h2')} style={[s.title, { color: colors.text }]}>Activity logs</Text>
         <Text style={[s.sub, { color: colors.muted }]}>Who did what, and when, across KalawGuide.</Text>
         <ActivityLogView />
       </ScrollView>

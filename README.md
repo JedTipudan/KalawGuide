@@ -104,7 +104,22 @@ Submits for verification       Manages destinations & contacts      Plans trips,
 
 ## Kalaw Assistance
 
-A rule-based travel assistant that works **fully offline**. It answers only from KalawGuide's own data, never makes up places, prices or phone numbers, and needs **no API key, no server and no paid AI**.
+A travel assistant with a **cloud AI** (online) and a **local AI** (offline). Both answer only from KalawGuide's own data and never make up places, prices or phone numbers. Everything is **free**: no paid AI and no server.
+
+| | Online | Offline |
+|---|---|---|
+| Who answers | **Cloud AI:** Google Gemini (free tier) writes a natural reply from the local engine's answer plus KalawGuide's latest data | **Local AI:** the on-device rule-based engine |
+| Data used | The live database, so changes by business owners and the admin on other devices show at once | The **copy saved on the device** at the last sync |
+| Status in chat | `Online · Cloud AI` | `Offline · Local AI · data from 5:42 PM` |
+
+- **Syncing data to the device:** while online, the app copies destinations, approved businesses, prices, facilities and emergency contacts into device storage (AsyncStorage, which is `localStorage` on the web). It syncs when the app starts, when the connection comes back, when the chat opens, and every 2 minutes. Offline answers say when that copy was saved.
+- **Cloud AI setup (optional):** create a free key at <https://aistudio.google.com/api-keys> (no billing). Put it in `.env` as `EXPO_PUBLIC_GEMINI_API_KEY`. For the APK, add the same variable on expo.dev under *Project → Environment variables* (the `preview` environment), because `.env` isn't uploaded to EAS. Without a key, or when the free quota runs out, the local AI answers everything.
+- **Cloud AI guardrails (stays inside KalawGuide):**
+  1. Off-topic and prompt-injection questions are refused in code and never sent to Gemini.
+  2. Gemini gets strict rules: KalawGuide travel topics only, facts only from the data sent with the question, no links or code.
+  3. Every Gemini reply is checked against KalawGuide's data before it's shown. It is discarded, and the local answer is shown instead, if it contains a price, phone number or bold place/business name that isn't in KalawGuide, a link, code, off-topic words, or is too long.
+  4. The existing leak filter runs last.
+- **Note:** like the map and Turso keys, the Gemini key is built into the app. That's fine for a class demo on the free tier. A public launch should call Gemini from a small server.
 
 | Ask something like… | You get |
 |---|---|
@@ -124,7 +139,7 @@ A rule-based travel assistant that works **fully offline**. It answers only from
   - The output is validated before it's shown.
 - **Chat history:** saved per signed-in user.
 - **Keyboard:** on web, **Enter sends** and Shift+Enter adds a new line.
-- **Code:** `features/assistant/` (engine, intent detection, guard, budget parser, knowledge queries) with Jest tests.
+- **Code:** `features/assistant/` (engine, intent detection, guard, budget parser, knowledge queries, `cloudModel.ts` for Gemini, `knowledgeCache.ts` for the saved copy) with Jest tests.
 
 ---
 
@@ -409,6 +424,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 | Android blocks the APK as unsafe | Install a `preview` (release) build, not a development build. Tap *More details → Install anyway* and submit the Play Protect appeal, or use Play internal testing. See `guide.html` §6. |
 | Blue location dot missing on the website | Open the site over `https://` or `localhost`, not `http://192.168…`, and allow location. |
 | Google Sign-In fails | Check `EXPO_PUBLIC_GOOGLE_CLIENT_ID` and the authorized origins. Demo mode works without it. |
+| APK build fails with `AAPT: error: file failed to compile` on an image | The file is not really a PNG (often a JPEG renamed to `.png`). Give it the right extension and update its `require()`. |
+| Kalaw Assistance says `Online · On-device answers` instead of `Cloud AI` | `EXPO_PUBLIC_GEMINI_API_KEY` is missing. Add it to `.env` and restart Expo, or for the APK add it to the EAS environment and rebuild. |
 | Dependency or build errors | Run `npx expo-doctor`, then `npx expo install --fix`. |
 
 ---
@@ -416,6 +433,12 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Cloud AI guardrails:** Gemini replies are checked against KalawGuide's data (prices, phone numbers, place names, no links/code/off-topic) before they're shown; otherwise the local answer is used.
+- **Kalaw Assistance: cloud AI + local AI.** Online, a free Google Gemini key gives natural answers from KalawGuide's latest data. That data is saved on the device whenever there's internet, so offline the local assistant still answers from the latest update.
+
+- **Admin and business website on phones.** Tables scroll sideways instead of overlapping. Two-column forms and cards stack into one column, and button rows wrap.
+- **Fix: APK build failed (`AAPT: error: file failed to compile`).** Three photos were JPEGs named `.png`, so they were renamed to `.jpg`.
 
 - **Shared online database (Turso).** With two settings, every device uses one database: the tourist, business-owner and admin sides can be tested on different devices. Accounts sign in anywhere, uploads are visible to the admin, and approvals reach tourists. Without the settings, the app keeps its on-device mode. See `guide.html`.
 

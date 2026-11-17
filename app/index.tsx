@@ -36,7 +36,7 @@ export default function IndexScreen() {
         </Text>
         <Text style={[styles.tagline, { color: colors.muted }]}>Discover. Plan. Go.</Text>
 
-        <Image source={require('../assets/images/hero-bg.png')} style={[styles.heroImage, { backgroundColor: colors.subtle }]} resizeMode="cover" />
+        <Image source={require('../assets/images/hero-bg.jpg')} style={[styles.heroImage, { backgroundColor: colors.subtle }]} resizeMode="cover" />
 
         <Text style={[styles.locationLabel, { color: colors.accent }]}>MATI CITY · DAVAO ORIENTAL</Text>
         <Text style={[styles.loadingText, { color: colors.muted }]}>Getting your next journey ready…</Text>

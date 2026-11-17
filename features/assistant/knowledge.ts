@@ -1,5 +1,6 @@
-import { getDatabase } from '../../database/migrations/init';
+import { DATABASE_MODE, getDatabase } from '../../database/migrations/init';
 import { sanitizeRetrieved } from './guard';
+import { KnowledgeSnapshot, loadSnapshot, saveSnapshot } from './knowledgeCache';
 
 /**
  * The assistant's only path to data: fixed, parameterized, read-only queries.
@@ -30,7 +31,7 @@ export interface PriceInfo {
 
 const placeholders = (n: number) => Array.from({ length: n }, () => '?').join(',');
 
-export async function getDestinations(): Promise<DestinationInfo[]> {
+async function liveDestinations(): Promise<DestinationInfo[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<{
     id: string; name: string; location: string; description: string; fee: number | null;
@@ -57,7 +58,7 @@ export async function getDestinations(): Promise<DestinationInfo[]> {
     .filter(d => d.name);
 }
 
-export async function getApprovedBusinesses(categories?: string[]): Promise<BusinessInfo[]> {
+async function liveBusinesses(categories?: string[]): Promise<BusinessInfo[]> {
   const db = await getDatabase();
   const filter = categories?.length ? ` AND b.category IN (${placeholders(categories.length)})` : '';
   const rows = await db.getAllAsync<{
@@ -81,7 +82,7 @@ export async function getApprovedBusinesses(categories?: string[]): Promise<Busi
     .filter(b => b.name);
 }
 
-export async function getPrices(businessIds: string[]): Promise<PriceInfo[]> {
+async function livePrices(businessIds: string[]): Promise<PriceInfo[]> {
   if (businessIds.length === 0) return [];
   const db = await getDatabase();
   const ids = placeholders(businessIds.length);
@@ -122,7 +123,7 @@ export async function getPrices(businessIds: string[]): Promise<PriceInfo[]> {
     .sort((a, b) => a.amount - b.amount);
 }
 
-export async function getFacilities(businessId: string): Promise<string[]> {
+async function liveFacilities(businessId: string): Promise<string[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<{ name: string }>(
     `SELECT f.name FROM listing_facilities f JOIN businesses b ON b.id = f.business_id
@@ -134,7 +135,7 @@ export async function getFacilities(businessId: string): Promise<string[]> {
 
 export interface EmergencyInfo { name: string; organization: string; number: string; verified: boolean }
 
-export async function getEmergencyContacts(): Promise<EmergencyInfo[]> {
+async function liveEmergency(): Promise<EmergencyInfo[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<{ name: string; organization: string; contact_number: string; is_verified: number }>(
     'SELECT name, organization, contact_number, is_verified FROM emergency_contacts ORDER BY is_verified DESC, name'
@@ -147,3 +148,78 @@ export async function getEmergencyContacts(): Promise<EmergencyInfo[]> {
   }));
 }
 
+
+// ─── Live data first, local snapshot when offline ────────────────────────────
+
+let offlineHint = false;
+let lastFromSnapshot: string | null = null;
+
+/** The engine tells us when the device is offline, so an online database isn't waited on for nothing. */
+export function setOfflineHint(offline: boolean) { offlineHint = offline; }
+
+/** syncedAt of the snapshot used by the most recent read, or null when it came from the live database. */
+export function lastSnapshotUsed(): string | null { return lastFromSnapshot; }
+
+async function read<T>(live: () => Promise<T>, fromSnapshot: (s: KnowledgeSnapshot) => T): Promise<T> {
+  // The on-device database is always current; only the shared online one can be out of reach.
+  const snap = DATABASE_MODE === 'online' ? await loadSnapshot() : null;
+  if (snap && offlineHint) { lastFromSnapshot = snap.syncedAt; return fromSnapshot(snap); }
+  try {
+    const value = await live();
+    lastFromSnapshot = null;
+    return value;
+  } catch (e) {
+    if (!snap) throw e;
+    lastFromSnapshot = snap.syncedAt;
+    return fromSnapshot(snap);
+  }
+}
+
+export function getDestinations(): Promise<DestinationInfo[]> {
+  return read(liveDestinations, s => s.destinations);
+}
+
+export function getApprovedBusinesses(categories?: string[]): Promise<BusinessInfo[]> {
+  return read(() => liveBusinesses(categories),
+    s => (categories?.length ? s.businesses.filter(b => categories.includes(b.category)) : s.businesses));
+}
+
+export function getPrices(businessIds: string[]): Promise<PriceInfo[]> {
+  return read(() => livePrices(businessIds), s => s.prices.filter(p => businessIds.includes(p.businessId)));
+}
+
+export function getFacilities(businessId: string): Promise<string[]> {
+  return read(() => liveFacilities(businessId), s => s.facilities[businessId] ?? []);
+}
+
+export function getEmergencyContacts(): Promise<EmergencyInfo[]> {
+  return read(liveEmergency, s => s.emergency);
+}
+
+/**
+ * Copy the latest approved data into local storage. Call it while online: this is how changes made
+ * by business owners and the admin on other devices reach the assistant for offline use.
+ */
+export async function syncKnowledge(): Promise<KnowledgeSnapshot> {
+  const [destinations, businesses, emergency] = await Promise.all([liveDestinations(), liveBusinesses(), liveEmergency()]);
+  const prices = await livePrices(businesses.map(b => b.id));
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<{ business_id: string; name: string }>(
+    `SELECT f.business_id, f.name FROM listing_facilities f JOIN businesses b ON b.id = f.business_id WHERE ${APPROVED}`
+  );
+  const facilities: Record<string, string[]> = {};
+  for (const r of rows) {
+    const name = sanitizeRetrieved(r.name, 40);
+    if (!name) continue;
+    const list = (facilities[r.business_id] ??= []);
+    if (list.length < 8) list.push(name);
+  }
+  const snapshot: KnowledgeSnapshot = {
+    version: 1, syncedAt: new Date().toISOString(), destinations, businesses, prices, facilities, emergency,
+  };
+  await saveSnapshot(snapshot);
+  return snapshot;
+}
+
+// Re-exported so the chat screen can show when the local copy was last updated.
+export { loadSnapshot };

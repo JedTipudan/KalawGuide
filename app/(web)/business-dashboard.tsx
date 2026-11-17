@@ -62,7 +62,7 @@ export default function WebBusinessDashboardScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        <Text style={[s.pageTitle, { color: colors.text }]}>Your business, ready for what's next.</Text>
+        <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Your business, ready for what's next.</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>Manage your listing, prices, and requests from one place.</Text>
 
         {/* Verification banner */}
@@ -89,7 +89,7 @@ export default function WebBusinessDashboardScreen() {
         ) : (
           <>
             {/* Stats */}
-            <View style={s.statsRow}>
+            <View {...rw('cols')} style={s.statsRow}>
               {[
                 { label: 'Published prices', value: listing.prices },
                 { label: 'Products', value: listing.products },
@@ -103,7 +103,7 @@ export default function WebBusinessDashboardScreen() {
             </View>
 
             {/* Two col */}
-            <View style={s.twoCol}>
+            <View {...rw('cols')} style={s.twoCol}>
               <View style={[s.checklistCard, { backgroundColor: colors.surface }]}>
                 <Text style={[s.cardTitle, { color: colors.text }]}>Your profile checklist</Text>
                 {[

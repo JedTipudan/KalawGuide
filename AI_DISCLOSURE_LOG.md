@@ -671,6 +671,71 @@ AI tool: Claude Code (Anthropic). The user's second course has an instructor who
 
 ---
 
+## Phone Layout for Admin/Business Website and APK Build Fix (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user reported two problems: (1) on a phone browser, the admin and business-owner pages overlapped, and (2) the EAS Android build failed at `:app:mergeReleaseResources` with `AAPT: error: file failed to compile` for `hero-bg.png`, `dest-waniban.png` and `dest-sleeping-dinosaur.png`.
+
+**Cause of the APK error:** those three files were JPEG photos saved with a `.png` name. Android's resource compiler (AAPT2) reads the extension, tries to compile them as PNG, and fails.
+
+**What the AI changed**
+- Renamed the three files to `.jpg` (`git mv`) and updated every `require()` (onboarding, landing, web home, mobile index, `utils/placeImages.ts`). All other images were checked by their file header and are real PNGs.
+- New phone-only (≤ 767 px) CSS tokens in `components/common/WebAppShell.tsx`:
+  - `table`: admin/business tables keep a 680 px minimum width and scroll sideways inside their card instead of squashing columns on top of each other.
+  - `cols`: side-by-side cards and form fields stack into one full-width column.
+- Applied to the web admin and business pages (`app/(web)/admin-*.tsx`, `business-*.tsx`): every table gets `table`; two-column form rows and the business dashboard stats/cards get `cols`; button rows, the products tabs and settings rows get `wrap`; page titles get `h2` (smaller on phones).
+
+**Checks:** `npx tsc --noEmit` passes. `npx expo lint` reports the same 60 pre-existing problems before and after. The phone layout was not checked in a browser by the AI, and a new APK build has not been run yet.
+
+---
+
+## Kalaw Assistance: Cloud AI + Local AI with Offline Data Sync (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user asked for Kalaw Assistance to have a real AI, free of charge. A cloud part would gather users' latest changes while online, and a local part would keep answering from that stored data offline. The approach was left to the AI.
+
+**Decisions**
+- **Cloud AI:** Google Gemini, free tier (no billing), model alias `gemini-flash-lite-latest`, via the Interactions API (`POST /v1beta/interactions`, `x-goog-api-key` header). The AI read Google's current docs first: they now call `generateContent` legacy, and Gemini 2.5 models are deprecated.
+- **Local AI:** the existing deterministic engine stays the source of facts and the offline answerer. The cloud model only rewords its answer, using the engine's draft plus a compact copy of KalawGuide's data. It is told to copy prices exactly and to never invent anything, and its output still passes `validateOutput`. The input guard and off-topic refusal still run first, in code.
+- **Offline data:** a snapshot (destinations, approved businesses, prices, facilities, emergency contacts) is kept in AsyncStorage. It is refreshed while online: on start, on reconnect, on opening the chat, and every 2 minutes. With the shared Turso database, reads fall back to it when the database can't be reached, and skip the network when the device is known to be offline.
+
+**What the AI changed**
+- New `features/assistant/knowledgeCache.ts` (snapshot storage) and `features/assistant/cloudModel.ts` (Gemini client, prompt rules, data-to-text, response parsing).
+- `features/assistant/knowledge.ts`: queries are now "live first, snapshot when offline"; added `syncKnowledge()`.
+- `features/assistant/assistantEngine.ts`: calls the cloud AI when online and configured, and falls back to the local answer on any error, timeout (15 s) or used-up quota. Reply metadata records `cloud_ai` and the snapshot time.
+- `components/assistant/KalawAssistanceFAB.tsx`: background sync; the status shows `Online · Cloud AI` or `Offline · Local AI · data from …`; offline answers show when the data was saved; the last 6 messages are sent as context.
+- `types/index.ts`: `model` can be `cloud_ai`; new `dataSyncedAt`.
+- `.env.example`: `EXPO_PUBLIC_GEMINI_API_KEY`, `EXPO_PUBLIC_GEMINI_MODEL`.
+- Tests: `cloudModel.test.ts`, `knowledgeCache.test.ts`. A Jest setup file adds the official AsyncStorage mock (`testing/jestSetup.js`, `package.json`).
+
+**Limitations**
+- **Not tested against the real Gemini API** (no key was available). The request and response shape follow Google's docs. The response parser also accepts the older `generateContent` shape.
+- **Not checked in the docs:** free-tier request limits and browser CORS. If Gemini fails, the local answer is shown.
+- **The key ships inside the app,** like the map and Turso keys.
+- **Chat history is not queued offline.** With the shared database, messages sent offline are shown but not saved.
+
+---
+
+## Cloud AI Guardrails (2026-11-17)
+
+AI tool: Claude Code (Anthropic). The user asked that the cloud AI never answer outside the app's scope, using guardrails or a better approach.
+
+**Approach:** a grounding check on the model's output, on top of the input guard and system rules. A system prompt alone can be talked around, so the app checks the reply in code and falls back to the database-only local answer.
+
+**What the AI changed**
+- `features/assistant/cloudModel.ts`: new `checkCloudReply()`. It rejects replies that:
+  - are over 1,500 characters;
+  - contain links, domains, HTML or code blocks;
+  - contain off-topic words (the same list as the intent check) that KalawGuide's data doesn't use;
+  - contain a peso amount, a 7+ digit phone number, or a **bold** name not found in the local draft, the synced data or the question.
+- The system rules now limit bold to names from the data and forbid code.
+- `features/assistant/assistantEngine.ts`: a rejected cloud reply is discarded and the local answer shown. If the model gives the standard refusal, that refusal is kept.
+- `features/assistant/intent.ts`: `OFF_TOPIC` is exported so both checks share one list.
+- `features/assistant/cloudModel.test.ts`: tests for grounded, invented-price, invented-place, invented-number, off-topic, link/code and length cases.
+- The user's local setup guide (`guide.html`, gitignored, not pushed) got a cloud AI section: getting a free key, adding it for Expo, Vercel and EAS, test steps, the guardrails, and troubleshooting.
+
+**Limitation:** the checks are pattern-based. A reply that is on-topic but rephrased loosely can still pass if it uses no unknown prices, numbers or names. It can only use facts KalawGuide already has.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -695,3 +760,6 @@ Real map with a free API key (MapTiler / Google) and setup guide (2026-11-17).
 Guide fix: MapTiler key steps (2026-11-17).
 Fix: MapTiler map blank on web (srcdoc → blob iframe) + 20 s fallback (2026-11-17).
 Shared online database (Turso) for multi-device testing (2026-11-17).
+Phone layout for admin/business website and APK build fix (JPEGs named .png) (2026-11-17).
+Kalaw Assistance cloud AI (Gemini free tier) + local AI with offline data sync (2026-11-17).
+Cloud AI guardrails: replies checked against KalawGuide data (2026-11-17).

@@ -176,6 +176,12 @@ export function WebAppShell({ children }: Props) {
             flex-direction: row !important; flex-wrap: wrap !important; gap: 4px !important;
             padding: 8px 12px !important; border-right-width: 0 !important;
           }
+          /* Admin/business tables: keep columns readable and scroll sideways instead of squashing. */
+          [data-r~="table"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+          [data-r~="table"] > * { min-width: 680px !important; }
+          /* Side-by-side cards and form fields stack into one column. */
+          [data-r~="cols"] { flex-direction: column !important; align-items: stretch !important; }
+          [data-r~="cols"] > * { flex-basis: auto !important; width: 100% !important; min-width: 0 !important; }
         }
 
         /* ── Hover lift on cards ── */

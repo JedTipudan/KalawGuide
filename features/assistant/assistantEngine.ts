@@ -6,15 +6,19 @@ import { classifyIntent } from './intent';
 import { REFUSAL } from './identity';
 import { BudgetRequest, matchDestination, parseBudgetRequest } from './budgetParser';
 import { getLocalModel } from './localModel';
+import { CLOUD_AI_ENABLED, CloudTurn, askCloud, checkCloudReply, factsFromSnapshot } from './cloudModel';
 import {
   BusinessInfo, DestinationInfo, PriceInfo, getApprovedBusinesses, getDestinations,
-  getEmergencyContacts, getFacilities, getPrices,
+  getEmergencyContacts, getFacilities, getPrices, lastSnapshotUsed, loadSnapshot, setOfflineHint, syncKnowledge,
 } from './knowledge';
 
 /**
  * Kalaw Assistance pipeline (works fully offline):
- * guard → intent → refuse | retrieve (read-only, approved data) → template → validate output.
- * Facts only come from KalawGuide's SQLite data; missing data is stated, never invented.
+ * guard → intent → refuse | retrieve (read-only, approved data) → template → [cloud AI] → validate output.
+ * Facts only come from KalawGuide's data; missing data is stated, never invented.
+ * Online with a Gemini key, the cloud AI words the answer from those facts (cloudModel.ts).
+ * Offline, the local engine answers from the live database, or from the last synced snapshot
+ * when the shared online database can't be reached (knowledgeCache.ts).
  */
 
 export interface AssistantReply {
@@ -42,8 +46,9 @@ const ESTIMATE_NOTE = 'Verified = confirmed in KalawGuide or published by an app
 export async function getAssistantReply(
   query: string,
   user: User | null,
-  opts: { offline: boolean }
+  opts: { offline: boolean; history?: CloudTurn[] }
 ): Promise<AssistantReply> {
+  setOfflineHint(opts.offline);
   const model = getLocalModel();
   const base = { offline: opts.offline, model: model ? 'local_llm' as const : 'deterministic' as const };
   const refuse = (intent: AssistantIntent): AssistantReply =>
@@ -82,8 +87,24 @@ export async function getAssistantReply(
     answer = { content: "Sorry, I couldn't read that information from KalawGuide right now. Please try again." };
   }
 
+  const dataSyncedAt = lastSnapshotUsed() ?? undefined;
   let content = answer.content;
-  if (model) {
+  let usedModel: AssistantReplyMeta['model'] = base.model;
+  if (!opts.offline && CLOUD_AI_ENABLED) {
+    try {
+      const snapshot = (await loadSnapshot()) ?? (await syncKnowledge().catch(() => null));
+      const facts = factsFromSnapshot(snapshot);
+      const cloud = (await askCloud({ question: query, draft: content, facts, history: opts.history ?? [] })).trim();
+      if (cloud === REFUSAL || cloud.startsWith(REFUSAL.slice(0, 40))) {
+        content = REFUSAL; // the model judged it off-topic: keep the standard refusal
+        usedModel = 'cloud_ai';
+      } else if (checkCloudReply(cloud, { draft: content, facts, question: query }) === null) {
+        content = cloud;
+        usedModel = 'cloud_ai';
+      } // else: the reply mentioned something KalawGuide can't back up, so the local answer stays
+
+    } catch { /* no internet, quota reached or timeout: keep the local answer */ }
+  } else if (model) {
     try { content = await model.rephrase(content); } catch { /* keep template text */ }
   }
 
@@ -94,6 +115,8 @@ export async function getAssistantReply(
     content,
     meta: {
       ...base,
+      model: usedModel,
+      dataSyncedAt,
       intent,
       sources: blocked ? [] : [...new Set(answer.sources ?? [])],
       hasEstimates: !blocked && !!answer.hasEstimates,

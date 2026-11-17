@@ -95,7 +95,7 @@ export default function WebAdminEmergencyScreen() {
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content}>
         <View style={s.pageHeader}>
           <View>
-            <Text style={[s.pageTitle, { color: colors.text }]}>Emergency Contacts</Text>
+            <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Emergency Contacts</Text>
             <Text style={[s.pageSub, { color: colors.muted }]}>Manage local emergency contacts visible to tourists.</Text>
           </View>
           <TouchableOpacity style={[s.addBtn, { backgroundColor: colors.primary }]} onPress={openAdd}>
@@ -166,7 +166,7 @@ export default function WebAdminEmergencyScreen() {
                 thumbColor={form.verified ? colors.success : colors.muted}
               />
             </View>
-            <View style={s.formActions}>
+            <View {...rw('wrap')} style={s.formActions}>
               <TouchableOpacity style={[s.cancelBtn, { borderColor: colors.border }]} onPress={() => setShowForm(false)}>
                 <Text style={[s.cancelBtnText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
@@ -191,7 +191,7 @@ export default function WebAdminEmergencyScreen() {
             <Text style={[s.emptyText, { color: colors.muted }]}>No emergency contacts yet. Add one above.</Text>
           </View>
         ) : (
-          <View style={[s.table, { borderColor: colors.border }]}>
+          <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
             <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
               {['Name & Organization', 'Contact Number', 'Status', 'Actions'].map(h => (
                 <Text key={h} style={[s.th, { color: colors.muted }, h === 'Name & Organization' && { flex: 2 }]}>{h}</Text>

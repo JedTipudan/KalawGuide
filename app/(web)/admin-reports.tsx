@@ -11,7 +11,7 @@ export default function WebAdminReportsScreen() {
     <AdminShell activeLabel="Reports & Analytics">
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Text style={[s.eyebrow, { color: colors.primary }]}>PLATFORM / REPORTS</Text>
-        <Text style={[s.title, { color: colors.text }]}>Reports & analytics</Text>
+        <Text {...rw('h2')} style={[s.title, { color: colors.text }]}>Reports & analytics</Text>
         <Text style={[s.sub, { color: colors.muted }]}>
           Platform health at a glance: users, business verification, listings and tourist activity.
         </Text>

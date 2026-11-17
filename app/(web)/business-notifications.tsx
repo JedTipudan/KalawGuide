@@ -56,7 +56,7 @@ export default function WebBusinessNotificationsScreen() {
       >
         <View style={s.pageHeader}>
           <View>
-            <Text style={[s.pageTitle, { color: colors.text }]}>Notifications</Text>
+            <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Notifications</Text>
             <Text style={[s.pageSub, { color: colors.muted }]}>Verification and listing updates.</Text>
           </View>
           {unreadCount > 0 && (

@@ -95,7 +95,7 @@ export default function WebBusinessFacilitiesScreen() {
   return (
     <BusinessShell activeLabel="Facilities & Activities">
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Text style={[s.pageTitle, { color: colors.text }]}>Facilities & Activities</Text>
+        <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Facilities & Activities</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>
           List what your establishment offers. These appear on your public listing.
         </Text>

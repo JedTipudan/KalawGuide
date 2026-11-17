@@ -221,7 +221,7 @@ export default function WebBusinessProfileScreen() {
   return (
     <BusinessShell activeLabel="My Business Profile">
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Text style={[s.pageTitle, { color: colors.text }]}>Business Profile</Text>
+        <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Business Profile</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>
           {bizId ? 'Update your business information.' : 'Create your business listing.'}
         </Text>
@@ -254,7 +254,7 @@ export default function WebBusinessProfileScreen() {
                 placeholder="Describe your business..." placeholderTextColor={colors.muted} value={description} onChangeText={setDescription} multiline numberOfLines={4} />
               {errors.description && <Text style={[s.error, { color: colors.danger }]}>{errors.description}</Text>}
             </View>
-            <View style={s.twoCol}>
+            <View {...rw('cols')} style={s.twoCol}>
               <View style={[s.field, { flex: 1 }]}>
                 <Text style={[s.label, { color: colors.text }]}>Address *</Text>
                 <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.address ? colors.danger : colors.border }]}
@@ -267,7 +267,7 @@ export default function WebBusinessProfileScreen() {
                   placeholder="(087) 000-0000" placeholderTextColor={colors.muted} value={contactNumber} onChangeText={setContactNumber} />
               </View>
             </View>
-            <View style={s.twoCol}>
+            <View {...rw('cols')} style={s.twoCol}>
               <View style={[s.field, { flex: 1 }]}>
                 <Text style={[s.label, { color: colors.text }]}>Email</Text>
                 <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
@@ -292,7 +292,7 @@ export default function WebBusinessProfileScreen() {
               </View>
             </View>
           </View>
-          <View style={s.formActions}>
+          <View {...rw('wrap')} style={s.formActions}>
             <TouchableOpacity style={[s.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSave} disabled={loading}>
               <Text style={[s.saveBtnText, { color: colors.onPrimary }]}>{loading ? 'Saving…' : 'Save Profile'}</Text>
             </TouchableOpacity>

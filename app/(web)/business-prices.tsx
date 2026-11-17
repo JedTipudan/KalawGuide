@@ -126,7 +126,7 @@ export default function WebBusinessPricesScreen() {
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.pageHeader}>
           <View>
-            <Text style={[s.pageTitle, { color: colors.text }]}>Price Management</Text>
+            <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Price Management</Text>
             <Text style={[s.pageSub, { color: colors.muted }]}>Publish your establishment's prices for tourists.</Text>
           </View>
           {bizId && (
@@ -148,7 +148,7 @@ export default function WebBusinessPricesScreen() {
           <View style={[s.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[s.formTitle, { color: colors.text }]}>{editingId ? 'Edit Price' : 'Add Price'}</Text>
             <View style={s.formGrid}>
-              <View style={s.twoCol}>
+              <View {...rw('cols')} style={s.twoCol}>
                 <View style={[s.field, { flex: 2 }]}>
                   <Text style={[s.label, { color: colors.text }]}>Price Title *</Text>
                   <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.title ? colors.danger : colors.border }]}
@@ -162,7 +162,7 @@ export default function WebBusinessPricesScreen() {
                   {errors.amount && <Text style={[s.error, { color: colors.danger }]}>{errors.amount}</Text>}
                 </View>
               </View>
-              <View style={s.twoCol}>
+              <View {...rw('cols')} style={s.twoCol}>
                 <View style={[s.field, { flex: 1 }]}>
                   <Text style={[s.label, { color: colors.text }]}>Category</Text>
                   <View style={s.chipRow}>
@@ -188,7 +188,7 @@ export default function WebBusinessPricesScreen() {
                   </View>
                 </View>
               </View>
-              <View style={s.twoCol}>
+              <View {...rw('cols')} style={s.twoCol}>
                 <View style={[s.field, { flex: 1 }]}>
                   <Text style={[s.label, { color: colors.text }]}>Description</Text>
                   <TextInput style={[s.input, s.textarea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
@@ -201,7 +201,7 @@ export default function WebBusinessPricesScreen() {
                 </View>
               </View>
             </View>
-            <View style={s.formActions}>
+            <View {...rw('wrap')} style={s.formActions}>
               <TouchableOpacity style={[s.cancelBtn, { borderColor: colors.border }]} onPress={() => setShowForm(false)}>
                 <Text style={[s.cancelBtnText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
@@ -219,7 +219,7 @@ export default function WebBusinessPricesScreen() {
         ) : prices.length === 0 ? (
           <View style={s.empty}><Text style={s.emptyIcon}>💰</Text><Text style={[s.emptyText, { color: colors.muted }]}>No prices yet. Tap "+ Add Price" to get started.</Text></View>
         ) : (
-          <View style={[s.table, { borderColor: colors.border }]}>
+          <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
             <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
               {['Title', 'Amount', 'Category', 'Unit', 'Actions'].map(h => (
                 <Text key={h} style={[s.th, { color: colors.muted }, h === 'Title' && { flex: 2 }]}>{h}</Text>

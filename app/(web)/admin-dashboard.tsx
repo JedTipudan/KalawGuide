@@ -56,7 +56,7 @@ export default function WebAdminDashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={[s.breadcrumb, { color: colors.accent }]}>PLATFORM / ADMIN DASHBOARD</Text>
-        <Text style={[s.pageTitle, { color: colors.text }]}>Platform overview</Text>
+        <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Platform overview</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>An organized view of platform health, review queues, and recent changes.</Text>
 
         <View style={s.metricsGrid}>

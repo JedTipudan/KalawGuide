@@ -106,7 +106,7 @@ export default function WebBusinessProductsScreen() {
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.pageHeader}>
           <View>
-            <Text style={[s.pageTitle, { color: colors.text }]}>Products & Services</Text>
+            <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Products & Services</Text>
             <Text style={[s.pageSub, { color: colors.muted }]}>Manage what you offer to tourists.</Text>
           </View>
           {bizId && (
@@ -117,7 +117,7 @@ export default function WebBusinessProductsScreen() {
         </View>
 
         {/* Tabs */}
-        <View style={[s.tabs, { borderColor: colors.border }]}>
+        <View {...rw('wrap')} style={[s.tabs, { borderColor: colors.border }]}>
           {(['products', 'services'] as Tab[]).map(t => (
             <TouchableOpacity key={t} style={[s.tab, tab === t && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
               onPress={() => { setTab(t); setShowForm(false); }}>
@@ -140,7 +140,7 @@ export default function WebBusinessProductsScreen() {
                   placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
                 {errors.name && <Text style={[s.error, { color: colors.danger }]}>{errors.name}</Text>}
               </View>
-              <View style={s.twoCol}>
+              <View {...rw('cols')} style={s.twoCol}>
                 <View style={[s.field, { flex: 1 }]}>
                   <Text style={[s.label, { color: colors.text }]}>Price (₱) *</Text>
                   <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.price ? colors.danger : colors.border }]}
@@ -161,7 +161,7 @@ export default function WebBusinessProductsScreen() {
                   placeholder="Optional description" placeholderTextColor={colors.muted} value={description} onChangeText={setDescription} multiline numberOfLines={3} />
               </View>
             </View>
-            <View style={s.formActions}>
+            <View {...rw('wrap')} style={s.formActions}>
               <TouchableOpacity style={[s.cancelBtn, { borderColor: colors.border }]} onPress={() => setShowForm(false)}>
                 <Text style={[s.cancelBtnText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
@@ -185,7 +185,7 @@ export default function WebBusinessProductsScreen() {
             <Text style={[s.emptyText, { color: colors.muted }]}>No {tab} yet. Tap "+ Add" to get started.</Text>
           </View>
         ) : (
-          <View style={[s.table, { borderColor: colors.border }]}>
+          <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
             <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
               {['Name', 'Price', tab === 'services' ? 'Duration' : 'Status', 'Actions'].map(h => (
                 <Text key={h} style={[s.th, { color: colors.muted }, h === 'Name' && { flex: 2 }]}>{h}</Text>

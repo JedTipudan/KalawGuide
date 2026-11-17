@@ -376,7 +376,9 @@ export interface AssistantReplyMeta {
   sources: string[];
   offline: boolean;
   hasEstimates: boolean;
-  model: 'deterministic' | 'local_llm';
+  model: 'deterministic' | 'local_llm' | 'cloud_ai';
+  /** set when the answer used the locally stored copy of KalawGuide data (offline) */
+  dataSyncedAt?: string;
   cards?: AssistantCard[];
 }
 

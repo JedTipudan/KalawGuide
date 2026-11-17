@@ -29,10 +29,10 @@ const PLACEHOLDER_DESTS: DestRow[] = [
 ];
 
 const HERO_SLIDES = [
-  { src: require('../../assets/images/hero-bg.png'), label: 'Dahican Beach' },
-  { src: require('../../assets/images/dest-waniban.png'), label: 'Waniban Island' },
+  { src: require('../../assets/images/hero-bg.jpg'), label: 'Dahican Beach' },
+  { src: require('../../assets/images/dest-waniban.jpg'), label: 'Waniban Island' },
   { src: require('../../assets/images/places/sleeping-dinosaur.jpg'), label: 'Sleeping Dinosaur' },
-  { src: require('../../assets/images/dest-sleeping-dinosaur.png'), label: 'Pujada Bay' },
+  { src: require('../../assets/images/dest-sleeping-dinosaur.jpg'), label: 'Pujada Bay' },
   { src: require('../../assets/images/places/somewhere-in-dahican.jpg'), label: 'Somewhere in Dahican' },
 ];
 

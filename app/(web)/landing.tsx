@@ -8,11 +8,11 @@ import { BrandLogo, Kiko } from '../../components/brand/Kiko';
 import { placeImage, distinctByPhoto } from '../../utils/placeImages';
 import { feeLabel, fromPriceLabel, LOWEST_PRICE_SQL } from '../../utils/priceLabel';
 
-// Four different photos (hero-coast.png was a byte-for-byte copy of hero-bg.png).
+// Four different photos (hero-coast.png was a byte-for-byte copy of hero-bg.jpg).
 const HERO_SLIDES = [
-  require('../../assets/images/hero-bg.png'),
+  require('../../assets/images/hero-bg.jpg'),
   require('../../assets/images/places/sleeping-dinosaur.jpg'),
-  require('../../assets/images/dest-waniban.png'),
+  require('../../assets/images/dest-waniban.jpg'),
   require('../../assets/images/places/somewhere-in-dahican.jpg'),
 ];
 

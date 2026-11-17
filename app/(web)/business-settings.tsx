@@ -26,7 +26,7 @@ export default function WebBusinessSettingsScreen() {
   return (
     <BusinessShell activeLabel="Account Settings">
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Text style={[s.pageTitle, { color: colors.text }]}>Account Settings</Text>
+        <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Account Settings</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>Manage your account preferences.</Text>
 
         {/* Account info */}
@@ -36,7 +36,7 @@ export default function WebBusinessSettingsScreen() {
             {INFO_ROWS.map((row, i) => (
               <React.Fragment key={row.label}>
                 {i > 0 && <View style={[s.divider, { backgroundColor: colors.border }]} />}
-                <View style={s.infoRow}>
+                <View {...rw('wrap')} style={s.infoRow}>
                   <Text style={[s.infoLabel, { color: colors.muted }]}>{row.label}</Text>
                   <Text style={[s.infoValue, { color: colors.text }]}>{row.value}</Text>
                 </View>
@@ -49,7 +49,7 @@ export default function WebBusinessSettingsScreen() {
         <View style={[s.card, { backgroundColor: colors.surface }]}>
           <Text style={[s.cardTitle, { color: colors.text }]}>Appearance</Text>
           <Text style={[s.cardSub, { color: colors.muted }]}>Choose your preferred color theme.</Text>
-          <View style={s.themeRow}>
+          <View {...rw('wrap')} style={s.themeRow}>
             {THEME_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt.value}

@@ -25,7 +25,7 @@ const KEYWORDS: [Scored, RegExp[]][] = [
 ];
 
 // Clearly off-topic subjects: refused unless the user names a known KalawGuide place.
-const OFF_TOPIC = /\b(python|javascript|java|code|coding|program(ming)?|function|homework|math|equation|essay|elect(ion|ions)|vote|president|senator|politic|joke|capital of|quantum|physics|chemistry|crypto|stock)/;
+export const OFF_TOPIC = /\b(python|javascript|java|code|coding|program(ming)?|function|homework|math|equation|essay|elect(ion|ions)|vote|president|senator|politic|joke|capital of|quantum|physics|chemistry|crypto|stock)/;
 
 export function classifyIntent(text: string, known: KnownEntities): AssistantIntent {
   if (checkInput(text).blocked) return 'malicious_or_override_attempt';

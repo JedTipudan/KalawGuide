@@ -171,7 +171,7 @@ export default function WebAdminBusinessesScreen() {
   return (
     <AdminShell activeLabel="Business Verification">
       <ScrollView {...rw('scpad')} style={{ flex: 1 }} contentContainerStyle={s.workspace}>
-        <Text style={[s.pageTitle, { color: colors.text }]}>Business Verification</Text>
+        <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>Business Verification</Text>
 
         {/* Tab switcher */}
         <View style={[s.tabRow, { borderColor: colors.border }]}>
@@ -231,7 +231,7 @@ export default function WebAdminBusinessesScreen() {
                 <Text style={[s.emptyText, { color: colors.muted }]}>No businesses found</Text>
               </View>
             ) : (
-              <View style={[s.table, { borderColor: colors.border }]}>
+              <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
                 <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
                   {['Business', 'Category', 'Owner', 'Status', 'Actions'].map(h => (
                     <Text key={h} style={[s.th, { color: colors.muted }, h === 'Business' && { flex: 2 }]}>{h}</Text>
@@ -294,7 +294,7 @@ export default function WebAdminBusinessesScreen() {
               <Text style={[s.emptySubText, { color: colors.muted }]}>Business owners upload ownership documents from their Business Profile page.</Text>
             </View>
           ) : (
-            <View style={[s.table, { borderColor: colors.border }]}>
+            <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
               <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
                 {['Business', 'Owner', 'Document', 'Preview', 'Uploaded'].map(h => (
                   <Text key={h} style={[s.th, { color: colors.muted }, h === 'Business' && { flex: 2 }]}>{h}</Text>
@@ -330,7 +330,7 @@ export default function WebAdminBusinessesScreen() {
               <Text style={[s.emptyText, { color: colors.muted }]}>No pending price revisions</Text>
             </View>
           ) : (
-            <View style={[s.table, { borderColor: colors.border }]}>
+            <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
               <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
                 {['Business', 'Field', 'Before', 'After', 'Submitted By', 'Actions'].map(h => (
                   <Text key={h} style={[s.th, { color: colors.muted }]}>{h}</Text>

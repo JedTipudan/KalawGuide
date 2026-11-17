@@ -21,7 +21,7 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     key: '1',
-    image: require('../../assets/images/hero-bg.png'),
+    image: require('../../assets/images/hero-bg.jpg'),
     label: 'DISCOVER YOUR KIND OF ESCAPE',
     heading: 'More places.\nMore possibilities.',
     body: 'Find coastal escapes, local food, and experiences around Mati City. Save the places that feel like you.',
@@ -29,7 +29,7 @@ const SLIDES: Slide[] = [
   },
   {
     key: '2',
-    image: require('../../assets/images/dest-waniban.png'),
+    image: require('../../assets/images/dest-waniban.jpg'),
     label: 'PLAN WITH A CLEARER BUDGET',
     heading: 'Less guesswork.\nMore going.',
     body: 'Estimate your whole trip, split the cost per person, and compare your plan with what you spend.',
@@ -37,7 +37,7 @@ const SLIDES: Slide[] = [
   },
   {
     key: '3',
-    image: require('../../assets/images/dest-sleeping-dinosaur.png'),
+    image: require('../../assets/images/dest-sleeping-dinosaur.jpg'),
     label: 'MAKE ROOM FOR THE JOURNEY',
     heading: 'Your trip.\nAll together.',
     body: 'Keep your itinerary, saved places, and travel plans in one organized travel space.',

@@ -27,31 +27,31 @@ export default function WebAdminSettingsScreen() {
   return (
     <AdminShell activeLabel="System Settings">
       <ScrollView {...rw('scpad')} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Text style={[s.pageTitle, { color: colors.text }]}>System Settings</Text>
+        <Text {...rw('h2')} style={[s.pageTitle, { color: colors.text }]}>System Settings</Text>
         <Text style={[s.pageSub, { color: colors.muted }]}>Administrator preferences and platform information.</Text>
 
         {/* Account */}
         <View style={[s.card, { backgroundColor: colors.surface }]}>
           <Text style={[s.cardTitle, { color: colors.text }]}>Administrator Account</Text>
           <View style={s.infoGrid}>
-            <View style={s.infoRow}>
+            <View {...rw('wrap')} style={s.infoRow}>
               <Text style={[s.infoLabel, { color: colors.muted }]}>Name</Text>
               <Text style={[s.infoValue, { color: colors.text }]}>{user?.displayName ?? '—'}</Text>
             </View>
             <View style={[s.divider, { backgroundColor: colors.border }]} />
-            <View style={s.infoRow}>
+            <View {...rw('wrap')} style={s.infoRow}>
               <Text style={[s.infoLabel, { color: colors.muted }]}>Email</Text>
               <Text style={[s.infoValue, { color: colors.text }]}>{user?.email ?? '—'}</Text>
             </View>
             <View style={[s.divider, { backgroundColor: colors.border }]} />
-            <View style={s.infoRow}>
+            <View {...rw('wrap')} style={s.infoRow}>
               <Text style={[s.infoLabel, { color: colors.muted }]}>Role</Text>
               <View style={[s.roleBadge, { backgroundColor: colors.primary + '20' }]}>
                 <Text style={[s.roleText, { color: colors.primary }]}>🛡 Administrator</Text>
               </View>
             </View>
             <View style={[s.divider, { backgroundColor: colors.border }]} />
-            <View style={s.infoRow}>
+            <View {...rw('wrap')} style={s.infoRow}>
               <Text style={[s.infoLabel, { color: colors.muted }]}>Sign-in method</Text>
               <Text style={[s.infoValue, { color: colors.text }]}>
                 {user?.provider === 'google' ? '🔵 Google' : '📧 Email'}
@@ -64,7 +64,7 @@ export default function WebAdminSettingsScreen() {
         <View style={[s.card, { backgroundColor: colors.surface }]}>
           <Text style={[s.cardTitle, { color: colors.text }]}>Appearance</Text>
           <Text style={[s.cardSub, { color: colors.muted }]}>Choose your preferred color theme.</Text>
-          <View style={s.themeRow}>
+          <View {...rw('wrap')} style={s.themeRow}>
             {THEME_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt.value}
@@ -88,7 +88,7 @@ export default function WebAdminSettingsScreen() {
             {INFO_ROWS.map((row, i) => (
               <React.Fragment key={row.label}>
                 {i > 0 && <View style={[s.divider, { backgroundColor: colors.border }]} />}
-                <View style={s.infoRow}>
+                <View {...rw('wrap')} style={s.infoRow}>
                   <Text style={[s.infoLabel, { color: colors.muted }]}>{row.label}</Text>
                   <Text style={[s.infoValue, { color: colors.text }]}>{row.value}</Text>
                 </View>
