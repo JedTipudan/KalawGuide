@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
-  TouchableOpacity, Image, Alert, RefreshControl,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BackBar } from '../../components/common/BackBar';
 import * as ImagePicker from 'expo-image-picker';
 import { pickImageAsDataUri } from '../../utils/pickImage';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -77,6 +78,7 @@ export default function OwnerPhotoGalleryScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <BackBar title="Photos" fallback="/(business)/(tabs)/dashboard" />
       <View style={[styles.utilBar, { backgroundColor: colors.surface }]}>
         <Text style={[styles.utilBarTitle, { color: colors.primary }]}>☰ Owner workspace</Text>
       </View>

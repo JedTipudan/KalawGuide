@@ -1,12 +1,13 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { KalawButton } from '../../components/common/KalawButton';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
-import { ThemeMode } from '../../types';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { KalawButton } from '../../../components/common/KalawButton';
+import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
+import { ThemeMode } from '../../../types';
 
 const THEME_OPTIONS: { label: string; value: ThemeMode; icon: string }[] = [
   { label: 'Light', value: 'light', icon: '☀️' },

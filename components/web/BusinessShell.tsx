@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,6 +26,10 @@ export function BusinessShell({ children, activeLabel }: Props) {
   const pathname = usePathname();
   const [selected, setSelected] = useState<string | null>(null);
   const [bizName, setBizName] = useState<string | null>(null);
+  // Below 768 px the links don't fit beside the content: show them behind a ☰ button instead.
+  const { width } = useWindowDimensions();
+  const compact = width < 768;
+  const [menuOpen, setMenuOpen] = useState(false);
   const [bizStatus, setBizStatus] = useState<string>('not_submitted');
 
   useEffect(() => {
@@ -69,15 +73,27 @@ export function BusinessShell({ children, activeLabel }: Props) {
       <View {...rw('pad wrap')} style={[s.commandBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[s.logo, { color: colors.primary }]}>≋ KalawGuide</Text>
         <Text {...rw('hide-sm')} style={[s.barLabel, { color: colors.muted }]}>BUSINESS WORKSPACE</Text>
+        {compact && <View style={{ flex: 1 }} />}
         <TouchableOpacity style={[s.themeBtn, { backgroundColor: colors.subtle, borderColor: colors.border }]} onPress={cycleTheme}>
           <Text style={[s.themeBtnText, { color: colors.text }]}>{themeLabel}</Text>
         </TouchableOpacity>
+        {compact && (
+          <TouchableOpacity
+            style={[s.menuBtn, { borderColor: colors.border }]}
+            onPress={() => setMenuOpen(o => !o)}
+            accessibilityRole="button"
+            accessibilityLabel={menuOpen ? 'Close menu' : 'Open menu'}
+          >
+            <Text style={[s.menuBtnText, { color: colors.text }]}>{menuOpen ? '✕' : '☰'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View {...rw('stack')} style={s.shell}>
-        {/* Sidebar */}
-        <View {...rw('sidebar')} style={[s.sidebar, { backgroundColor: isDark ? colors.subtle : colors.surface, borderRightColor: colors.border, overflow: 'auto' as any }]}>
-          <Text {...rw('hide-sm')} style={[s.sidebarRole, { color: colors.accent }]}>BUSINESS OWNER</Text>
+        {/* Sidebar (a ☰ drop-down on phones) */}
+        {(!compact || menuOpen) && (
+        <View {...(compact ? {} : rw('sidebar'))} style={[s.sidebar, compact && s.sidebarCompact, { backgroundColor: isDark ? colors.subtle : colors.surface, borderRightColor: colors.border, borderBottomColor: colors.border, overflow: 'auto' as any }]}>
+          {!compact && <Text style={[s.sidebarRole, { color: colors.accent }]}>BUSINESS OWNER</Text>}
 
           {bizName && (
             <View style={[s.bizCard, { backgroundColor: isDark ? colors.surface : colors.background }]}>
@@ -91,8 +107,9 @@ export function BusinessShell({ children, activeLabel }: Props) {
           {SIDEBAR_LINKS.map(link => (
             <TouchableOpacity
               key={link.label}
-              style={[s.item, isActive(link) && { backgroundColor: isDark ? colors.border : colors.primary }]}
+              style={[s.item, compact && s.itemCompact, isActive(link) && { backgroundColor: isDark ? colors.border : colors.primary }]}
               onPress={() => {
+                setMenuOpen(false);
                 if (!link.route) { signOut(); return; }
                 setSelected(link.label);
                 router.push(link.route as any);
@@ -104,8 +121,9 @@ export function BusinessShell({ children, activeLabel }: Props) {
             </TouchableOpacity>
           ))}
 
-          <Text {...rw('hide-sm')} style={[s.sidebarFooter, { color: colors.muted }]}>{'Only your business records\nare visible in this portal.'}</Text>
+          {!compact && <Text style={[s.sidebarFooter, { color: colors.muted }]}>{'Only your business records\nare visible in this portal.'}</Text>}
         </View>
+        )}
 
         {/* Workspace */}
         <ScrollView style={s.workspace} contentContainerStyle={s.workspaceContent} showsVerticalScrollIndicator={false}>
@@ -135,4 +153,9 @@ const s = StyleSheet.create({
   sidebarFooter: { fontSize: 11, opacity: 0.6, marginTop: 16, lineHeight: 16 },
   workspace: { flex: 1 },
   workspaceContent: { flexGrow: 1 },
+  menuBtn: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  menuBtnText: { fontSize: 18 },
+  // Phones: the sidebar becomes a drop-down list under the top bar; the workspace gets the full screen.
+  sidebarCompact: { width: '100%' as any, maxWidth: '100%' as any, minWidth: 0, borderRightWidth: 0, borderBottomWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  itemCompact: { paddingVertical: 12, minHeight: 44, justifyContent: 'center' },
 });

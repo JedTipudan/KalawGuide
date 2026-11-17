@@ -104,7 +104,7 @@ const s = StyleSheet.create({
   pageTitle: { fontSize: 32, fontWeight: '700' },
   pageSub: { fontSize: 14, lineHeight: 20 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  metricCard: { width: 377, borderRadius: 12, padding: 24, gap: 8 },
+  metricCard: { width: 377, maxWidth: '100%' as any, flexGrow: 1, borderRadius: 12, padding: 24, gap: 8 },
   metricLabel: { fontSize: 12 },
   metricValue: { fontSize: 32, fontWeight: '700' },
   metricSub: { fontSize: 11 },

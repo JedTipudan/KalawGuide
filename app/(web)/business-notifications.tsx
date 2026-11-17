@@ -100,7 +100,7 @@ export default function WebBusinessNotificationsScreen() {
 
 const s = StyleSheet.create({
   content: { padding: 32, gap: 20, paddingBottom: 48 },
-  pageHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  pageHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   pageTitle: { fontSize: 24, fontWeight: '700' },
   pageSub: { fontSize: 14, marginTop: 4 },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },

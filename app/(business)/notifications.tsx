@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, FlatList,
-  TouchableOpacity, RefreshControl,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BackBar } from '../../components/common/BackBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
@@ -46,6 +47,7 @@ export default function OwnerNotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <BackBar title="Notifications" fallback="/(business)/(tabs)/dashboard" />
       <View style={[styles.utilBar, { backgroundColor: colors.surface }]}>
         <Text style={[styles.utilBarTitle, { color: colors.primary }]}>☰ Owner workspace</Text>
       </View>

@@ -5,12 +5,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { KalawButton } from '../../components/common/KalawButton';
-import { getDatabase } from '../../database/migrations/init';
-import { Typography, Spacing, Radius, Shadows } from '../../constants/tokens';
-import { BusinessVerificationStatus } from '../../types';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { KalawButton } from '../../../components/common/KalawButton';
+import { getDatabase } from '../../../database/migrations/init';
+import { Typography, Spacing, Radius, Shadows } from '../../../constants/tokens';
+import { BusinessVerificationStatus } from '../../../types';
 
 interface BusinessRow {
   id: string;
@@ -111,7 +111,7 @@ export default function BusinessDashboard() {
             </Text>
             <KalawButton
               label="Create Business Profile"
-              onPress={() => router.push('/(business)/profile' as any)}
+              onPress={() => router.push('/(business)/(tabs)/profile' as any)}
               fullWidth
               size="lg"
             />
@@ -131,7 +131,7 @@ export default function BusinessDashboard() {
                 </View>
                 <TouchableOpacity
                   style={[styles.editBtn, { borderColor: colors.border }]}
-                  onPress={() => router.push('/(business)/profile' as any)}
+                  onPress={() => router.push('/(business)/(tabs)/profile' as any)}
                 >
                   <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit</Text>
                 </TouchableOpacity>
@@ -154,7 +154,7 @@ export default function BusinessDashboard() {
               {business.verification_status === 'not_submitted' && (
                 <KalawButton
                   label="Submit for Verification"
-                  onPress={() => router.push('/(business)/profile' as any)}
+                  onPress={() => router.push('/(business)/(tabs)/profile' as any)}
                   fullWidth
                 />
               )}
@@ -180,12 +180,12 @@ export default function BusinessDashboard() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Manage</Text>
             <View style={styles.quickLinks}>
               {[
-                { icon: '📋', label: 'My Listings', route: '/(business)/listings' },
-                { icon: '💰', label: 'Prices', route: '/(business)/prices' },
+                { icon: '📋', label: 'My Listings', route: '/(business)/(tabs)/listings' },
+                { icon: '💰', label: 'Prices', route: '/(business)/(tabs)/prices' },
                 { icon: '🏗', label: 'Facilities', route: '/(business)/facilities' },
                 { icon: '📷', label: 'Photos', route: '/(business)/photos' },
                 { icon: '🔔', label: 'Notifications', route: '/(business)/notifications' },
-                { icon: '⚙️', label: 'Account Settings', route: '/(business)/account-settings' },
+                { icon: '⚙️', label: 'Account Settings', route: '/(business)/(tabs)/account-settings' },
               ].map(item => (
                 <TouchableOpacity
                   key={item.label}

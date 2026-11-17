@@ -22,7 +22,7 @@ export default function RoleSelectScreen() {
       if (selected === 'tourist') {
         router.replace('/(tourist)/(tabs)/home');
       } else {
-        router.replace('/(business)/dashboard');
+        router.replace('/(business)/(tabs)/dashboard');
       }
     } catch (e) {
       console.error('setRole error:', e);

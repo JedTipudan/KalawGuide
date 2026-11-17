@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, FlatList,
-  TouchableOpacity, Alert, Modal, KeyboardAvoidingView,
-  Platform, ScrollView,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Modal, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BackBar } from '../../components/common/BackBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { KalawButton } from '../../components/common/KalawButton';
@@ -88,6 +88,7 @@ export default function BusinessServicesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <BackBar title="Services" fallback="/(business)/(tabs)/dashboard" />
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Services</Text>
         {bizId && (

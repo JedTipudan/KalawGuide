@@ -385,7 +385,7 @@ export default function WebAdminBusinessesScreen() {
 const s = StyleSheet.create({
   workspace: { padding: 32, gap: 24 },
   pageTitle: { fontSize: 24, fontWeight: '700' },
-  tabRow: { flexDirection: 'row', borderBottomWidth: 1, gap: 0 },
+  tabRow: { flexDirection: 'row', flexWrap: 'wrap', borderBottomWidth: 1, gap: 0 },
   tabBtn: { paddingHorizontal: 20, paddingVertical: 12 },
   tabText: { fontSize: 14, fontWeight: '600' },
   toolbar: { gap: 12 },

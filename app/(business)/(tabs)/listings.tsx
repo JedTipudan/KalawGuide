@@ -5,11 +5,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { getDatabase } from '../../database/migrations/init';
-import { now, generateId } from '../../utils/helpers';
-import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../constants/tokens';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getDatabase } from '../../../database/migrations/init';
+import { now, generateId } from '../../../utils/helpers';
+import { Typography, Spacing, Radius, Shadows, statusLabel } from '../../../constants/tokens';
 
 interface BizRow {
   id: string; name: string; category: string; address: string;
@@ -107,7 +107,7 @@ export default function BusinessListingsScreen() {
                 <Text style={[styles.note, { color: colors.danger }]}>Admin note: {item.verification_note}</Text>
               ) : null}
               <View style={styles.actions}>
-                <TouchableOpacity style={[styles.actionBtn, { borderColor: colors.primary }]} onPress={() => router.push('/(business)/profile' as any)}>
+                <TouchableOpacity style={[styles.actionBtn, { borderColor: colors.primary }]} onPress={() => router.push('/(business)/(tabs)/profile' as any)}>
                   <Text style={[styles.actionText, { color: colors.primary }]}>✏️ Edit</Text>
                 </TouchableOpacity>
                 {(item.verification_status === 'not_submitted' || item.verification_status === 'rejected') && (

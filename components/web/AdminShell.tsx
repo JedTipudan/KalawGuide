@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,6 +25,10 @@ export function AdminShell({ children, activeLabel }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [selected, setSelected] = useState<string | null>(null);
+  // Below 768 px the 9 links don't fit beside the content: show them behind a ☰ button instead.
+  const { width } = useWindowDimensions();
+  const compact = width < 768;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const themeLabel = mode === 'light' ? '☀ Light' : mode === 'dark' ? '☾ Dark' : '◐ System';
   function cycleTheme() {
@@ -53,28 +57,42 @@ export function AdminShell({ children, activeLabel }: Props) {
       <View {...rw('pad wrap')} style={[s.commandBar, { backgroundColor: navBg, borderBottomColor: colors.border }]}>
         <Text style={[s.logo, { color: colors.primary }]}>≋ KalawGuide</Text>
         <Text {...rw('hide-sm')} style={[s.barLabel, { color: colors.muted }]}>CONTROL CENTER / ADMINISTRATOR</Text>
+        {compact && <View style={{ flex: 1 }} />}
         <TouchableOpacity style={[s.themeBtn, { backgroundColor: isDark ? colors.subtle : colors.surface, borderColor: colors.border }]} onPress={cycleTheme}>
           <Text style={[s.themeBtnText, { color: colors.text }]}>{themeLabel}</Text>
         </TouchableOpacity>
+        {compact && (
+          <TouchableOpacity
+            style={[s.menuBtn, { borderColor: colors.border }]}
+            onPress={() => setMenuOpen(o => !o)}
+            accessibilityRole="button"
+            accessibilityLabel={menuOpen ? 'Close menu' : 'Open menu'}
+          >
+            <Text style={[s.menuBtnText, { color: colors.text }]}>{menuOpen ? '✕' : '☰'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <View {...rw('stack')} style={s.shell}>
-        <View {...rw('sidebar')} style={[s.sidebar, { backgroundColor: navBg, borderRightColor: colors.border }]}>
+        {(!compact || menuOpen) && (
+        <View {...(compact ? {} : rw('sidebar'))} style={[s.sidebar, compact && s.sidebarCompact, { backgroundColor: navBg, borderRightColor: colors.border, borderBottomColor: colors.border }]}>
           <Text {...rw('hide-sm')} style={[s.sidebarSection, { color: navText }]}>PLATFORM MANAGEMENT</Text>
           {SIDEBAR_LINKS.map(link => (
             <TouchableOpacity
               key={link.label}
-              style={[s.item, isActive(link) && { backgroundColor: activeBg }]}
+              style={[s.item, compact && s.itemCompact, isActive(link) && { backgroundColor: activeBg }]}
               onPress={() => {
+                setMenuOpen(false);
                 if (!link.route) { signOut(); return; }
                 setSelected(link.label);
                 router.push(link.route as any);
               }}
             >
-              <Text style={[s.itemText, { color: isActive(link) ? activeText : navText }, isActive(link) && s.itemTextActive]}>{link.label}</Text>
+              <Text style={[s.itemText, compact && { fontSize: 15 }, { color: isActive(link) ? activeText : navText }, isActive(link) && s.itemTextActive]}>{link.label}</Text>
             </TouchableOpacity>
           ))}
-          <Text {...rw('hide-sm')} style={[s.sidebarFooter, { color: navText }]}>{'Administrator access\nRestricted workspace'}</Text>
+          {!compact && <Text style={[s.sidebarFooter, { color: navText }]}>{'Administrator access\nRestricted workspace'}</Text>}
         </View>
+        )}
         <ScrollView style={s.workspace} showsVerticalScrollIndicator={false}>
           {children}
         </ScrollView>
@@ -98,4 +116,9 @@ const s = StyleSheet.create({
   itemTextActive: { fontWeight: '700' },
   sidebarFooter: { fontSize: 11, opacity: 0.7, marginTop: 16, lineHeight: 16 },
   workspace: { flex: 1 },
+  menuBtn: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  menuBtnText: { fontSize: 18 },
+  // Phones: the sidebar becomes a drop-down list under the top bar; the workspace gets the full screen.
+  sidebarCompact: { width: '100%' as any, maxWidth: '100%' as any, minWidth: 0, borderRightWidth: 0, borderBottomWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  itemCompact: { paddingVertical: 12, minHeight: 44, justifyContent: 'center' },
 });

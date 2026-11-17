@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BackBar } from '../../components/common/BackBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDatabase } from '../../database/migrations/init';
@@ -111,6 +112,7 @@ export default function BusinessFacilitiesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <BackBar title="Facilities & Activities" fallback="/(business)/(tabs)/dashboard" />
       <View style={styles.header}>
         <View>
           <Text style={[styles.title, { color: colors.text }]}>Facilities & Activities</Text>

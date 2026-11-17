@@ -230,7 +230,7 @@ export default function WebAdminEmergencyScreen() {
 
 const s = StyleSheet.create({
   content: { padding: 32, gap: 24, paddingBottom: 48 },
-  pageHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  pageHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   pageTitle: { fontSize: 24, fontWeight: '700' },
   pageSub: { fontSize: 14, marginTop: 4 },
   addBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
