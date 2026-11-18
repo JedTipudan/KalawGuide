@@ -29,7 +29,7 @@ export const KalawInput = forwardRef<TextInputRef, Props>(function KalawInput({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
+      {!!label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
       <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: error ? colors.danger : colors.border }]}>
         <TextInput
           ref={ref}
@@ -53,8 +53,8 @@ export const KalawInput = forwardRef<TextInputRef, Props>(function KalawInput({
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
-      {hint && !error && <Text style={[styles.hint, { color: colors.muted }]}>{hint}</Text>}
+      {!!error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
+      {!!hint && !error && <Text style={[styles.hint, { color: colors.muted }]}>{hint}</Text>}
     </View>
   );
 });

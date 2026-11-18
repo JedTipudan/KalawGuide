@@ -153,13 +153,13 @@ export default function WebBusinessPricesScreen() {
                   <Text style={[s.label, { color: colors.text }]}>Price Title *</Text>
                   <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.title ? colors.danger : colors.border }]}
                     placeholder="e.g. Entrance Fee, Cottage Rental" placeholderTextColor={colors.muted} value={title} onChangeText={setTitle} />
-                  {errors.title && <Text style={[s.error, { color: colors.danger }]}>{errors.title}</Text>}
+                  {!!errors.title && <Text style={[s.error, { color: colors.danger }]}>{errors.title}</Text>}
                 </View>
                 <View style={[s.field, { flex: 1 }]}>
                   <Text style={[s.label, { color: colors.text }]}>Amount (₱) *</Text>
                   <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.amount ? colors.danger : colors.border }]}
                     placeholder="0.00" placeholderTextColor={colors.muted} value={amount} onChangeText={setAmount} />
-                  {errors.amount && <Text style={[s.error, { color: colors.danger }]}>{errors.amount}</Text>}
+                  {!!errors.amount && <Text style={[s.error, { color: colors.danger }]}>{errors.amount}</Text>}
                 </View>
               </View>
               <View {...rw('cols')} style={s.twoCol}>
@@ -229,7 +229,7 @@ export default function WebBusinessPricesScreen() {
               <View key={item.id} style={[s.row, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 <View style={[s.cell, { flex: 2 }]}>
                   <Text style={[s.itemName, { color: colors.text }]}>{item.title}</Text>
-                  {item.description && <Text style={[s.itemDesc, { color: colors.muted }]} numberOfLines={1}>{item.description}</Text>}
+                  {!!item.description && <Text style={[s.itemDesc, { color: colors.muted }]} numberOfLines={1}>{item.description}</Text>}
                 </View>
                 <Text style={[s.cell, s.cellText, { color: colors.primary, fontWeight: '700' }]}>{formatCurrency(item.amount)}</Text>
                 <Text style={[s.cell, s.cellText, { color: colors.text }]}>{PRICE_CATEGORIES.find(c => c.value === item.category)?.label ?? item.category}</Text>

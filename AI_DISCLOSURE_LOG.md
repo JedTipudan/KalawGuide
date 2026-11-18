@@ -804,6 +804,39 @@ AI tool: Claude Code (Anthropic). The user reported: destination category icons 
 
 ---
 
+## Guide Fix: EAS `env:create` Renamed to `env:set` (2026-11-18)
+
+AI tool: Claude Code (Anthropic). The user ran the guide's Turso APK step and got: "This command is deprecated. Use eas env:set instead" and "Flag --name can only be specified once".
+
+**Causes found**
+- EAS CLI renamed `eas env:create` to `eas env:set`.
+- Both commands were pasted at once, so they ran as one command with two `--name` flags.
+
+**What the AI changed**
+- `guide.html` (local only, not in git): every `env:create` is now `env:set`.
+- The user still got an error pasting the token inside the long command. The Turso and Gemini APK steps now add secrets on the expo.dev *Environment variables* page (Option A), or with a plain `eas env:set` that asks for each value (Option B). The token is never pasted into a command line.
+
+---
+
+## Shared Database Fix and Responsive Check on Every Screen (2026-11-18)
+
+AI tool: Claude Code (Anthropic). The user asked for every screen to be responsive with no overlap (APK, desktop browser, phone browser and PWA), then a push and a new APK now that the shared Turso database is set up.
+
+**How it was checked**
+- The web app ran locally against the shared Turso database. Every tourist, public, admin and business page (46 routes) was loaded at 360 px (phone), 768 px (tablet) and 1224 px (desktop). A script measured each page for sideways overflow, text off the right edge, clipped text and overlapping visible text. The landing page was also checked at 900, 1024, 1100 and 1280 px.
+- Admin and business pages were opened with a browser-only test session for the seeded admin and demo-owner accounts. Nothing was changed in the database.
+- Native-only screens were reviewed in code: all use safe-area insets, and no fixed width is wider than a phone.
+
+**Problems found and fixed**
+- **Businesses never showed with the shared database** ("No businesses found"). The "from" price subquery used the outer column `b.category` in its `ORDER BY`, which Turso rejects (`no such column: b.category`). The local SQLite on each device accepts it, so this only happened online. `utils/priceLabel.ts` now keeps that column in `WHERE` and falls back to the cheapest price of any kind. Same result: stays still show the cheapest room. This also fixes prices on the landing page and Favorites.
+- **Landing page menu overlapped at tablet widths** (768–1000 px): the text links ran into the theme and Sign in buttons. `app/(web)/landing.tsx` shows the text links only from 1024 px.
+- **Empty text rendered inside a View.** `{error && <Text>}` with `error = ''` puts an empty string straight into a View. The web logged "Unexpected text node", and Android can crash with "Text strings must be rendered within a <Text> component". `components/common/KalawInput.tsx` and 6 screens now use `!!value &&`.
+
+**Not changed**
+- 58 existing lint errors (mostly unescaped quotes in text) are unrelated to this work.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -834,3 +867,5 @@ Cloud AI guardrails: replies checked against KalawGuide data (2026-11-17).
 Installable website (PWA) for iPhone and Android (2026-11-17).
 Fix: "Invalid VFS state" on Google sign-in in the web app/PWA (2026-11-17).
 Category icons, overlap fixes, business list grid and web business page (2026-11-17).
+Guide fix: EAS `env:create` renamed to `env:set` (2026-11-18).
+Shared database business list fix, landing nav overlap, empty-text crash guard (2026-11-18).

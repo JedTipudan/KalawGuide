@@ -454,6 +454,11 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
+- **Fix: businesses missing with the shared online database.** The "from" price query used SQL that Turso rejects, so the list was empty online. It now works on Turso and on-device.
+- **Responsive check on every screen.** All 46 web pages were measured at phone, tablet and desktop widths. The landing page menu no longer overlaps between 768 and 1024 px. Empty text values no longer render inside a View, which can crash Android.
+
+- **Guide fix: EAS environment variables.** `guide.html` now uses `eas env:set` (EAS renamed `env:create`). The Turso token and Gemini key are added on the expo.dev *Environment variables* page, or with `eas env:set` asking for each value, so they're never pasted into a long command.
+
 - **Fix: category icons and overlaps.** Destination categories show real icons, not cut-off words ("bed", "mo", "wav"). On phones (website/PWA), pages no longer run under the footer. The APK's tourist tab bar has room for icons and labels again. The install banner no longer covers the Sign In button.
 - **Businesses list fits every screen.** 1 column on phones, 2 on tablets and 3 on desktop. On the website, business details now open in a centered page with the nav bar. Website text uses Inter/Manrope instead of falling back to Times.
 

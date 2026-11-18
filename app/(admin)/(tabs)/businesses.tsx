@@ -231,7 +231,7 @@ export default function AdminBusinessesScreen() {
                   <View style={styles.cardInfo}>
                     <Text style={[styles.bizName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                     <Text style={[styles.bizCategory, { color: colors.muted }]}>{item.category.replace('_', ' ')} · {item.address}</Text>
-                    {item.owner_name && <Text style={[styles.ownerName, { color: colors.muted }]}>👤 {item.owner_name}</Text>}
+                    {!!item.owner_name && <Text style={[styles.ownerName, { color: colors.muted }]}>👤 {item.owner_name}</Text>}
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
                     <Text style={[styles.statusText, { color: statusLabel(statusColor) }]}>{item.verification_status.replace('_', ' ')}</Text>
@@ -280,7 +280,7 @@ export default function AdminBusinessesScreen() {
               <View key={rev.id} style={[styles.card, { backgroundColor: colors.surface, ...shadow }]}>
                 <Text style={[styles.bizName, { color: colors.text }]}>{rev.business_name}</Text>
                 <Text style={[styles.bizCategory, { color: colors.muted }]}>Field: {rev.field_name.replace('_', ' ')}</Text>
-                {rev.submitted_by_email && <Text style={[styles.ownerName, { color: colors.muted }]}>👤 {rev.submitted_by_email}</Text>}
+                {!!rev.submitted_by_email && <Text style={[styles.ownerName, { color: colors.muted }]}>👤 {rev.submitted_by_email}</Text>}
                 <View style={[styles.revisionChange, { backgroundColor: colors.subtle }]}>
                   {rev.old_value && (
                     <Text style={[styles.revisionOld, { color: colors.danger }]}>Before: {rev.old_value}</Text>

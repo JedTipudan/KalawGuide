@@ -117,7 +117,7 @@ export default function WebAdminEmergencyScreen() {
                   value={form.name}
                   onChangeText={v => setForm(f => ({ ...f, name: v }))}
                 />
-                {errors.name && <Text style={[s.error, { color: colors.danger }]}>{errors.name}</Text>}
+                {!!errors.name && <Text style={[s.error, { color: colors.danger }]}>{errors.name}</Text>}
               </View>
               <View style={s.formField}>
                 <Text style={[s.label, { color: colors.text }]}>Organization *</Text>
@@ -128,7 +128,7 @@ export default function WebAdminEmergencyScreen() {
                   value={form.org}
                   onChangeText={v => setForm(f => ({ ...f, org: v }))}
                 />
-                {errors.org && <Text style={[s.error, { color: colors.danger }]}>{errors.org}</Text>}
+                {!!errors.org && <Text style={[s.error, { color: colors.danger }]}>{errors.org}</Text>}
               </View>
               <View style={s.formField}>
                 <Text style={[s.label, { color: colors.text }]}>Contact Number *</Text>
@@ -139,7 +139,7 @@ export default function WebAdminEmergencyScreen() {
                   value={form.number}
                   onChangeText={v => setForm(f => ({ ...f, number: v }))}
                 />
-                {errors.number && <Text style={[s.error, { color: colors.danger }]}>{errors.number}</Text>}
+                {!!errors.number && <Text style={[s.error, { color: colors.danger }]}>{errors.number}</Text>}
               </View>
               <View style={s.formField}>
                 <Text style={[s.label, { color: colors.text }]}>Description</Text>

@@ -138,14 +138,14 @@ export default function WebBusinessProductsScreen() {
                 <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.name ? colors.danger : colors.border }]}
                   placeholder={tab === 'products' ? 'e.g. Surfboard Rental' : 'e.g. Island Hopping Tour'}
                   placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
-                {errors.name && <Text style={[s.error, { color: colors.danger }]}>{errors.name}</Text>}
+                {!!errors.name && <Text style={[s.error, { color: colors.danger }]}>{errors.name}</Text>}
               </View>
               <View {...rw('cols')} style={s.twoCol}>
                 <View style={[s.field, { flex: 1 }]}>
                   <Text style={[s.label, { color: colors.text }]}>Price (₱) *</Text>
                   <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.price ? colors.danger : colors.border }]}
                     placeholder="0.00" placeholderTextColor={colors.muted} value={price} onChangeText={setPrice} />
-                  {errors.price && <Text style={[s.error, { color: colors.danger }]}>{errors.price}</Text>}
+                  {!!errors.price && <Text style={[s.error, { color: colors.danger }]}>{errors.price}</Text>}
                 </View>
                 {tab === 'services' && (
                   <View style={[s.field, { flex: 1 }]}>
@@ -195,7 +195,7 @@ export default function WebBusinessProductsScreen() {
               <View key={item.id} style={[s.row, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 <View style={[s.cell, { flex: 2 }]}>
                   <Text style={[s.itemName, { color: colors.text }]}>{item.name}</Text>
-                  {item.description && <Text style={[s.itemDesc, { color: colors.muted }]} numberOfLines={1}>{item.description}</Text>}
+                  {!!item.description && <Text style={[s.itemDesc, { color: colors.muted }]} numberOfLines={1}>{item.description}</Text>}
                 </View>
                 <Text style={[s.cell, s.cellText, { color: colors.primary }]}>{formatCurrency(item.price)}</Text>
                 <Text style={[s.cell, s.cellText, { color: colors.muted }]}>

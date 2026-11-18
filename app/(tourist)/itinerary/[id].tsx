@@ -153,9 +153,9 @@ export default function ItineraryDetailScreen() {
           <View style={[styles.itemCard, { backgroundColor: colors.surface, ...shadow }]}>
             <View style={[styles.itemAccent, { backgroundColor: colors.accent }]} />
             <View style={styles.itemBody}>
-              {item.time && <Text style={[styles.itemTime, { color: colors.muted }]}>{item.time}</Text>}
+              {!!item.time && <Text style={[styles.itemTime, { color: colors.muted }]}>{item.time}</Text>}
               <Text style={[styles.itemTitle, { color: colors.text }]}>{item.title}</Text>
-              {item.description && <Text style={[styles.itemDesc, { color: colors.muted }]} numberOfLines={2}>{item.description}</Text>}
+              {!!item.description && <Text style={[styles.itemDesc, { color: colors.muted }]} numberOfLines={2}>{item.description}</Text>}
               {item.estimated_cost !== null && (
                 <Text style={[styles.itemCost, { color: colors.primary }]}>₱{item.estimated_cost.toLocaleString()}</Text>
               )}

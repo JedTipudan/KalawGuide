@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getDatabase } from '../../database/migrations/init';
@@ -17,6 +17,8 @@ const HERO_SLIDES = [
 ];
 
 export default function WebLandingScreen() {
+  // The text links need about 1000px next to the logo and buttons; narrower screens show only the buttons.
+  const showNavLinks = useWindowDimensions().width >= 1024;
   const { colors, mode, setMode, isDark } = useTheme();
   const router = useRouter();
   const [destinations, setDestinations] = useState<{ id: string; name: string; location: string; estimated_fee: number | null; fee_verified?: number }[]>([]);
@@ -67,7 +69,7 @@ export default function WebLandingScreen() {
       {/* ── Navigation ── */}
       <View {...rw('pad gap-sm')} style={[s.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <BrandLogo color={colors.primary} size={22} />
-        <View {...rw('hide-sm')} style={s.navLinks}>
+        {showNavLinks ? <View style={s.navLinks}>
           {['Home', 'Explore Destinations', 'Local Businesses', 'About'].map(l => (
             <TouchableOpacity key={l} onPress={() => l === 'Explore Destinations' ? router.push('/(web)/explore' as any) : undefined}>
               <div className="nav-link">
@@ -75,7 +77,7 @@ export default function WebLandingScreen() {
               </div>
             </TouchableOpacity>
           ))}
-        </View>
+        </View> : <View style={{ flex: 1 }} />}
         <View style={s.navRight}>
           <TouchableOpacity {...rw('hide-sm')} style={[s.navBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={cycleTheme}>
             <Text style={[s.navBtnText, { color: colors.text }]}>{themeLabel}</Text>

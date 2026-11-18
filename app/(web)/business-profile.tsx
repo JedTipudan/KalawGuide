@@ -234,7 +234,7 @@ export default function WebBusinessProfileScreen() {
             <Text style={[s.statusText, { color: STATUS_COLOR[verificationStatus] }]}>
               Verification status: <Text style={{ fontWeight: '700' }}>{verificationStatus.replace('_', ' ')}</Text>
             </Text>
-            {verificationNote && <Text style={[s.statusNote, { color: colors.muted }]}>Note: {verificationNote}</Text>}
+            {!!verificationNote && <Text style={[s.statusNote, { color: colors.muted }]}>Note: {verificationNote}</Text>}
           </View>
         )}
 
@@ -246,20 +246,20 @@ export default function WebBusinessProfileScreen() {
               <Text style={[s.label, { color: colors.text }]}>Business Name *</Text>
               <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.name ? colors.danger : colors.border }]}
                 placeholder="e.g. Dahican Surf Resort" placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
-              {errors.name && <Text style={[s.error, { color: colors.danger }]}>{errors.name}</Text>}
+              {!!errors.name && <Text style={[s.error, { color: colors.danger }]}>{errors.name}</Text>}
             </View>
             <View style={s.field}>
               <Text style={[s.label, { color: colors.text }]}>Description *</Text>
               <TextInput style={[s.input, s.textarea, { backgroundColor: colors.background, color: colors.text, borderColor: errors.description ? colors.danger : colors.border }]}
                 placeholder="Describe your business..." placeholderTextColor={colors.muted} value={description} onChangeText={setDescription} multiline numberOfLines={4} />
-              {errors.description && <Text style={[s.error, { color: colors.danger }]}>{errors.description}</Text>}
+              {!!errors.description && <Text style={[s.error, { color: colors.danger }]}>{errors.description}</Text>}
             </View>
             <View {...rw('cols')} style={s.twoCol}>
               <View style={[s.field, { flex: 1 }]}>
                 <Text style={[s.label, { color: colors.text }]}>Address *</Text>
                 <TextInput style={[s.input, { backgroundColor: colors.background, color: colors.text, borderColor: errors.address ? colors.danger : colors.border }]}
                   placeholder="Street, Barangay, Mati City" placeholderTextColor={colors.muted} value={address} onChangeText={setAddress} />
-                {errors.address && <Text style={[s.error, { color: colors.danger }]}>{errors.address}</Text>}
+                {!!errors.address && <Text style={[s.error, { color: colors.danger }]}>{errors.address}</Text>}
               </View>
               <View style={[s.field, { flex: 1 }]}>
                 <Text style={[s.label, { color: colors.text }]}>Contact Number</Text>
