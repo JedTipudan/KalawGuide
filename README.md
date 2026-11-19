@@ -98,7 +98,7 @@ Submits for verification       Manages destinations & contacts      Plans trips,
 ### Website (all roles)
 - **Public pages:** landing page, explore, businesses, emergency and map.
 - **Role-based apps:** the full tourist experience, a business owner portal and an admin control center, each with its own navigation.
-- **Responsive design:** below 1024 px the top navigation collapses into a ☰ menu, and layouts stack into one column on phones. The page never scrolls sideways.
+- **Responsive design:** the ☰ menu appears only on phone-width screens (below 768 px: phone browsers and phone PWAs). Laptops and desktops always get the full navigation bar, and layouts stack into one column on phones. The page never scrolls sideways.
 
 ---
 
@@ -453,6 +453,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **☰ menu only on phones.** Laptops and desktops (browser or installed PWA) now show the full navigation bar instead of the phone menu. The ☰ menu appears only below 768 px.
 
 - **Fix: businesses missing with the shared online database.** The "from" price query used SQL that Turso rejects, so the list was empty online. It now works on Turso and on-device.
 - **Responsive check on every screen.** All 46 web pages were measured at phone, tablet and desktop widths. The landing page menu no longer overlaps between 768 and 1024 px. Empty text values no longer render inside a View, which can crash Android.

@@ -16,8 +16,10 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
-  // The 9 tourist links + theme + sign out need ~1300px; below that they crowded into the logo.
-  const compact = width < (variant === 'tourist' ? 1320 : 1024);
+  // ☰ menu only on phone-width screens (mobile browser / phone PWA). Laptops and desktops
+  // always get the full link bar; between 768 and 1320px it just tightens up and wraps.
+  const compact = width < 768;
+  const tight = width < 1320;
   const [menuOpen, setMenuOpen] = useState(false);
 
   function goHome() {
@@ -99,14 +101,14 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
   }
 
   return (
-    <View style={[styles.nav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-      <TouchableOpacity onPress={goHome}>
-        <BrandLogo color={colors.primary} size={22} />
+    <View style={[styles.nav, tight && styles.navTight, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <TouchableOpacity onPress={goHome} style={styles.noShrink}>
+        <BrandLogo color={colors.primary} size={tight ? 20 : 22} />
       </TouchableOpacity>
 
-      <View style={styles.right}>
+      <View style={[styles.right, tight && styles.rightTight]}>
         {variant === 'tourist' && (
-          <View style={styles.navLinks}>
+          <View style={[styles.navLinks, tight && styles.navLinksTight]}>
             {TOURIST_LINKS.map(l => (
               <div key={l.route} className="nav-link">
                 <TouchableOpacity onPress={() => router.push(l.route as any)}>
@@ -119,7 +121,7 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
           </View>
         )}
         {variant === 'business' && (
-          <View style={styles.navLinks}>
+          <View style={[styles.navLinks, tight && styles.navLinksTight]}>
             {BUSINESS_LINKS.map(l => (
               <div key={l.route} className="nav-link">
                 <TouchableOpacity onPress={() => router.push(l.route as any)}>
@@ -132,7 +134,7 @@ export function WebNav({ variant = 'public' }: WebNavProps) {
           </View>
         )}
         {variant === 'admin' && (
-          <View style={styles.navLinks}>
+          <View style={[styles.navLinks, tight && styles.navLinksTight]}>
             {ADMIN_LINKS.map(l => (
               <div key={l.route} className="nav-link">
                 <TouchableOpacity onPress={() => router.push(l.route as any)}>
@@ -213,6 +215,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   navCompact: { paddingHorizontal: 16, paddingVertical: 12 },
+  navTight: { paddingHorizontal: 24, gap: Spacing.base },
+  noShrink: { flexShrink: 0 },
+  navLinksTight: { flexShrink: 1, flexWrap: 'wrap', justifyContent: 'flex-end', columnGap: Spacing.base, rowGap: Spacing.xs },
+  rightTight: { flexShrink: 1, flexWrap: 'wrap', justifyContent: 'flex-end', gap: Spacing.md, rowGap: Spacing.sm },
   logoCompact: { fontSize: Typography.size.h5 },
   menuBtn: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   menuBtnText: { fontSize: 20, fontFamily: Typography.fontFamilyBody },

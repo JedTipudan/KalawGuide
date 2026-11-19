@@ -837,6 +837,16 @@ AI tool: Claude Code (Anthropic). The user asked for every screen to be responsi
 
 ---
 
+## Hamburger Menu Only on Phones, Full Nav on Laptops (2026-11-19)
+
+AI tool: Claude Code (Anthropic). The user reported that the website looked like the phone version on a desktop or laptop (☰ menu). They wanted the ☰ menu only in phone browsers and phone PWAs.
+
+**Change**
+- `components/web/WebNav.tsx`: the tourist nav switched to the ☰ menu below 1320 px (and the other roles below 1024 px), so most laptops got the phone menu. The ☰ menu now shows only below 768 px, the same breakpoint the admin and business shells already use.
+- Between 768 and 1320 px (laptops, small desktop windows, laptop PWAs), the full link bar stays. It uses smaller padding and gaps, and the links wrap onto a second line instead of running into the logo.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -869,3 +879,4 @@ Fix: "Invalid VFS state" on Google sign-in in the web app/PWA (2026-11-17).
 Category icons, overlap fixes, business list grid and web business page (2026-11-17).
 Guide fix: EAS `env:create` renamed to `env:set` (2026-11-18).
 Shared database business list fix, landing nav overlap, empty-text crash guard (2026-11-18).
+Hamburger menu only on phones; full nav bar on laptops and desktops (2026-11-19).
