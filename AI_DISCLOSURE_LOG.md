@@ -858,6 +858,17 @@ AI tool: Claude Code (Anthropic). The user reported that in the Android APK, the
 
 ---
 
+## Install Popup for Everyone on the Website (2026-11-24)
+
+AI tool: Claude Code (Anthropic). The user wanted an install (PWA) popup to appear whenever anyone opens the website.
+
+**Change**
+- `components/web/InstallAppBanner.tsx`: the small corner banner is now a centered popup with the app icon and a dimmed background. It appears about 1.5 seconds after the page opens.
+- Before, it appeared only in Chrome, Edge, Samsung Internet and Safari on iPhone, and it hid for 14 days after "Not now". Now every browser gets it: browsers with no install button (for example Firefox) get instructions to use the browser menu. "Not now" hides it only until the next visit (session storage). It still never shows inside the installed app.
+- The browser's install event is now caught as soon as the page loads, so the Install button isn't missed when the event fires before the app has finished loading.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -892,3 +903,4 @@ Guide fix: EAS `env:create` renamed to `env:set` (2026-11-18).
 Shared database business list fix, landing nav overlap, empty-text crash guard (2026-11-18).
 Hamburger menu only on phones; full nav bar on laptops and desktops (2026-11-19).
 Fix: chatbot text box hidden by the keyboard on the Android APK (2026-11-24).
+Install popup for everyone on the website (2026-11-24).

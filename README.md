@@ -108,10 +108,11 @@ For people who don't want to download the APK, especially on iPhone, where APKs 
 
 | Device | How to install |
 |---|---|
-| iPhone / iPad | Open the website in **Safari** → tap **Share** (square with ⬆) → **Add to Home Screen** → **Add**. A banner on the site shows these steps. |
-| Android | Open the website in **Chrome** → tap **Install** on the banner (or menu ⋮ → *Install app*). |
-| Desktop Chrome / Edge | Click **Install** on the banner, or the install icon in the address bar. |
+| iPhone / iPad | Open the website in **Safari** → tap **Share** (square with ⬆) → **Add to Home Screen** → **Add**. A popup on the site shows these steps. |
+| Android | Open the website in **Chrome** → tap **Install** on the popup (or menu ⋮ → *Install app*). |
+| Desktop Chrome / Edge | Click **Install** on the popup, or the install icon in the address bar. |
 
+- **Install popup:** everyone who opens the website in a browser sees an *Install KalawGuide* popup after about 1.5 seconds. Browsers without an install button (for example Firefox) get menu instructions instead. *Not now* hides it until the next visit, and it never shows once the app is installed.
 - It opens full-screen from its own home-screen icon (KalawGuide icon, navy splash), like a normal app.
 - **Updates are automatic:** pages always load fresh when online, so a new Vercel deploy reaches installed apps without reinstalling.
 - **Offline:** after one online visit, the app opens without internet and Kalaw Assistance uses its saved data.
@@ -454,6 +455,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Install popup on the website.** Everyone who opens the website now gets an *Install KalawGuide* popup (with steps for iPhone and other browsers) until they install it. *Not now* hides it only until the next visit.
 
 - **Fix: keyboard covered the chatbot text box on the APK.** In the Android app, the Kiko chat input now moves above the keyboard, so you can see what you type without closing the keyboard.
 
