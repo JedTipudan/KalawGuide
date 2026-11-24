@@ -847,6 +847,17 @@ AI tool: Claude Code (Anthropic). The user reported that the website looked like
 
 ---
 
+## Fix: Chatbot Input Hidden by the Keyboard on the APK (2026-11-24)
+
+AI tool: Claude Code (Anthropic). The user reported that in the Android APK, the keyboard covered the Kalaw Assistance (Kiko) text box. They had to close the keyboard to see what they typed.
+
+**Change**
+- `components/assistant/KalawAssistanceFAB.tsx`: the `KeyboardAvoidingView` wrapped only the input row and used `behavior="height"` on Android. Android apps are now always edge-to-edge (React Native 0.88), so the window no longer resizes for the keyboard and the input stayed behind it. The `KeyboardAvoidingView` now wraps the whole chat with `behavior="padding"` on every platform, so the message list shrinks and the input sits just above the keyboard.
+- The chat `Modal` is drawn edge-to-edge on Android (`statusBarTranslucent`, `navigationBarTranslucent`) so the keyboard's position matches the layout. `SafeAreaView` still keeps content clear of the system bars.
+- The message list scrolls to the newest message when the keyboard opens. Tapping a suggestion or the send button no longer just closes the keyboard first (`keyboardShouldPersistTaps="handled"`).
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -880,3 +891,4 @@ Category icons, overlap fixes, business list grid and web business page (2026-11
 Guide fix: EAS `env:create` renamed to `env:set` (2026-11-18).
 Shared database business list fix, landing nav overlap, empty-text crash guard (2026-11-18).
 Hamburger menu only on phones; full nav bar on laptops and desktops (2026-11-19).
+Fix: chatbot text box hidden by the keyboard on the Android APK (2026-11-24).

@@ -192,11 +192,17 @@ export function KalawAssistanceFAB() {
         visible={isOpen}
         animationType="slide"
         presentationStyle="pageSheet"
+        // Android: draw the modal edge-to-edge so the keyboard's position lines up with the
+        // layout; SafeAreaView below keeps content clear of the status and navigation bars.
+        statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => setIsOpen(false)}
       >
         <SafeAreaProvider>
           <SafeAreaView style={[styles.modal, { backgroundColor: colors.background }]}>
-            <View style={styles.container}>
+            {/* Wrap the whole chat so the list shrinks and the input rides above the keyboard.
+                Android is edge-to-edge (the window no longer resizes), so 'padding' is needed there too. */}
+            <KeyboardAvoidingView style={styles.container} behavior="padding">
               {/* Header */}
               <View style={[styles.header, { borderBottomColor: colors.border }]}>
                 <View style={styles.headerLeft}>
@@ -249,6 +255,9 @@ export function KalawAssistanceFAB() {
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.messageList}
                 onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+                // Keep the latest message in view when the keyboard opens and the list shrinks.
+                onLayout={() => { if (messages.length) listRef.current?.scrollToEnd({ animated: false }); }}
+                keyboardShouldPersistTaps="handled"
                 ListEmptyComponent={
                   <View style={styles.emptyState}>
                     <Kiko pose="presenting" height={150} />
@@ -323,35 +332,33 @@ export function KalawAssistanceFAB() {
               )}
 
               {/* Input */}
-              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <View style={[styles.inputRow, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-                  <TextInput
-                    style={[styles.textInput, { color: colors.text, backgroundColor: colors.subtle }]}
-                    placeholder="Ask about destinations, budgets, trips…"
-                    placeholderTextColor={colors.muted}
-                    value={input}
-                    onChangeText={setInput}
-                    multiline
-                    maxLength={MAX_INPUT_LENGTH}
-                    returnKeyType="send"
-                    submitBehavior="submit"
-                    onSubmitEditing={() => sendMessage(input)}
-                    onKeyPress={handleWebEnter}
-                    accessibilityLabel="Message Kalaw Assistance"
-                  />
-                  <TouchableOpacity
-                    style={[styles.sendButton, { backgroundColor: input.trim() && !isTyping ? fabColor : colors.border }]}
-                    onPress={() => sendMessage(input)}
-                    disabled={!input.trim() || isTyping}
-                    accessibilityRole="button"
-                    accessibilityLabel="Send message"
-                    accessibilityState={{ disabled: !input.trim() || isTyping }}
-                  >
-                    <Icon name="send" size={20} color={onFab} />
+              <View style={[styles.inputRow, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text, backgroundColor: colors.subtle }]}
+                  placeholder="Ask about destinations, budgets, trips…"
+                  placeholderTextColor={colors.muted}
+                  value={input}
+                  onChangeText={setInput}
+                  multiline
+                  maxLength={MAX_INPUT_LENGTH}
+                  returnKeyType="send"
+                  submitBehavior="submit"
+                  onSubmitEditing={() => sendMessage(input)}
+                  onKeyPress={handleWebEnter}
+                  accessibilityLabel="Message Kalaw Assistance"
+                />
+                <TouchableOpacity
+                  style={[styles.sendButton, { backgroundColor: input.trim() && !isTyping ? fabColor : colors.border }]}
+                  onPress={() => sendMessage(input)}
+                  disabled={!input.trim() || isTyping}
+                  accessibilityRole="button"
+                  accessibilityLabel="Send message"
+                  accessibilityState={{ disabled: !input.trim() || isTyping }}
+                >
+                  <Icon name="send" size={20} color={onFab} />
                   </TouchableOpacity>
-                </View>
-              </KeyboardAvoidingView>
-            </View>
+              </View>
+            </KeyboardAvoidingView>
           </SafeAreaView>
         </SafeAreaProvider>
       </Modal>

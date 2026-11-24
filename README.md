@@ -446,6 +446,7 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 | iPhone: no *Add to Home Screen* option | Use **Safari** (on iOS 16.4+ other browsers work through their Share menu too). Scroll down the Share sheet to find it. |
 | Installed web app shows an old version | Close it fully and reopen while online. If it still looks old, delete the home-screen icon and add it again. |
 | Website says "already open in another window or tab" (was "Invalid VFS state") | The browser lets only one window use the on-device database. Close the other KalawGuide tab or installed-app window, then reload. With the shared Turso database this can't happen. |
+| APK: keyboard covers the Kalaw Assistance text box | That's an older build. Build a new APK. The chat input now moves above the keyboard. |
 | Dependency or build errors | Run `npx expo-doctor`, then `npx expo install --fix`. |
 
 ---
@@ -453,6 +454,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Fix: keyboard covered the chatbot text box on the APK.** In the Android app, the Kiko chat input now moves above the keyboard, so you can see what you type without closing the keyboard.
 
 - **☰ menu only on phones.** Laptops and desktops (browser or installed PWA) now show the full navigation bar instead of the phone menu. The ☰ menu appears only below 768 px.
 
