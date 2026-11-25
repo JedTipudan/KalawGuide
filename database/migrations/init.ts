@@ -1,39 +1,29 @@
 import * as SQLite from 'expo-sqlite';
+import { AppState, Platform } from 'react-native';
 import { OfflineError, TursoDatabase, remoteConfigFromEnv } from '../remote/tursoDatabase';
 import { offlineCache } from '../remote/offlineCache';
+import { OUTBOX_SCHEMA, SyncedDatabase, type LocalDb } from '../remote/syncedDatabase';
+import { storage } from '../../utils/storage';
 
 /**
  * Two modes, same SQL:
  *  • Shared online database (Turso) when EXPO_PUBLIC_TURSO_DATABASE_URL + EXPO_PUBLIC_TURSO_AUTH_TOKEN
  *    are set — every phone, the APK and the website see the same users, businesses and approvals.
+ *    On phones the app works on a synced copy, so it also works offline (syncedDatabase.ts).
  *  • On-device SQLite otherwise (each device/browser keeps its own copy, works fully offline).
  */
 export const DATABASE_MODE: 'online' | 'device' = remoteConfigFromEnv() ? 'online' : 'device';
 
 // Single shared promise stored on globalThis so it survives across module
-// re-evaluations on web (HMR). This guarantees openDatabaseAsync is called
-// exactly once — concurrent callers all await the same promise.
-declare const globalThis: { __kalawguide_db_promise?: Promise<SQLite.SQLiteDatabase> };
+// re-evaluations on web (HMR). This guarantees the database is opened exactly once.
+declare const globalThis: {
+  __kalawguide_db_promise?: Promise<SQLite.SQLiteDatabase>;
+  __kalawguide_synced?: SyncedDatabase;
+};
 
 export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (!globalThis.__kalawguide_db_promise) {
-    const remote = remoteConfigFromEnv();
-    const open: Promise<SQLite.SQLiteDatabase> = remote
-      // TursoDatabase implements the four methods the app uses (getAll/getFirst/run/exec).
-      // Reads are saved on the device, so lists still show with no internet.
-      ? Promise.resolve(new TursoDatabase({ ...remote, cache: offlineCache }) as unknown as SQLite.SQLiteDatabase)
-      : SQLite.openDatabaseAsync('kalawguide.db');
-    globalThis.__kalawguide_db_promise = open
-      .then(async db => {
-        try {
-          await runMigrations(db);
-        } catch (e) {
-          // Offline: the tables already exist on the server; reads come from the offline copy.
-          if (!(e instanceof OfflineError)) throw e;
-          // Run them again next time the app opens with internet.
-        }
-        return db;
-      })
+    globalThis.__kalawguide_db_promise = openDatabase()
       .catch(e => {
         // Reset on failure so a future call can retry
         globalThis.__kalawguide_db_promise = undefined;
@@ -47,6 +37,88 @@ export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       });
   }
   return globalThis.__kalawguide_db_promise;
+}
+
+async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
+  const cfg = remoteConfigFromEnv();
+  if (!cfg) {
+    const db = await SQLite.openDatabaseAsync('kalawguide.db');
+    await runMigrations(db);
+    return db;
+  }
+
+  const remote = new TursoDatabase({ ...cfg, cache: offlineCache });
+  await runMigrations(remote as unknown as SQLite.SQLiteDatabase).catch(e => {
+    // Offline: the tables already exist on the server. Run them again next launch with internet.
+    if (!(e instanceof OfflineError)) throw e;
+  });
+
+  // Phones: work on a copy kept on the device and sync it (see syncedDatabase.ts), so everything,
+  // including saving, works offline. Website: online database with saved answers as fallback.
+  if (Platform.OS !== 'web') {
+    try {
+      const synced = await openSynced(remote);
+      return synced as unknown as SQLite.SQLiteDatabase;
+    } catch (e) {
+      console.warn('[sync] on-device copy unavailable, using the online database directly:', e);
+    }
+  }
+  return remote as unknown as SQLite.SQLiteDatabase;
+}
+
+async function openSynced(remote: TursoDatabase): Promise<SyncedDatabase> {
+  const local = await SQLite.openDatabaseAsync('kalawguide-replica.db');
+  await runMigrations(local);
+  // The copy has no accounts table rows (they stay online), so foreign keys can't be checked here;
+  // the online database checks them. Wait (don't fail) while a sync briefly locks the file.
+  await local.execAsync('PRAGMA foreign_keys = OFF; PRAGMA busy_timeout = 5000;');
+  await local.execAsync(OUTBOX_SCHEMA);
+
+  const synced = new SyncedDatabase(local as unknown as LocalDb, remote, { getUserId: signedInUserId });
+  globalThis.__kalawguide_synced = synced;
+  if (await synced.hasSynced()) {
+    void synced.sync().catch(() => {});
+  } else {
+    // First launch: wait for the data (up to 20 s) so the first screens aren't empty.
+    await Promise.race([synced.sync().catch(() => {}), new Promise(r => setTimeout(r, 20000))]);
+  }
+  startAutoSync(synced);
+  return synced;
+}
+
+async function signedInUserId(): Promise<string | null> {
+  const raw = await storage.getItem('kalawguide_session');
+  if (!raw) return null;
+  try {
+    return (JSON.parse(raw) as { user?: { id?: string } }).user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const RESYNC_MS = 2 * 60 * 1000;
+
+/** Sync when the app comes back to the screen, when internet returns, and send pending changes every minute. */
+function startAutoSync(db: SyncedDatabase): void {
+  let last = Date.now();
+  const syncSoon = (force = false) => {
+    if (!force && Date.now() - last < RESYNC_MS) { void db.flush().catch(() => {}); return; }
+    last = Date.now();
+    void db.sync().catch(() => {});
+  };
+  AppState.addEventListener('change', s => { if (s === 'active') syncSoon(); });
+  // Loaded here (phones only) so the website and tests don't pull in the native network module.
+  import('expo-network')
+    .then(Network => Network.addNetworkStateListener(e => { if (e.isConnected && e.isInternetReachable !== false) syncSoon(true); }))
+    .catch(() => { /* network events unavailable: AppState and the timer still sync */ });
+  setInterval(() => {
+    void db.pendingCount().then(n => { if (n > 0) void db.flush().catch(() => {}); }).catch(() => {});
+  }, 60000);
+}
+
+/** Sync now (e.g. right after sign-in, so the user's own budgets and trips come down). */
+export function requestSync(): Promise<void> {
+  return globalThis.__kalawguide_synced?.sync().catch(() => {}) ?? Promise.resolve();
 }
 
 async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {

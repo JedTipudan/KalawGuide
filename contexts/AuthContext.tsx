@@ -23,6 +23,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Phones: bring down this user's own budgets, trips, expenses and favorites after sign-in. */
+async function syncAfterSignIn(): Promise<void> {
+  try {
+    const { requestSync } = await import('../database/migrations/init');
+    await requestSync();
+  } catch { /* offline: synced later */ }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,12 +89,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw e;
     }
     setUser(session.user);
+    void syncAfterSignIn();
     logActivity({ userId: session.user.id, action: 'signed_in', entityType: 'user', entityId: session.user.id, entityName: session.user.displayName });
   }, []);
 
   const register = useCallback(async (credentials: RegisterCredentials) => {
     const session = await registerWithEmail(credentials);
     setUser(session.user);
+    void syncAfterSignIn();
     logActivity({ userId: session.user.id, action: 'registered', entityType: 'user', entityId: session.user.id, entityName: session.user.displayName, details: session.user.role });
   }, []);
 
@@ -95,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     const { session, isNewUser } = await signInWithGoogle(googleUser);
     setUser(session.user);
+    void syncAfterSignIn();
     logActivity({ userId: session.user.id, action: isNewUser ? 'registered' : 'signed_in_google', entityType: 'user', entityId: session.user.id, entityName: session.user.displayName, details: 'Google' });
     return { isNewUser };
   }, []);

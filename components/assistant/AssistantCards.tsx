@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DestinationCardData, TripBudgetResult, TripCostCategory } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
@@ -24,6 +24,21 @@ export function PriceBadge({ verified, missing }: { verified: boolean; missing?:
     <View style={[styles.badge, { borderColor: color }]}>
       <Text style={[styles.badgeText, { color }]}>{label}</Text>
     </View>
+  );
+}
+
+/** "Open this budget" etc. after the assistant saved something for the user. */
+export function ActionCard({ label, onPress }: { label: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.card, { backgroundColor: colors.primary, borderColor: colors.primary, alignItems: 'center' }]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Text style={[styles.cardTitle, { color: colors.onPrimary }]}>{label} →</Text>
+    </TouchableOpacity>
   );
 }
 

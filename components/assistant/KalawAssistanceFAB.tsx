@@ -16,7 +16,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useNetworkState } from 'expo-network';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { AssistantMessage, AssistantSuggestion } from '../../types';
+import { ActionTarget, AssistantMessage, AssistantSuggestion } from '../../types';
+import { useRouter } from 'expo-router';
 import { formatShortDate, generateId, now } from '../../utils/helpers';
 import { getAssistantReply } from '../../features/assistant/assistantEngine';
 import { CLOUD_AI_ENABLED } from '../../features/assistant/cloudModel';
@@ -25,11 +26,13 @@ import { clearHistory, loadHistory, saveMessage } from '../../features/assistant
 import { ASSISTANT_NAME, ASSISTANT_PURPOSE } from '../../features/assistant/identity';
 import { MAX_INPUT_LENGTH } from '../../features/assistant/guard';
 import { Icon } from '../common/Icon';
-import { BudgetBreakdownCard, DestinationCard } from './AssistantCards';
+import { ActionCard, BudgetBreakdownCard, DestinationCard } from './AssistantCards';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
 import { Kiko, KikoAvatar } from '../brand/Kiko';
 
 const SUGGESTIONS: AssistantSuggestion[] = [
+  { id: '8', label: '📝 Create my budget', query: 'Create a budget for Dahican Beach, 2 people, 3 days, food ₱300' },
+  { id: '9', label: '🧾 Log an expense', query: 'Add ₱150 lunch to my expenses' },
   { id: '1', label: 'Budget for Dahican Beach', query: 'How much should I prepare for Dahican Beach?' },
   { id: '2', label: '3-day trip for 4', query: 'Plan a 3-day trip for 4 people.' },
   { id: '3', label: 'Where can I go with ₱2,000?', query: 'Where can I travel with ₱2,000?' },
@@ -69,6 +72,22 @@ export function KalawAssistanceFAB() {
   const { user } = useAuth();
   const network = useNetworkState();
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const isWeb = Platform.OS === 'web';
+
+  /** Opens what an assistant action saved. Null when that screen doesn't exist on this platform. */
+  const routeFor = useCallback((t: ActionTarget): Parameters<ReturnType<typeof useRouter>['push']>[0] | null => {
+    switch (t.screen) {
+      case 'budget-results':
+        return { pathname: isWeb ? '/(web)/budget-results' : '/(tourist)/budget-results', params: { id: t.id } } as never;
+      case 'expenses':
+        return (isWeb ? '/(web)/expenses' : '/(tourist)/expenses') as never;
+      case 'favorites':
+        return isWeb ? null : ('/(tourist)/favorites' as never);
+      case 'itinerary':
+        return (isWeb ? '/(web)/trips' : { pathname: '/(tourist)/itinerary/[id]', params: { id: t.id } }) as never;
+    }
+  }, [isWeb]);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -300,11 +319,14 @@ export function KalawAssistanceFAB() {
                         content={item.content}
                         style={[styles.messageText, { color: isUser ? colors.onPrimary : colors.text }]}
                       />
-                      {cards.map((c, i) =>
-                        c.type === 'budget'
-                          ? <BudgetBreakdownCard key={i} data={c.data} />
-                          : <DestinationCard key={i} data={c.data} />
-                      )}
+                      {cards.map((c, i) => {
+                        if (c.type === 'budget') return <BudgetBreakdownCard key={i} data={c.data} />;
+                        if (c.type === 'destination') return <DestinationCard key={i} data={c.data} />;
+                        const href = routeFor(c.data.target);
+                        return href
+                          ? <ActionCard key={i} label={c.data.label} onPress={() => { setIsOpen(false); router.push(href); }} />
+                          : null;
+                      })}
                       {!isUser && item.metadata?.dataSyncedAt && (
                         <Text style={[styles.estimateNote, { color: colors.muted }]}>
                           Offline answer · KalawGuide data saved {syncLabel(item.metadata.dataSyncedAt)}

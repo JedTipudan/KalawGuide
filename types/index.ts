@@ -367,9 +367,17 @@ export interface DestinationCardData {
   feeVerified: boolean;
 }
 
+/** Where an assistant action saved something, so the chat can offer an "Open" button. */
+export type ActionTarget =
+  | { screen: 'budget-results'; id: string }
+  | { screen: 'expenses' }
+  | { screen: 'favorites' }
+  | { screen: 'itinerary'; id: string };
+
 export type AssistantCard =
   | { type: 'destination'; data: DestinationCardData }
-  | { type: 'budget'; data: TripBudgetResult };
+  | { type: 'budget'; data: TripBudgetResult }
+  | { type: 'action'; data: { label: string; target: ActionTarget } };
 
 export interface AssistantReplyMeta {
   intent: AssistantIntent;

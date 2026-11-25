@@ -956,6 +956,29 @@ AI tool: Claude Code (Anthropic). With the full-page redirect, Google sent the u
 
 ---
 
+## Offline-First Phone App and Assistant Actions (2026-11-25)
+
+AI tool: Claude Code (Anthropic). The user asked why things that work online didn't work offline, and whether everything could work offline. They also wanted Kalaw Assistance to do tasks for them (for example create a budget), online and offline. The AI was asked to pick the best approach for the project.
+
+**Offline-first phone app**
+- Cause: with the shared Turso database, every write was an internet request, so saving failed offline. Reads only had a cache of earlier answers.
+- `database/remote/syncedDatabase.ts` (new): on phones, the app works on a SQLite copy (`kalawguide-replica.db`). Reads come from the copy. Writes go to the copy and to an `_outbox` table, which is sent to Turso in order (50 per request) when online. A refused change (e.g. a duplicate) is logged and skipped.
+- Sync: send the outbox, then download shared tables in full and personal tables only for the signed-in user. The copy is replaced in one transaction, and anything still in the outbox is applied again so offline changes aren't lost.
+- Accounts (`users`), `business_documents` and `activity_logs` stay online-only. They are private or large, so they aren't copied to every phone. Their reads use the saved-answer cache when offline, and their writes wait in the outbox.
+- "INSERT OR IGNORE" writes that changed nothing (the demo data inserted at every launch) aren't uploaded.
+- `database/remote/tursoDatabase.ts`: new `runBatchAsync` (sends a batch of queued changes; each statement can fail on its own) and `getAllFreshAsync` (a read that isn't cached).
+- `database/migrations/init.ts`: phones use the synced copy (falling back to the direct online database if the copy can't open). It waits up to 20 s on the very first launch. Auto-sync runs on app start, when the app returns to the screen, when internet comes back (`expo-network`, loaded only on phones), and every minute while changes are pending. `requestSync()` runs after sign-in, registration and Google sign-in (`contexts/AuthContext.tsx`). The website keeps the online database with the saved-answer cache.
+- Foreign keys are off in the phone's copy, because accounts aren't copied there. The online database still enforces them.
+
+**Assistant actions**
+- `features/assistant/actions.ts` (new): code (not the AI) recognizes four actions: save a budget, add an expense, add a favorite, create a trip. Each saves to the database. A saved budget stores values that the Budget results screen turns into the same total as the assistant's estimate.
+- `features/assistant/assistantEngine.ts`: actions run before intent detection and skip cloud rewording, so the confirmation matches what was saved. If the place or amount is missing, it asks instead of guessing. Only signed-in tourists can use actions. A website save while offline gets a clear "no internet" message.
+- `types/index.ts`: a new `action` card type. `components/assistant/AssistantCards.tsx` and `KalawAssistanceFAB.tsx`: an "Open this budget / Open Expenses / Open Favorites / Open this trip" button. The website has no Favorites page, so it doesn't show that button there. Two new suggestion chips were added, and the help text lists the actions.
+
+**Checks:** new tests cover offline read/save/list, upload and sharing across phones, the online-only tables, and all four assistant actions (including budget totals matching and guests being refused). `npx jest`: 185/185 passed. `npx tsc --noEmit` passed. `npx expo lint` showed no problems in the changed files. Not yet tested on a real phone. That needs a new APK build.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -998,3 +1021,4 @@ Fix: Google sign-in Error 400 (code_challenge_method) on the website (2026-11-25
 Fix: Google sign-in redirect_uri_mismatch on the website (2026-11-25).
 Fix: website Google sign-in uses a full-page redirect instead of a popup (2026-11-25).
 Fix: Google reply lost on the website /sign-in rewrite (2026-11-25).
+Offline-first phone app (synced copy + outbox) and assistant actions (2026-11-25).

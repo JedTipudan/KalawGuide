@@ -124,6 +124,18 @@ export class TursoDatabase {
 
   /** Sends statements in one HTTP request and returns one result per statement. */
   private async pipeline(stmts: HranaStmt[]): Promise<HranaResult[]> {
+    const results = await this.send(stmts);
+    return stmts.map((s, i) => {
+      const r = results[i];
+      if (!r || r.type !== 'ok' || !r.response) {
+        throw new RemoteDatabaseError(r?.error?.message ?? `Statement failed: ${s.sql.slice(0, 80)}`);
+      }
+      return r.response.result;
+    });
+  }
+
+  /** One HTTP request; each statement succeeds or fails on its own. */
+  private async send(stmts: HranaStmt[]): Promise<{ type: string; response?: { result: HranaResult }; error?: { message: string } }[]> {
     if (stmts.length === 0) return [];
     const body = JSON.stringify({
       requests: [...stmts.map(stmt => ({ type: 'execute', stmt })), { type: 'close' }],
@@ -151,13 +163,24 @@ export class TursoDatabase {
       throw new RemoteDatabaseError(`Online database error ${res.status}.${hint} ${text.slice(0, 200)}`);
     }
     const json = await res.json() as { results: { type: string; response?: { result: HranaResult }; error?: { message: string } }[] };
+    return json.results;
+  }
+
+  /**
+   * Sends queued writes in one request. Returns, per statement, null when it worked or the server's
+   * error message (e.g. a duplicate). Throws OfflineError when the server can't be reached.
+   */
+  async runBatchAsync(stmts: { sql: string; params?: SQLValue[] }[]): Promise<(string | null)[]> {
+    const results = await this.send(stmts.map(s => this.stmt(s.sql, s.params)));
     return stmts.map((s, i) => {
-      const r = json.results[i];
-      if (!r || r.type !== 'ok' || !r.response) {
-        throw new RemoteDatabaseError(r?.error?.message ?? `Statement failed: ${s.sql.slice(0, 80)}`);
-      }
-      return r.response.result;
+      const r = results[i];
+      return r && r.type === 'ok' ? null : (r?.error?.message ?? `Statement failed: ${s.sql.slice(0, 80)}`);
     });
+  }
+
+  /** A read that always goes online and is not saved in the offline cache. */
+  async getAllFreshAsync<T>(sql: string, params?: SQLValue[] | SQLValue): Promise<T[]> {
+    return this.readOnline<T>(sql, params);
   }
 
   private stmt(sql: string, params?: SQLValue[] | SQLValue): HranaStmt {

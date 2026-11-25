@@ -194,3 +194,94 @@ describe('Shared online database: the instructor scenario across devices', () =>
     expect((await db.getFirstAsync<{ n: number }>("SELECT COUNT(*) AS n FROM businesses WHERE id LIKE 'seed_biz_%'"))!.n).toBe(13);
   });
 });
+
+describe('SyncedDatabase: the phone works offline and syncs later', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { SyncedDatabase, OUTBOX_SCHEMA, tablesIn } = require('./syncedDatabase') as typeof import('./syncedDatabase');
+  const SCHEMA = `
+    CREATE TABLE destinations (id TEXT PRIMARY KEY, name TEXT NOT NULL);
+    CREATE TABLE budget_plans (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL);
+    CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL);`;
+
+  function phoneDb() {
+    const db = new DatabaseSync(':memory:');
+    db.exec(SCHEMA + OUTBOX_SCHEMA);
+    const args = (p: unknown) => (p === undefined ? [] : Array.isArray(p) ? p : [p]) as never[];
+    return {
+      raw: db,
+      getAllAsync: async <T,>(sql: string, p?: unknown) => db.prepare(sql).all(...args(p)) as T[],
+      getFirstAsync: async <T,>(sql: string, p?: unknown) => (db.prepare(sql).get(...args(p)) ?? null) as T | null,
+      runAsync: async (sql: string, p?: unknown) => {
+        const i = db.prepare(sql).run(...args(p));
+        return { lastInsertRowId: Number(i.lastInsertRowid), changes: Number(i.changes) };
+      },
+      execAsync: async (sql: string) => { db.exec(sql); },
+    };
+  }
+
+  function setup() {
+    const server = fakeTurso();
+    let online = true;
+    const fetchImpl = ((...a: Parameters<typeof fetch>) =>
+      online ? server.fetchImpl(...a) : Promise.reject(new TypeError('Network request failed'))) as typeof fetch;
+    const remote = new TursoDatabase({ url: 'https://kalaw-test.turso.io', authToken: 'secret', fetchImpl });
+    const phone = (userId: string | null) => {
+      const local = phoneDb();
+      return { local, db: new SyncedDatabase(local, remote, {
+        getUserId: async () => userId,
+        sharedTables: ['destinations'],
+        personalTables: [['budget_plans', 'user_id = ?']],
+      }) };
+    };
+    return { remote, phone, setOnline: (v: boolean) => { online = v; } };
+  }
+
+  it('reads, saves and lists offline, then uploads and shares when back online', async () => {
+    const { remote, phone, setOnline } = setup();
+    await remote.execAsync(SCHEMA);
+    await remote.runAsync("INSERT INTO destinations VALUES ('d1', 'Dahican Beach')");
+
+    const a = phone('u1');
+    await a.db.sync();
+    expect(await a.db.hasSynced()).toBe(true);
+
+    setOnline(false);
+    expect(await a.db.getAllAsync('SELECT name FROM destinations')).toEqual([{ name: 'Dahican Beach' }]);
+    await a.db.runAsync('INSERT INTO budget_plans (id, user_id, title) VALUES (?, ?, ?)', ['b1', 'u1', 'Trip to Dahican']);
+    expect(await a.db.getAllAsync('SELECT title FROM budget_plans WHERE user_id = ?', ['u1'])).toEqual([{ title: 'Trip to Dahican' }]);
+    expect(await a.db.pendingCount()).toBe(1);
+    expect(await a.db.flush()).toBe(false);
+    await expect(a.db.sync()).rejects.toThrow(OfflineError);
+    expect(await a.db.getAllAsync('SELECT id FROM budget_plans')).toEqual([{ id: 'b1' }]); // still there
+
+    setOnline(true);
+    await remote.runAsync("INSERT INTO destinations VALUES ('d2', 'Pujada Island')"); // added elsewhere meanwhile
+    await a.db.sync();
+    expect(await a.db.pendingCount()).toBe(0);
+    expect(await remote.getAllAsync('SELECT id FROM budget_plans')).toEqual([{ id: 'b1' }]);
+    expect((await a.db.getAllAsync<{ id: string }>('SELECT id FROM destinations ORDER BY id')).map(r => r.id)).toEqual(['d1', 'd2']);
+
+    // Another phone of the same user gets the budget; another user's phone doesn't.
+    const b = phone('u1');
+    await b.db.sync();
+    expect(await b.db.getAllAsync('SELECT id FROM budget_plans')).toEqual([{ id: 'b1' }]);
+    const c = phone('u2');
+    await c.db.sync();
+    expect(await c.db.getAllAsync('SELECT id FROM budget_plans')).toEqual([]);
+  });
+
+  it('keeps accounts online-only and skips uploading demo rows that changed nothing', async () => {
+    const { remote, phone } = setup();
+    await remote.execAsync(SCHEMA);
+    await remote.runAsync("INSERT INTO users VALUES ('u1', 'a@b.c')");
+    const a = phone('u1');
+    await a.db.sync();
+    expect(a.local.raw.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({ n: 0 });
+    expect(await a.db.getAllAsync('SELECT email FROM users WHERE id = ?', ['u1'])).toEqual([{ email: 'a@b.c' }]);
+
+    await a.db.runAsync("INSERT OR IGNORE INTO destinations VALUES ('d9', 'Demo')");
+    await a.db.runAsync("INSERT OR IGNORE INTO destinations VALUES ('d9', 'Demo')");
+    expect(await a.db.pendingCount()).toBe(1);
+    expect(tablesIn('SELECT * FROM businesses b JOIN users u ON u.id = b.owner_id')).toEqual(['businesses', 'users']);
+  });
+});

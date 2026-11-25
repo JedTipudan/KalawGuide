@@ -1,9 +1,11 @@
+jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual('crypto').randomUUID() }));
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 
 import * as SQLite from 'expo-sqlite';
 import { openFakeDatabase, resetDatabase } from '../../testing/fakeSqlite';
 import { getDatabase } from '../../database/migrations/init';
 import { getAssistantReply } from './assistantEngine';
+import { calculateBudget } from '../../services/budget/budgetService';
 import { REFUSAL } from './identity';
 import { TripBudgetResult, User } from '../../types';
 
@@ -178,5 +180,68 @@ describe('place recommendations', () => {
     const r = await ask('best places to visit in Mati');
     expect(destIds(r)).toHaveLength(0);
     expect(r.content).toMatch(/doesn't have/);
+  });
+});
+
+describe('actions: the assistant saves things for the user', () => {
+  it('creates and saves a budget plan whose totals match the estimate', async () => {
+    await seed();
+    const r = await ask('Create a budget for Dahican Beach, 2 people, 3 days, food 300');
+    expect(r.content).toMatch(/Saved to \*\*My Budgets\*\*/);
+    const est = budgetCard(r)!;
+    const action = r.meta.cards?.find(c => c.type === 'action');
+    expect(action?.data).toMatchObject({ target: { screen: 'budget-results' } });
+
+    const db = await getDatabase();
+    const plan = await db.getFirstAsync<Record<string, number | string>>('SELECT * FROM budget_plans WHERE user_id = ?', ['u1']);
+    expect(plan).toMatchObject({ title: 'Trip to Dahican Beach', destination_id: 'd1', travelers: 2, duration_days: 3 });
+    const total = calculateBudget({
+      travelers: Number(plan!.travelers), durationDays: Number(plan!.duration_days),
+      transportation: Number(plan!.transportation), accommodation: Number(plan!.accommodation),
+      food: Number(plan!.food), activities: Number(plan!.activities), miscellaneous: Number(plan!.miscellaneous),
+    }).total;
+    expect(total).toBeCloseTo(est.groupTotal, 2);
+  });
+
+  it('asks for the destination instead of guessing', async () => {
+    await seed();
+    const r = await ask('Make me a budget please');
+    expect(r.content).toMatch(/Which destination/);
+    const db = await getDatabase();
+    expect(await db.getAllAsync('SELECT id FROM budget_plans')).toEqual([]);
+  });
+
+  it('adds an expense, a favorite and a trip', async () => {
+    await seed();
+    const db = await getDatabase();
+
+    expect((await ask('Add ₱150 lunch to my expenses')).content).toMatch(/Added to \*\*Expenses\*\*/);
+    expect(await db.getFirstAsync('SELECT name, amount, category FROM expenses WHERE user_id = ?', ['u1']))
+      .toEqual({ name: 'Lunch', amount: 150, category: 'food' });
+
+    expect((await ask('Add Sunrise Resort to my favorites')).content).toMatch(/Added \*\*Sunrise Resort\*\*/);
+    expect((await ask('Add Sunrise Resort to my favorites')).content).toMatch(/already in your favorites/);
+    expect(await db.getAllAsync("SELECT entity_type, entity_id FROM favorites WHERE user_id = 'u1'"))
+      .toEqual([{ entity_type: 'business', entity_id: 'b1' }]);
+
+    const trip = await ask('Create a 2-day trip to Dahican Beach');
+    expect(trip.content).toMatch(/Created \*\*Trip to Dahican Beach\*\* \(2 days/);
+    const it2 = await db.getFirstAsync<{ id: string; start_date: string; end_date: string }>('SELECT id, start_date, end_date FROM itineraries');
+    expect(await db.getAllAsync('SELECT destination_id FROM itinerary_items WHERE itinerary_id = ?', [it2!.id]))
+      .toEqual([{ destination_id: 'd1' }]);
+  });
+
+  it('needs a signed-in tourist and never saves for guests', async () => {
+    await seed();
+    expect((await ask('Add ₱150 lunch to my expenses', null)).content).toMatch(/Sign in as a tourist/);
+    const db = await getDatabase();
+    expect(await db.getAllAsync('SELECT id FROM expenses')).toEqual([]);
+  });
+
+  it('questions still get answers, not actions', async () => {
+    await seed();
+    const r = await ask('How much should I prepare for Dahican Beach?');
+    expect(r.content).not.toMatch(/Saved to/);
+    expect(r.meta.intent).toBe('travel_budget');
   });
 });

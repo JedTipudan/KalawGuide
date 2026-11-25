@@ -151,6 +151,20 @@ A travel assistant with a **cloud AI** (online) and a **local AI** (offline). Bo
 | "How do I book a room?" | An explanation that KalawGuide doesn't take bookings, plus contact details for verified businesses |
 | "Emergency numbers" | Police, hospital, fire, coast guard and disaster office, each marked verified or not |
 
+### The assistant can do it for you
+
+Signed-in tourists can ask Kalaw Assistance to **save** things, not just explain them. It works the same way **online and offline**. On the phone app, it saves on the device and syncs when there's internet.
+
+| Say something like… | It does |
+|---|---|
+| "Create a budget for Dahican Beach, 2 people, 3 days, food ₱300" | Builds the itemized estimate and **saves it to My Budgets**, with an *Open this budget* button |
+| "Add ₱150 lunch to my expenses" / "I spent 200 on tricycle fare" | **Adds an expense** with the amount and category (food, transportation, accommodation, activities, shopping, other) |
+| "Add Sunrise Resort to my favorites" | **Adds a destination or business** to Favorites (it tells you if it's already there) |
+| "Create a 2-day trip to Dahican Beach" | **Creates a trip** in My Trips, with a visit to that place on day 1 |
+
+- **Rules:** actions are recognized in code, not by the cloud AI, so the confirmation always matches what was saved. If something is missing (which place, how much), it asks instead of guessing. Guests and business/admin accounts are told to sign in as a tourist.
+- **Code:** `features/assistant/actions.ts`, called from `assistantEngine.ts`. The chat shows a button that opens what was saved.
+
 - **Safety:**
   - An input guard blocks prompt-injection attempts.
   - Off-topic questions are politely refused.
@@ -291,7 +305,13 @@ The tests run the app's real migrations and SQL against Node's built-in SQLite (
 
 - **Two database modes, same SQL** (`database/migrations/init.ts`):
   - **Shared online database (Turso)** when `EXPO_PUBLIC_TURSO_DATABASE_URL` and `EXPO_PUBLIC_TURSO_AUTH_TOKEN` are set. Every phone, the APK and the website use one database, so a business registered on one device and approved by the admin on another shows for tourists everywhere. `database/remote/tursoDatabase.ts` implements the four expo-sqlite calls the app uses over Turso's HTTP API, and buffers each `BEGIN … COMMIT` into one atomic request. Setup is in `guide.html` → *Shared online database*.
-  - **Works offline in online mode too:** every list the app reads from Turso (Explore, Local Businesses, details, prices, favorites…) is saved on the device (`database/remote/offlineCache.ts`). With no internet, the app shows the last saved copy instead of an empty list. Changes such as saving, booking or editing still need internet. A screen never opened while online has nothing saved yet.
+  - **Phone app: everything works offline** (`database/remote/syncedDatabase.ts`). The app keeps a copy of the data on the phone (`kalawguide-replica.db`) and works on that copy:
+    - **Reads** (Explore, Local Businesses, details, prices, budgets, trips, expenses, favorites, chat history) come from the copy, so they show with no internet.
+    - **Changes** (save a budget, add an expense, favorite, create or edit a trip, business edits) are saved on the phone at once and put in an **outbox**. The outbox is sent to Turso in order as soon as there's internet.
+    - **Sync** runs on app start, when internet comes back, when the app returns to the screen (at most every 2 minutes), and after sign-in. Pending changes are retried every minute. It sends the outbox first, then refreshes the copy: shared data in full, and only the signed-in user's own budgets, trips, expenses, favorites, notifications and chat.
+    - **Online-only:** accounts, business verification documents and activity logs are not copied to phones (they are private or large). Signing in or registering for the first time needs internet. When offline, these reads use the last saved answer, and writes wait in the outbox.
+    - The first launch waits up to 20 s to download the data. A phone that has never been online starts empty.
+  - **Website:** reads go to Turso, and the last answer is saved in the browser (`database/remote/offlineCache.ts`). Offline, it shows the last saved lists. Saving changes on the website needs internet.
   - **On this device** otherwise: SQLite on the device or in the browser. It works fully offline, but each device has its own copy.
   - Password hashes (salted SHA-256) are stored with the user, so accounts work on any device that shares the database. Business photos and verification documents are saved as compressed images in the database, so the admin can review them from anywhere.
   - Admin *Settings* shows which mode is active.
@@ -463,6 +483,9 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **The phone app now works fully offline.** It keeps a synced copy of the data on the phone. Saving a budget, adding an expense, favorites, trips and other changes work with no internet, and they upload automatically when you're back online.
+- **Kalaw Assistance can do things for you.** "Create a budget for Dahican Beach, 2 people, 3 days" saves it to My Budgets. It can also add expenses, add favorites and create trips, online or offline. Two new suggestion chips show how.
 
 - **Fix: website Google sign-in returned to the sign-in page.** At startup, `index.ts` rewrites `/sign-in` to the app's internal route, and that rewrite dropped Google's `#access_token=…` reply. `index.ts` now saves the reply first, and the sign-in page finishes the login from it.
 

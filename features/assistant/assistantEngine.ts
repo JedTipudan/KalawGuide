@@ -1,4 +1,4 @@
-import { AssistantCard, AssistantIntent, AssistantReplyMeta, TripCostItem, User } from '../../types';
+import { ActionTarget, AssistantCard, AssistantIntent, AssistantReplyMeta, TripBudgetResult, TripCostItem, User } from '../../types';
 import { formatCurrency } from '../../utils/helpers';
 import { calculateTripBudget, unitToPricingModel } from '../../services/budget/budgetService';
 import { checkInput, validateOutput } from './guard';
@@ -6,6 +6,10 @@ import { classifyIntent } from './intent';
 import { REFUSAL } from './identity';
 import { BudgetRequest, matchDestination, parseBudgetRequest } from './budgetParser';
 import { getLocalModel } from './localModel';
+import {
+  AssistantAction, addExpense, addFavorite, canAct, createTrip, detectAction, findPlace, parseExpense, saveBudgetPlan,
+} from './actions';
+import { OfflineError } from '../../database/remote/tursoDatabase';
 import { CLOUD_AI_ENABLED, CloudTurn, askCloud, checkCloudReply, factsFromSnapshot } from './cloudModel';
 import {
   BusinessInfo, DestinationInfo, PriceInfo, getApprovedBusinesses, getDestinations,
@@ -65,6 +69,21 @@ export async function getAssistantReply(
     return {
       content: "I couldn't open KalawGuide's offline data on this device. Please restart the app and try again.",
       meta: { ...base, intent: 'app_help', sources: [], hasEstimates: false },
+    };
+  }
+
+  // Actions: "create me a budget…", "add ₱150 lunch to my expenses", "add Dahican to favorites",
+  // "make a 2-day trip to…". Saved directly (same result online and offline); no cloud rewording,
+  // so the confirmation always matches what was saved.
+  const action = detectAction(query);
+  if (action) {
+    const answer = await runAction(action, ctx);
+    return {
+      content: validateOutput(answer.content),
+      meta: {
+        ...base, intent: ACTION_INTENT[action], sources: [...new Set(answer.sources ?? [])],
+        hasEstimates: !!answer.hasEstimates, cards: answer.cards,
+      },
     };
   }
 
@@ -152,6 +171,80 @@ async function businessesWithPrices(ctx: Context, categories: string[]) {
   const list = ctx.businesses.filter(b => categories.includes(b.category));
   const prices = await getPrices(list.map(b => b.id));
   return { list, prices };
+}
+
+// ─── Actions (save for the user) ──────────────────────────────────────────────
+
+const ACTION_INTENT: Record<AssistantAction, AssistantIntent> = {
+  save_budget: 'travel_budget', add_expense: 'app_help', add_favorite: 'app_help', create_trip: 'itinerary_planning',
+};
+
+const openCard = (label: string, target: ActionTarget): AssistantCard => ({ type: 'action', data: { label, target } });
+
+async function runAction(action: AssistantAction, ctx: Context): Promise<Answer> {
+  const notAllowed = canAct(ctx.user);
+  if (notAllowed) return { content: notAllowed };
+  const user = ctx.user!;
+  const names = ctx.destinations.map(d => d.name);
+  const example = ctx.destinations[0]?.name ?? 'Dahican Beach';
+  try {
+    switch (action) {
+      case 'save_budget': {
+        const req = parseBudgetRequest(ctx.query, names);
+        const dest = ctx.destinations.find(d => d.name === req.destination);
+        if (!dest) {
+          return { content: `Which destination is the budget for? Try: "Create a budget for ${example}, 2 people, 3 days, food ₱300".` };
+        }
+        const estimate = await budgetFor(dest, req, ctx);
+        const result = estimate.cards?.find(c => c.type === 'budget')?.data as TripBudgetResult;
+        const id = await saveBudgetPlan(user, dest, result);
+        return {
+          ...estimate,
+          content: `✅ Saved to **My Budgets** as "Trip to ${dest.name}".
+
+${estimate.content}`,
+          cards: [...(estimate.cards ?? []), openCard('Open this budget', { screen: 'budget-results', id })],
+        };
+      }
+      case 'add_expense': {
+        const e = parseExpense(ctx.query);
+        if (e.amount === null) return { content: 'How much was it? Try: "Add ₱150 lunch to my expenses".' };
+        await addExpense(user, { ...e, amount: e.amount });
+        return {
+          content: `✅ Added to **Expenses**: ${e.name}, ${formatCurrency(e.amount)} (${e.category}), dated today.`,
+          cards: [openCard('Open Expenses', { screen: 'expenses' })],
+        };
+      }
+      case 'add_favorite': {
+        const place = findPlace(ctx.query, ctx.destinations, ctx.businesses);
+        if (!place) return { content: `Which place should I add? Try: "Add ${example} to my favorites".` };
+        const r = await addFavorite(user, place.type, place.id);
+        return {
+          content: r === 'added' ? `✅ Added **${place.name}** to your favorites.` : `**${place.name}** is already in your favorites.`,
+          sources: [`${place.type === 'business' ? 'businesses' : 'destinations'}:${place.id}`],
+          cards: [openCard('Open Favorites', { screen: 'favorites' })],
+        };
+      }
+      case 'create_trip': {
+        const req = parseBudgetRequest(ctx.query, names);
+        const dest = ctx.destinations.find(d => d.name === req.destination);
+        if (!dest) return { content: `Where is the trip to? Try: "Create a 2-day trip to ${example}".` };
+        const days = req.days ?? 1;
+        const id = await createTrip(user, dest, days);
+        return {
+          content: `✅ Created **Trip to ${dest.name}** (${days} day${days > 1 ? 's' : ''}, starting today) in **My Trips**, with a visit to ${dest.name} on day 1. Open it to add more stops.`,
+          sources: [`destinations:${dest.id}`],
+          cards: [openCard('Open this trip', { screen: 'itinerary', id }), destCard(dest)],
+        };
+      }
+    }
+  } catch (e) {
+    return {
+      content: e instanceof OfflineError
+        ? "I couldn't save that because there's no internet on this browser. Try again when you're online (the phone app saves offline)."
+        : "Sorry, I couldn't save that right now. Please try again.",
+    };
+  }
 }
 
 // ─── Budget ───────────────────────────────────────────────────────────────────
@@ -648,7 +741,7 @@ const HANDLERS: Record<Exclude<AssistantIntent, 'unrelated' | 'malicious_or_over
     const name = ctx.user ? ` ${ctx.user.displayName.split(' ')[0]}` : '';
     return {
       content: `Hi${name}! I'm Kalaw Assistance, the official KalawGuide tourism assistant. I work offline using KalawGuide's own data.\n\nI can help with:\n• Top places to visit (e.g. "What are the best places to visit in Mati?")
-• Destinations, entrance fees and details\n• Verified accommodations, food, transport and activities\n• Trip budgets (e.g. "How much for Dahican Beach for 4 people, 3 days?")\n• Itineraries (e.g. "Plan a 3-day trip for 4 people")\n• Contacting verified local businesses and emergency contacts\n\nIn the app: see places and where you are on the 🗺 **Live map**, save places with ♥ **Favorites**, plan trips in **Trips**, and track spending in **Budget** and **Expenses**.`,
+• Destinations, entrance fees and details\n• Verified accommodations, food, transport and activities\n• Trip budgets (e.g. "How much for Dahican Beach for 4 people, 3 days?")\n• Itineraries (e.g. "Plan a 3-day trip for 4 people")\n• Contacting verified local businesses and emergency contacts\n\nI can also do it for you (online or offline):\n• "Create a budget for Dahican Beach, 2 people, 3 days, food ₱300" → saved to My Budgets\n• "Add ₱150 lunch to my expenses"\n• "Add Dahican Beach to my favorites"\n• "Create a 2-day trip to Dahican Beach" → saved to My Trips\n\nIn the app: see places and where you are on the 🗺 **Live map**, save places with ♥ **Favorites**, plan trips in **Trips**, and track spending in **Budget** and **Expenses**.`,
     };
   },
 };
