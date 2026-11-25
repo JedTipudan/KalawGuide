@@ -977,6 +977,8 @@ AI tool: Claude Code (Anthropic). The user asked why things that work online did
 
 **Checks:** new tests cover offline read/save/list, upload and sharing across phones, the online-only tables, and all four assistant actions (including budget totals matching and guests being refused). `npx jest`: 185/185 passed. `npx tsc --noEmit` passed. `npx expo lint` showed no problems in the changed files. Not yet tested on a real phone. That needs a new APK build.
 
+**Shipped:** committed to `main` as 013de0e and pushed (Vercel redeploys the website from it). EAS Android preview APK build `8aab159b-fa65-40c9-bb7c-b9e709de770e` started from this commit.
+
 ---
 
 ## Last Updated
