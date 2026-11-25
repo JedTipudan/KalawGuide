@@ -908,8 +908,8 @@ AI tool: Claude Code (Anthropic). The user created the Web and Android OAuth cli
 
 - Checked that the EAS `preview` environment already has `EXPO_PUBLIC_GOOGLE_CLIENT_ID`, and that it matches the Web client ID in `.env`. No change was needed. The Android client ID isn't stored in the app, because Google matches the APK by package name and SHA-1.
 - Started an Android APK build on EAS (`preview` profile), which includes offline lists and real Google Sign-In. It signs with the default EAS keystore, which is the one the SHA-1 must come from.
-- Committed the work and pushed it to GitHub on a branch, not directly to `main`.
-- Not done by the AI: the Vercel environment variable. The Vercel CLI isn't installed here, so the user adds `EXPO_PUBLIC_GOOGLE_CLIENT_ID` in the Vercel dashboard and redeploys.
+- Committed the work on the `offline-lists-google-signin` branch. After the user added the Vercel environment variable, it was merged into `main` (fast-forward) and pushed, so Vercel deploys the website.
+- The user added `EXPO_PUBLIC_GOOGLE_CLIENT_ID` in the Vercel dashboard (the Vercel CLI is not installed here).
 
 ---
 
