@@ -464,6 +464,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
+- **Fix: Google sign-in "Error 400: invalid_request" on the website.** The website's Google request sent a PKCE setting (`code_challenge_method`) that Google rejects for a token request. It is now turned off for that request.
+
 - **Google Sign-In set up for the APK.** The Web and Android OAuth clients were created in Google Cloud. The EAS `preview` environment has the Web client ID, and a new APK was built with real Google Sign-In and offline lists.
 
 - **Guide: how to get the APK's SHA-1.** `guide.html` → *Real Google Sign-In* now explains where the SHA-1 comes from (the EAS signing key) and gives three ways to find it: expo.dev *Credentials*, `eas credentials` in the terminal, or `keytool` on an APK file. It also covers creating the Android OAuth client.

@@ -913,6 +913,16 @@ AI tool: Claude Code (Anthropic). The user created the Web and Android OAuth cli
 
 ---
 
+## Fix: Google Sign-In Error 400 on the Website (2026-11-25)
+
+AI tool: Claude Code (Anthropic). On the website, Google showed "Access blocked: Authorization Error. Parameter not allowed for this message type: code_challenge_method. Error 400: invalid_request".
+
+- Cause: `services/auth/googlePrompt.web.ts` asks Google for an access token directly (`responseType: Token`). expo-auth-session adds PKCE (`code_challenge_method`) by default, and Google accepts that only in the code flow.
+- Fix: `usePKCE: false` on that request. The APK isn't affected, because it uses the native Google account picker.
+- Checks: `npx tsc --noEmit` passed.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -951,3 +961,4 @@ Install popup for everyone on the website (2026-11-24).
 Offline lists with the shared database, and real Google Sign-In (2026-11-25).
 Guide: how to get the APK SHA-1 for Google Sign-In (2026-11-25).
 Google Sign-In setup checked and new APK build (2026-11-25).
+Fix: Google sign-in Error 400 (code_challenge_method) on the website (2026-11-25).

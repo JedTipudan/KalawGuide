@@ -23,6 +23,8 @@ export async function promptGoogleProfile(): Promise<GoogleProfile | null> {
     scopes: ['openid', 'profile', 'email'],
     redirectUri,
     responseType: AuthSession.ResponseType.Token,
+    // PKCE is only for the "code" flow. Google rejects code_challenge_method on a token request (Error 400).
+    usePKCE: false,
     extraParams: { prompt: 'select_account' },
   });
   const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
