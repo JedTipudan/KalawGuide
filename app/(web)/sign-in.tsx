@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -11,7 +11,7 @@ import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
 import { rw } from '../../utils/responsive';
 import { Kiko } from '../../components/brand/Kiko';
-import { promptGoogleProfile } from '../../services/auth/googlePrompt';
+import { promptGoogleProfile, completeGoogleRedirect } from '../../services/auth/googlePrompt';
 
 
 export default function WebSignInScreen() {
@@ -49,11 +49,11 @@ export default function WebSignInScreen() {
     }
   }
 
-  async function handleGoogleSignIn() {
+  async function finishGoogle(getProfile: () => Promise<Awaited<ReturnType<typeof promptGoogleProfile>>>) {
     setGoogleLoading(true);
     try {
-      const profile = await promptGoogleProfile();
-      if (!profile) return; // user closed the Google window
+      const profile = await getProfile();
+      if (!profile) return; // user cancelled at Google
       const { isNewUser } = await googleSignIn(profile);
       if (isNewUser) router.replace('/(web)/role-select' as any);
     } catch (err: unknown) {
@@ -63,6 +63,16 @@ export default function WebSignInScreen() {
       setGoogleLoading(false);
     }
   }
+
+  // The button leaves the page for Google; Google sends the tab back here to finish signing in.
+  const handleGoogleSignIn = () => finishGoogle(promptGoogleProfile);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && /access_token=|error=/.test(window.location.hash)) {
+      Promise.resolve().then(() => finishGoogle(completeGoogleRedirect));
+    }
+    // Runs once, when Google redirects back to this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <WebLayout navVariant="public">

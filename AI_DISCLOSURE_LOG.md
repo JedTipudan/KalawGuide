@@ -934,6 +934,18 @@ AI tool: Claude Code (Anthropic). After the PKCE fix, Google showed "Error 400: 
 
 ---
 
+## Fix: Website Google Sign-In Stuck in the Popup (2026-11-25)
+
+AI tool: Claude Code (Anthropic). After the redirect URI fix, Google sign-in succeeded. But the popup then showed the KalawGuide sign-in page, and the main window never signed in.
+
+- Cause: the site sends `Cross-Origin-Opener-Policy: same-origin` (needed by the on-device database). That cuts a popup off from the page that opened it, so the popup couldn't hand the Google result back.
+- Fix: `services/auth/googlePrompt.web.ts` now uses a full-page redirect instead of expo-auth-session's popup. The tab goes to Google (`response_type=token`, a random `state` kept in sessionStorage) and comes back to `/sign-in#access_token=…`. `completeGoogleRedirect()` checks the state, removes the token from the address bar, and reads the Google profile.
+- `app/(web)/sign-in.tsx`: on load, if Google sent the tab back, it finishes signing in. New users go to role select, as before.
+- `services/auth/googlePrompt.ts` (phones): a `completeGoogleRedirect()` that returns null, so both versions have the same functions.
+- `guide.html` and `README.md` updated. Checks: `npx tsc --noEmit` passed, and lint showed no new problems in the changed files. Not yet confirmed on the live site.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -974,3 +986,4 @@ Guide: how to get the APK SHA-1 for Google Sign-In (2026-11-25).
 Google Sign-In setup checked and new APK build (2026-11-25).
 Fix: Google sign-in Error 400 (code_challenge_method) on the website (2026-11-25).
 Fix: Google sign-in redirect_uri_mismatch on the website (2026-11-25).
+Fix: website Google sign-in uses a full-page redirect instead of a popup (2026-11-25).

@@ -239,7 +239,7 @@ The **Continue with Google** button is on the sign-in and tourist registration s
 KalawGuide talks to Google directly, with no third-party auth server in between. Google's screen shows the app name and logo from your OAuth consent screen (**KalawGuide**), and the website gets the user back on its own address.
 
 - **APK:** `services/auth/googlePrompt.ts` uses the native Google account picker (`@react-native-google-signin/google-signin`). It needs a real build, not Expo Go.
-- **Website:** `services/auth/googlePrompt.web.ts` opens Google's sign-in popup.
+- **Website:** `services/auth/googlePrompt.web.ts` sends the tab to Google's sign-in page (no popup). Google returns it to `/sign-in`, and that page finishes the login.
 
 Setup (full steps in `guide.html` → *Real Google Sign-In*):
 
@@ -463,6 +463,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Fix: website Google sign-in stopped at the sign-in page.** The Google popup signed in, but it could not pass the result back, because the site's `Cross-Origin-Opener-Policy` header cuts a popup off from its page. The website now sends the whole tab to Google, and Google brings it back to `/sign-in`, which finishes the login and opens the dashboard.
 
 - **Fix: Google sign-in "redirect_uri_mismatch" on the website.** Google now always returns to one fixed address, `https://<your-site>/sign-in`. Add exactly that address to the Web client's *Authorized redirect URIs*.
 

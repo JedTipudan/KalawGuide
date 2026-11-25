@@ -55,6 +55,11 @@ export async function promptGoogleProfile(): Promise<GoogleProfile | null> {
   }
 }
 
+/** Website only (redirect sign-in). On phones the picker returns the profile directly. */
+export async function completeGoogleRedirect(): Promise<GoogleProfile | null> {
+  return null;
+}
+
 /** Forget the Google account on this phone, so the next sign-in shows the account picker again. */
 export async function signOutGoogle(): Promise<void> {
   try {
