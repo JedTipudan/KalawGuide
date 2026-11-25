@@ -244,7 +244,7 @@ KalawGuide talks to Google directly, with no third-party auth server in between.
 Setup (full steps in `guide.html` → *Real Google Sign-In*):
 
 1. Google Cloud Console → *Google Auth Platform → Branding*: set the app name to **KalawGuide** and add the logo and home page. Then publish the app under *Audience*.
-2. Create a **Web** OAuth client and add the Vercel URL to *Authorized JavaScript origins* and *redirect URIs*. Set `EXPO_PUBLIC_GOOGLE_CLIENT_ID` to its ID in `.env`, in Vercel and in EAS (`preview`).
+2. Create a **Web** OAuth client. Add the Vercel URL (no slash at the end) to *Authorized JavaScript origins*, and the URL plus `/sign-in` to *Authorized redirect URIs*. Set `EXPO_PUBLIC_GOOGLE_CLIENT_ID` to its ID in `.env`, in Vercel and in EAS (`preview`).
 3. Create an **Android** OAuth client with package `com.kalawguide.app` and the APK's SHA-1. Find the SHA-1 on expo.dev → project → *Credentials* → Android → `com.kalawguide.app`, or with `npx eas-cli@latest credentials`. Then rebuild the APK.
 
 Never commit `.env`. Only `.env.example` belongs in git.
@@ -463,6 +463,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Fix: Google sign-in "redirect_uri_mismatch" on the website.** Google now always returns to one fixed address, `https://<your-site>/sign-in`. Add exactly that address to the Web client's *Authorized redirect URIs*.
 
 - **Fix: Google sign-in "Error 400: invalid_request" on the website.** The website's Google request sent a PKCE setting (`code_challenge_method`) that Google rejects for a token request. It is now turned off for that request.
 

@@ -17,7 +17,9 @@ export type { GoogleProfile };
 export async function promptGoogleProfile(): Promise<GoogleProfile | null> {
   const clientId = (process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '').trim();
   if (!clientId) throw missingGoogleSetup();
-  const redirectUri = AuthSession.makeRedirectUri();
+  // One fixed address, so it matches "Authorized redirect URIs" in Google Cloud exactly:
+  // https://<your-site>/sign-in. That page loads this file, which hands the result back to the opener.
+  const redirectUri = `${window.location.origin}/sign-in`;
   const request = new AuthSession.AuthRequest({
     clientId,
     scopes: ['openid', 'profile', 'email'],

@@ -923,6 +923,17 @@ AI tool: Claude Code (Anthropic). On the website, Google showed "Access blocked:
 
 ---
 
+## Fix: Google Sign-In redirect_uri_mismatch on the Website (2026-11-25)
+
+AI tool: Claude Code (Anthropic). After the PKCE fix, Google showed "Error 400: redirect_uri_mismatch" on the website.
+
+- Cause: the redirect address came from `makeRedirectUri()`, which doesn't exactly match the address registered in Google Cloud.
+- Fix: `services/auth/googlePrompt.web.ts` now always uses `${window.location.origin}/sign-in`. That page loads the sign-in code, so the Google popup's result is handed back to the main window.
+- `guide.html` and `README.md` now give the exact addresses to register: the site URL as the JavaScript origin, and the site URL + `/sign-in` as the redirect URI (and the same for `localhost:8081`).
+- Checks: `npx tsc --noEmit` passed. Not yet confirmed on the live site.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -962,3 +973,4 @@ Offline lists with the shared database, and real Google Sign-In (2026-11-25).
 Guide: how to get the APK SHA-1 for Google Sign-In (2026-11-25).
 Google Sign-In setup checked and new APK build (2026-11-25).
 Fix: Google sign-in Error 400 (code_challenge_method) on the website (2026-11-25).
+Fix: Google sign-in redirect_uri_mismatch on the website (2026-11-25).
