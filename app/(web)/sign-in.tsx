@@ -11,7 +11,7 @@ import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
 import { Typography, Spacing, Radius } from '../../constants/tokens';
 import { rw } from '../../utils/responsive';
 import { Kiko } from '../../components/brand/Kiko';
-import { promptGoogleProfile, completeGoogleRedirect } from '../../services/auth/googlePrompt';
+import { promptGoogleProfile, completeGoogleRedirect, hasGoogleRedirect } from '../../services/auth/googlePrompt';
 
 
 export default function WebSignInScreen() {
@@ -67,7 +67,7 @@ export default function WebSignInScreen() {
   // The button leaves the page for Google; Google sends the tab back here to finish signing in.
   const handleGoogleSignIn = () => finishGoogle(promptGoogleProfile);
   useEffect(() => {
-    if (typeof window !== 'undefined' && /access_token=|error=/.test(window.location.hash)) {
+    if (hasGoogleRedirect()) {
       Promise.resolve().then(() => finishGoogle(completeGoogleRedirect));
     }
     // Runs once, when Google redirects back to this page.

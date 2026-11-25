@@ -464,6 +464,8 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
 
+- **Fix: website Google sign-in returned to the sign-in page.** At startup, `index.ts` rewrites `/sign-in` to the app's internal route, and that rewrite dropped Google's `#access_token=…` reply. `index.ts` now saves the reply first, and the sign-in page finishes the login from it.
+
 - **Fix: website Google sign-in stopped at the sign-in page.** The Google popup signed in, but it could not pass the result back, because the site's `Cross-Origin-Opener-Policy` header cuts a popup off from its page. The website now sends the whole tab to Google, and Google brings it back to `/sign-in`, which finishes the login and opens the dashboard.
 
 - **Fix: Google sign-in "redirect_uri_mismatch" on the website.** Google now always returns to one fixed address, `https://<your-site>/sign-in`. Add exactly that address to the Web client's *Authorized redirect URIs*.

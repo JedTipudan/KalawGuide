@@ -55,6 +55,10 @@ export async function promptGoogleProfile(): Promise<GoogleProfile | null> {
   }
 }
 
+export function hasGoogleRedirect(): boolean {
+  return false;
+}
+
 /** Website only (redirect sign-in). On phones the picker returns the profile directly. */
 export async function completeGoogleRedirect(): Promise<GoogleProfile | null> {
   return null;

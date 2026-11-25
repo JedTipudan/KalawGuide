@@ -16,6 +16,17 @@ export type { GoogleProfile };
  */
 
 const STATE_KEY = 'kalaw.google.state';
+/** Written by index.ts at startup: Google's #reply, saved before the router rewrites the URL. */
+const RETURN_KEY = 'kalaw.google.return';
+
+/** True when this page load is Google sending the user back. */
+export function hasGoogleRedirect(): boolean {
+  try {
+    return typeof sessionStorage !== 'undefined' && !!sessionStorage.getItem(RETURN_KEY);
+  } catch {
+    return false;
+  }
+}
 
 function redirectUri(): string {
   return `${window.location.origin}/sign-in`;
@@ -45,13 +56,14 @@ export async function promptGoogleProfile(): Promise<GoogleProfile | null> {
  */
 export async function completeGoogleRedirect(): Promise<GoogleProfile | null> {
   if (typeof window === 'undefined') return null;
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const saved = sessionStorage.getItem(RETURN_KEY);
+  sessionStorage.removeItem(RETURN_KEY);
+  if (!saved) return null;
+  const hash = new URLSearchParams(saved);
   const token = hash.get('access_token');
   const error = hash.get('error');
   if (!token && !error) return null;
 
-  // Take the token out of the address bar and history right away.
-  window.history.replaceState(null, '', window.location.pathname + window.location.search);
   const expected = sessionStorage.getItem(STATE_KEY);
   sessionStorage.removeItem(STATE_KEY);
 

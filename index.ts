@@ -3,6 +3,12 @@
 // so this must run first. We use require() not import because ES module
 // imports are hoisted — require() executes in order.
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  // Google sign-in returns to /sign-in#access_token=…&state=… (website). Keep that reply before any
+  // URL rewrite or the router drops the #part; the sign-in page finishes the login from it.
+  if (/[#&](access_token|error)=/.test(window.location.hash)) {
+    try { sessionStorage.setItem('kalaw.google.return', window.location.hash.replace(/^#/, '')); } catch { /* storage blocked */ }
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
   const MAP: Record<string, string> = {
     '/home': '/(web)/home',
     '/explore': '/(web)/explore',

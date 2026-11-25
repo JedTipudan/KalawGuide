@@ -946,6 +946,16 @@ AI tool: Claude Code (Anthropic). After the redirect URI fix, Google sign-in suc
 
 ---
 
+## Fix: Google Reply Lost on the Website's /sign-in Rewrite (2026-11-25)
+
+AI tool: Claude Code (Anthropic). With the full-page redirect, Google sent the user back, but the site just showed the sign-in page again.
+
+- Cause: `index.ts` rewrites bare web paths (`/sign-in` → `/(web)/sign-in`) with `history.replaceState` before the router starts, and that dropped the `#access_token=…&state=…` part of the URL.
+- Fix: `index.ts` now saves Google's reply to sessionStorage (`kalaw.google.return`) first and removes it from the URL. `completeGoogleRedirect()` reads it from there. The new `hasGoogleRedirect()` tells the web sign-in page to finish the login. On phones it returns false.
+- Checks: `npx tsc --noEmit` passed, and lint showed no new problems in the changed files.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -987,3 +997,4 @@ Google Sign-In setup checked and new APK build (2026-11-25).
 Fix: Google sign-in Error 400 (code_challenge_method) on the website (2026-11-25).
 Fix: Google sign-in redirect_uri_mismatch on the website (2026-11-25).
 Fix: website Google sign-in uses a full-page redirect instead of a popup (2026-11-25).
+Fix: Google reply lost on the website /sign-in rewrite (2026-11-25).
