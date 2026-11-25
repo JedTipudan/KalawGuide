@@ -25,9 +25,17 @@ interface HranaResult {
   last_insert_rowid: string | number | null;
 }
 
-export interface RemoteConfig { url: string; authToken: string; fetchImpl?: typeof fetch; timeoutMs?: number }
+/** Where successful reads are saved so they can be answered with no internet (see offlineCache.ts). */
+export interface QueryCache {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void>;
+}
+
+export interface RemoteConfig { url: string; authToken: string; fetchImpl?: typeof fetch; timeoutMs?: number; cache?: QueryCache }
 
 export class RemoteDatabaseError extends Error {}
+/** The server could not be reached at all (no internet, airplane mode, timeout). */
+export class OfflineError extends RemoteDatabaseError {}
 
 /** libsql://name-org.turso.io → https://name-org.turso.io (the HTTP API host). */
 export function toHttpUrl(url: string): string {
@@ -103,6 +111,7 @@ export class TursoDatabase {
   private readonly token: string;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
+  private readonly cache?: QueryCache;
   private tx: HranaStmt[] | null = null;
 
   constructor(cfg: RemoteConfig) {
@@ -110,6 +119,7 @@ export class TursoDatabase {
     this.token = cfg.authToken.trim();
     this.fetchImpl = cfg.fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
     this.timeoutMs = cfg.timeoutMs ?? 20000;
+    this.cache = cfg.cache;
   }
 
   /** Sends statements in one HTTP request and returns one result per statement. */
@@ -129,7 +139,7 @@ export class TursoDatabase {
         signal: ctrl?.signal,
       });
     } catch (e) {
-      throw new RemoteDatabaseError(
+      throw new OfflineError(
         `Can't reach the online database. Check your internet connection. (${(e as Error).message})`);
     } finally {
       if (timer) clearTimeout(timer);
@@ -163,7 +173,26 @@ export class TursoDatabase {
     await this.pipeline([{ sql: 'BEGIN' }, ...pending, { sql: 'COMMIT' }]);
   }
 
+  /**
+   * Reads go online first; each result is saved to the offline cache. With no internet the
+   * last saved result for the same SQL + parameters is returned instead of failing.
+   */
   async getAllAsync<T>(sql: string, params?: SQLValue[] | SQLValue): Promise<T[]> {
+    if (!this.cache) return this.readOnline<T>(sql, params);
+    const key = JSON.stringify([sql, params ?? null]);
+    try {
+      const rows = await this.readOnline<T>(sql, params);
+      void this.cache.set(key, JSON.stringify(rows)).catch(() => {});
+      return rows;
+    } catch (e) {
+      if (!(e instanceof OfflineError)) throw e;
+      const saved = await this.cache.get(key).catch(() => null);
+      if (saved === null) throw e;
+      return JSON.parse(saved) as T[];
+    }
+  }
+
+  private async readOnline<T>(sql: string, params?: SQLValue[] | SQLValue): Promise<T[]> {
     const info = sql.match(TABLE_INFO);
     if (info) {
       // PRAGMA table_info → read the column names from an empty SELECT instead (works on any host).

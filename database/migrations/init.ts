@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
-import { TursoDatabase, remoteConfigFromEnv } from '../remote/tursoDatabase';
+import { OfflineError, TursoDatabase, remoteConfigFromEnv } from '../remote/tursoDatabase';
+import { offlineCache } from '../remote/offlineCache';
 
 /**
  * Two modes, same SQL:
@@ -19,11 +20,18 @@ export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
     const remote = remoteConfigFromEnv();
     const open: Promise<SQLite.SQLiteDatabase> = remote
       // TursoDatabase implements the four methods the app uses (getAll/getFirst/run/exec).
-      ? Promise.resolve(new TursoDatabase(remote) as unknown as SQLite.SQLiteDatabase)
+      // Reads are saved on the device, so lists still show with no internet.
+      ? Promise.resolve(new TursoDatabase({ ...remote, cache: offlineCache }) as unknown as SQLite.SQLiteDatabase)
       : SQLite.openDatabaseAsync('kalawguide.db');
     globalThis.__kalawguide_db_promise = open
       .then(async db => {
-        await runMigrations(db);
+        try {
+          await runMigrations(db);
+        } catch (e) {
+          // Offline: the tables already exist on the server; reads come from the offline copy.
+          if (!(e instanceof OfflineError)) throw e;
+          // Run them again next time the app opens with internet.
+        }
         return db;
       })
       .catch(e => {

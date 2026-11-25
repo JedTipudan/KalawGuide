@@ -869,6 +869,50 @@ AI tool: Claude Code (Anthropic). The user wanted an install (PWA) popup to appe
 
 ---
 
+## Offline Lists and Real Google Sign-In (2026-11-25)
+
+AI tool: Claude Code (Anthropic). The user said that without mobile data or internet, Explore and Local Businesses showed no list. They wanted the lists visible offline. They also wanted real Google sign-in instead of demo mode, with Google's screen showing the app and not a backend URL.
+
+**Offline lists**
+- Cause: with the shared Turso database, every read was an internet request, so offline reads failed and the lists came up empty. The startup schema check also failed offline.
+- `database/remote/offlineCache.ts` (new): saves each successful read, keyed by SQL and parameters. Phones use a separate SQLite file (`kalawguide-offline.db`), so rows with photos fit. The website uses localStorage.
+- `database/remote/tursoDatabase.ts`: a new `OfflineError` for "server not reachable". `getAllAsync` saves each result and, when offline, answers from the saved copy. Writes still need internet.
+- `database/migrations/init.ts`: uses the cache, and continues when offline instead of failing to open the database.
+- New test: an offline read returns the saved copy, while unsaved reads and writes report `OfflineError`.
+
+**Real Google Sign-In**
+- Removed the demo Google user. Without `EXPO_PUBLIC_GOOGLE_CLIENT_ID`, the button shows a clear setup message.
+- APK: `services/auth/googlePrompt.ts` now uses `@react-native-google-signin/google-signin` (installed with `npx expo install`) for the native Google account picker. It is loaded on first use, so Expo Go shows a message instead of crashing. Signing out also signs out of Google, so the account picker shows next time.
+- Website: `services/auth/googlePrompt.web.ts` keeps Google's own popup. It now always shows the account chooser and sends the token in a header.
+- The library's config plugin was not added to `app.json`. It only sets up iOS, and without options it expects Firebase files, which would break the Android build.
+- There is no Supabase in this project. Google sign-in goes directly to Google, so the consent screen shows the app name from the Google Cloud *Branding* page.
+- `guide.html` → *Real Google Sign-In* and `README.md` were updated with the setup steps: branding, Web client, and an Android client with the EAS SHA-1.
+
+**Checks:** `npx tsc --noEmit` passed, and all 178 Jest tests passed. `npx expo lint` showed no problems in the changed files (its existing errors are in other files). Real Google sign-in has not been tested on a device, because it needs the Google Cloud clients and a new APK build.
+
+---
+
+## Guide: Getting the APK's SHA-1 (2026-11-25)
+
+AI tool: Claude Code (Anthropic). The user was stuck on the Google Sign-In step that needed a SHA-1 fingerprint, because the guide didn't explain how to get one.
+
+- `guide.html` → *Real Google Sign-In*: the SHA-1 step is now its own step. It explains that the SHA-1 comes from the signing key EAS created at the first APK build, then gives three ways to find it: expo.dev → *Credentials* → Android, `npx eas-cli@latest credentials` (with what to do if there is no keystore yet), and `keytool -printcert -jarfile` on an APK. Creating the Android OAuth client is now a separate step with the exact Google Cloud clicks.
+- `README.md`: Google Sign-In setup step 3 now says where to find the SHA-1.
+- Documentation only; no app code changed.
+
+---
+
+## Google Sign-In Setup and New APK Build (2026-11-25)
+
+AI tool: Claude Code (Anthropic). The user created the Web and Android OAuth clients (with the APK's SHA-1) in Google Cloud. They asked the AI to do the remaining steps, update the docs, push, and build the APK.
+
+- Checked that the EAS `preview` environment already has `EXPO_PUBLIC_GOOGLE_CLIENT_ID`, and that it matches the Web client ID in `.env`. No change was needed. The Android client ID isn't stored in the app, because Google matches the APK by package name and SHA-1.
+- Started an Android APK build on EAS (`preview` profile), which includes offline lists and real Google Sign-In. It signs with the default EAS keystore, which is the one the SHA-1 must come from.
+- Committed the work and pushed it to GitHub on a branch, not directly to `main`.
+- Not done by the AI: the Vercel environment variable. The Vercel CLI isn't installed here, so the user adds `EXPO_PUBLIC_GOOGLE_CLIENT_ID` in the Vercel dashboard and redeploys.
+
+---
+
 ## Last Updated
 
 Phase 3 — Tourist MVP, Business Owner Portal, Administrator Portal implementation.
@@ -904,3 +948,6 @@ Shared database business list fix, landing nav overlap, empty-text crash guard (
 Hamburger menu only on phones; full nav bar on laptops and desktops (2026-11-19).
 Fix: chatbot text box hidden by the keyboard on the Android APK (2026-11-24).
 Install popup for everyone on the website (2026-11-24).
+Offline lists with the shared database, and real Google Sign-In (2026-11-25).
+Guide: how to get the APK SHA-1 for Google Sign-In (2026-11-25).
+Google Sign-In setup checked and new APK build (2026-11-25).

@@ -232,13 +232,20 @@ Always add packages with `npx expo install <package>` so the versions match the 
 
 Tourist and business owner accounts are created from the sign-up screens. Each device or browser has its own database (see [Data and offline model](#data-and-offline-model)), so create test accounts on the device you'll demo on.
 
-### Google Sign-In (optional)
+### Google Sign-In
 
-The **Continue with Google** button is on the sign-in and tourist registration screens (mobile and web sign-in). It signs in a returning user and creates the account for a new one. Without a client ID, it signs in a **demo** Google user, which is fine for the hackathon. To use real Google accounts:
+The **Continue with Google** button is on the sign-in and tourist registration screens (mobile and web sign-in). It signs in a returning user and creates the account for a new one. It uses **real Google accounts only**. The demo Google user was removed.
 
-1. In [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials), create OAuth clients: a **Web** client, **Android** (`com.kalawguide.app`) and **iOS** (`com.kalawguide.app`).
-2. Put the web client ID in `.env` as `EXPO_PUBLIC_GOOGLE_CLIENT_ID`. Add the Android and iOS IDs too if you build those apps.
-3. For the deployed site, add its URL to the web client's *Authorized JavaScript origins* and *redirect URIs*.
+KalawGuide talks to Google directly, with no third-party auth server in between. Google's screen shows the app name and logo from your OAuth consent screen (**KalawGuide**), and the website gets the user back on its own address.
+
+- **APK:** `services/auth/googlePrompt.ts` uses the native Google account picker (`@react-native-google-signin/google-signin`). It needs a real build, not Expo Go.
+- **Website:** `services/auth/googlePrompt.web.ts` opens Google's sign-in popup.
+
+Setup (full steps in `guide.html` → *Real Google Sign-In*):
+
+1. Google Cloud Console → *Google Auth Platform → Branding*: set the app name to **KalawGuide** and add the logo and home page. Then publish the app under *Audience*.
+2. Create a **Web** OAuth client and add the Vercel URL to *Authorized JavaScript origins* and *redirect URIs*. Set `EXPO_PUBLIC_GOOGLE_CLIENT_ID` to its ID in `.env`, in Vercel and in EAS (`preview`).
+3. Create an **Android** OAuth client with package `com.kalawguide.app` and the APK's SHA-1. Find the SHA-1 on expo.dev → project → *Credentials* → Android → `com.kalawguide.app`, or with `npx eas-cli@latest credentials`. Then rebuild the APK.
 
 Never commit `.env`. Only `.env.example` belongs in git.
 
@@ -284,6 +291,7 @@ The tests run the app's real migrations and SQL against Node's built-in SQLite (
 
 - **Two database modes, same SQL** (`database/migrations/init.ts`):
   - **Shared online database (Turso)** when `EXPO_PUBLIC_TURSO_DATABASE_URL` and `EXPO_PUBLIC_TURSO_AUTH_TOKEN` are set. Every phone, the APK and the website use one database, so a business registered on one device and approved by the admin on another shows for tourists everywhere. `database/remote/tursoDatabase.ts` implements the four expo-sqlite calls the app uses over Turso's HTTP API, and buffers each `BEGIN … COMMIT` into one atomic request. Setup is in `guide.html` → *Shared online database*.
+  - **Works offline in online mode too:** every list the app reads from Turso (Explore, Local Businesses, details, prices, favorites…) is saved on the device (`database/remote/offlineCache.ts`). With no internet, the app shows the last saved copy instead of an empty list. Changes such as saving, booking or editing still need internet. A screen never opened while online has nothing saved yet.
   - **On this device** otherwise: SQLite on the device or in the browser. It works fully offline, but each device has its own copy.
   - Password hashes (salted SHA-256) are stored with the user, so accounts work on any device that shares the database. Business photos and verification documents are saved as compressed images in the database, so the admin can review them from anywhere.
   - Admin *Settings* shows which mode is active.
@@ -455,6 +463,13 @@ Colors come straight from the Figma variables (Design System › Semantic color 
 ## Changelog
 
 The latest changes are listed first. Full details, including what AI did, are in [`AI_DISCLOSURE_LOG.md`](AI_DISCLOSURE_LOG.md).
+
+- **Google Sign-In set up for the APK.** The Web and Android OAuth clients were created in Google Cloud. The EAS `preview` environment has the Web client ID, and a new APK was built with real Google Sign-In and offline lists.
+
+- **Guide: how to get the APK's SHA-1.** `guide.html` → *Real Google Sign-In* now explains where the SHA-1 comes from (the EAS signing key) and gives three ways to find it: expo.dev *Credentials*, `eas credentials` in the terminal, or `keytool` on an APK file. It also covers creating the Android OAuth client.
+
+- **Lists work without internet.** With the shared online database, Explore, Local Businesses and the detail pages used to come up empty when offline. The app now saves what it reads and shows the last saved copy when there's no connection.
+- **Real Google Sign-In (no demo).** The APK uses the phone's native Google account picker, and the website uses Google's popup. Both go straight to Google, so Google shows the KalawGuide name, not another service's address. Setup steps are in `guide.html` → *Real Google Sign-In*.
 
 - **Install popup on the website.** Everyone who opens the website now gets an *Install KalawGuide* popup (with steps for iPhone and other browsers) until they install it. *Not now* hides it only until the next visit.
 

@@ -102,6 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     if (user) await logActivity({ userId: user.id, action: 'signed_out', entityType: 'user', entityId: user.id, entityName: user.displayName });
     await authSignOut();
+    const { signOutGoogle } = await import('../services/auth/googlePrompt');
+    await signOutGoogle();
     setUser(null);
   }, [user]);
 

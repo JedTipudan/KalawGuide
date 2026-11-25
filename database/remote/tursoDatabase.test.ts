@@ -22,7 +22,7 @@ jest.mock('expo-crypto', () => {
 });
 
 import { DatabaseSync } from 'node:sqlite';
-import { TursoDatabase, splitStatements, toHttpUrl } from './tursoDatabase';
+import { OfflineError, TursoDatabase, splitStatements, toHttpUrl } from './tursoDatabase';
 
 type HV = { type: string; value?: string | number; base64?: string };
 
@@ -106,6 +106,24 @@ describe('TursoDatabase (unit)', () => {
     await db.execAsync('CREATE TABLE users (id TEXT, email TEXT);');
     const cols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(users)');
     expect(cols.map(c => c.name)).toEqual(['id', 'email']);
+  });
+
+  it('with no internet, answers reads from the last saved copy', async () => {
+    const server = fakeTurso();
+    const saved = new Map<string, string>();
+    const cache = { get: async (k: string) => saved.get(k) ?? null, set: async (k: string, v: string) => { saved.set(k, v); } };
+    let online = true;
+    const fetchImpl = ((...a: Parameters<typeof fetch>) =>
+      online ? server.fetchImpl(...a) : Promise.reject(new TypeError('Network request failed'))) as typeof fetch;
+    const db = new TursoDatabase({ url: 'https://kalaw-test.turso.io', authToken: 'secret', fetchImpl, cache });
+    await db.execAsync("CREATE TABLE destinations (id TEXT, name TEXT); INSERT INTO destinations VALUES ('d1', 'Kalaw Falls');");
+    const live = await db.getAllAsync<{ name: string }>('SELECT name FROM destinations WHERE id = ?', ['d1']);
+    await new Promise(r => setTimeout(r, 0));
+
+    online = false;
+    expect(await db.getAllAsync('SELECT name FROM destinations WHERE id = ?', ['d1'])).toEqual(live);
+    await expect(db.getAllAsync('SELECT id FROM destinations')).rejects.toThrow(OfflineError);
+    await expect(db.runAsync("INSERT INTO destinations VALUES ('d2', 'x')")).rejects.toThrow(OfflineError);
   });
 });
 

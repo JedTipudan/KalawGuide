@@ -1,33 +1,65 @@
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
+import { missingGoogleSetup, type GoogleProfile } from './googleProfile';
 
-WebBrowser.maybeCompleteAuthSession();
-
-export interface GoogleProfile { id: string; email: string; name: string; picture?: string }
+export type { GoogleProfile };
 
 /**
- * Asks Google who the user is. One flow for sign-in and registration: AuthContext.googleSignIn()
- * creates the account for a new Google user and signs in a returning one.
+ * Phones (APK / iOS): the native Google account picker from Google Play services. No browser and
+ * no third-party auth server, so the user only sees "KalawGuide" and their Google accounts.
  *
- * - No EXPO_PUBLIC_GOOGLE_CLIENT_ID → demo mode (a simulated Google user), so the button always works in demos.
- * - Returns null when the user closes the Google window.
+ * Google matches the app by its Android OAuth client (package com.kalawguide.app + the APK's SHA-1);
+ * webClientId is the Web client ID from the same Google Cloud project.
+ * Needs a development or EAS build — it is not in Expo Go.
+ *
+ * Returns null when the user closes the picker.
  */
-export async function promptGoogleProfile(): Promise<GoogleProfile | null> {
-  const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
-  if (!clientId) {
-    return { id: 'google_demo_user', email: 'demo.google@kalawguide.app', name: 'Google Demo User' };
+type Lib = typeof import('@react-native-google-signin/google-signin');
+let lib: Lib | null = null;
+
+/** Loaded on first use: the native module is not in Expo Go, and importing it there would crash the screen. */
+async function load(): Promise<Lib> {
+  if (lib) return lib;
+  const webClientId = (process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '').trim();
+  if (!webClientId) throw missingGoogleSetup();
+  const iosClientId = (process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '').trim() || undefined;
+  let mod: Lib;
+  try {
+    mod = await import('@react-native-google-signin/google-signin');
+  } catch {
+    throw new Error('Google sign-in needs the installed app (APK). It is not available in Expo Go.');
   }
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'kalawguide' });
-  const request = new AuthSession.AuthRequest({
-    clientId,
-    scopes: ['openid', 'profile', 'email'],
-    redirectUri,
-    responseType: AuthSession.ResponseType.Token,
-  });
-  const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
-  if (result.type !== 'success' || !result.authentication?.accessToken) return null;
-  const res = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${result.authentication.accessToken}`);
-  if (!res.ok) throw new Error('Could not read your Google profile. Please try again.');
-  const info = await res.json();
-  return { id: info.sub, email: info.email, name: info.name, picture: info.picture };
+  mod.GoogleSignin.configure({ webClientId, iosClientId, scopes: ['profile', 'email'] });
+  lib = mod;
+  return mod;
+}
+
+export async function promptGoogleProfile(): Promise<GoogleProfile | null> {
+  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = await load();
+  try {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const response = await GoogleSignin.signIn();
+    if (!isSuccessResponse(response)) return null;
+    const u = response.data.user;
+    return { id: u.id, email: u.email, name: u.name ?? u.email, picture: u.photo ?? undefined };
+  } catch (e) {
+    if (isErrorWithCode(e)) {
+      if (e.code === statusCodes.SIGN_IN_CANCELLED) return null;
+      if (e.code === statusCodes.IN_PROGRESS) return null;
+      if (e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        throw new Error('Google Play services is missing or out of date on this phone. Update it, or sign in with email.');
+      }
+      if (String(e.code) === '10' || /DEVELOPER_ERROR/i.test(e.message)) {
+        throw new Error('Google sign-in is not set up for this build (DEVELOPER_ERROR). Add this APK\'s SHA-1 to the Android OAuth client — see guide.html → Google Sign-In.');
+      }
+    }
+    throw e;
+  }
+}
+
+/** Forget the Google account on this phone, so the next sign-in shows the account picker again. */
+export async function signOutGoogle(): Promise<void> {
+  try {
+    if ((process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '').trim()) await (await load()).GoogleSignin.signOut();
+  } catch {
+    /* not signed in with Google */
+  }
 }
