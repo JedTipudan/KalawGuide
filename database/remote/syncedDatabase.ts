@@ -36,7 +36,7 @@ export interface RemoteDb {
 }
 
 /** Never copied to phones: read online (with the last saved answer as fallback). */
-export const ONLINE_ONLY_TABLES = ['users', 'business_documents', 'activity_logs'];
+export const ONLINE_ONLY_TABLES = ['users', 'business_documents', 'document_checks', 'activity_logs'];
 
 /** Same for everyone: copied in full. */
 export const SHARED_TABLES = [

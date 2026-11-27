@@ -7,6 +7,9 @@ import { getDatabase } from '../../database/migrations/init';
 import { generateId, now } from '../../utils/helpers';
 import { BusinessVerificationStatus } from '../../types';
 import { rw } from '../../utils/responsive';
+import { DocCheckBadge, DocCheckReport } from '../../components/admin/DocumentCheck';
+import { checkDocument, getDocumentChecks, worstVerdict, type DocCheck } from '../../features/docCheck/documentCheckService';
+import { DOC_AI_ENABLED } from '../../features/docCheck/aiVision';
 
 interface BizRow {
   id: string; name: string; category: string; address: string;
@@ -51,6 +54,8 @@ export default function WebAdminBusinessesScreen() {
   const [filter, setFilter] = useState<BusinessVerificationStatus | 'all'>('pending');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [checks, setChecks] = useState<Record<string, DocCheck>>({});
+  const [checking, setChecking] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,10 +96,28 @@ export default function WebAdminBusinessesScreen() {
         ORDER BY bd.uploaded_at DESC
       `);
       setDocuments(docRows);
+      setChecks(await getDocumentChecks().catch(() => ({})));
     } finally { setLoading(false); }
   }, [filter, search]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function runCheck(docId: string) {
+    setChecking(prev => new Set(prev).add(docId));
+    try {
+      const result = await checkDocument(docId);
+      setChecks(prev => ({ ...prev, [docId]: result }));
+    } catch (e) {
+      window.alert(`AI check failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setChecking(prev => { const next = new Set(prev); next.delete(docId); return next; });
+    }
+  }
+
+  /** One at a time: keeps within Gemini's free-tier rate limit, and each check sees the ones before it. */
+  async function checkAllUnchecked() {
+    for (const d of documents.filter(doc => !checks[doc.id])) await runCheck(d.id);
+  }
 
   async function updateStatus(id: string, status: BusinessVerificationStatus, note?: string) {
     const db = await getDatabase();
@@ -254,6 +277,10 @@ export default function WebAdminBusinessesScreen() {
                         <View style={[s.badge, { backgroundColor: sc }]}>
                           <Text style={[s.badgeText, { color: statusLabel(sc) }]}>{item.verification_status.replace('_', ' ')}</Text>
                         </View>
+                        {(() => {
+                          const worst = worstVerdict(documents.filter(d => d.business_id === item.id).map(d => checks[d.id]));
+                          return worst ? <View style={{ marginTop: 4 }}><DocCheckBadge verdict={worst} /></View> : null;
+                        })()}
                       </View>
                       <View style={[s.cell, s.actions]}>
                         {item.verification_status === 'pending' && (
@@ -294,9 +321,29 @@ export default function WebAdminBusinessesScreen() {
               <Text style={[s.emptySubText, { color: colors.muted }]}>Business owners upload ownership documents from their Business Profile page.</Text>
             </View>
           ) : (
+            <>
+            <View style={[s.aiBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={{ flex: 1, minWidth: 240, gap: 4 }}>
+                <Text style={[s.bizName, { color: colors.text }]}>🤖 AI Document Check</Text>
+                <Text style={[s.bizAddr, { color: colors.muted }]}>
+                  {DOC_AI_ENABLED
+                    ? 'Flags duplicates (same image or document number used by another business), wrong document type, names that do not match, expired dates, and signs of editing. It advises; you decide.'
+                    : 'AI reading is off (no EXPO_PUBLIC_GEMINI_API_KEY). Only duplicate checks will run.'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                disabled={checking.size > 0 || documents.every(d => checks[d.id])}
+                onPress={checkAllUnchecked}
+                style={[s.actionBtn, { borderColor: colors.primary, backgroundColor: colors.primary + '15', opacity: checking.size > 0 || documents.every(d => checks[d.id]) ? 0.5 : 1 }]}
+              >
+                <Text style={[s.actionText, { color: colors.primary }]}>
+                  {checking.size > 0 ? 'Checking…' : `Check all unchecked (${documents.filter(d => !checks[d.id]).length})`}
+                </Text>
+              </TouchableOpacity>
+            </View>
             <View {...rw('table')} style={[s.table, { borderColor: colors.border }]}>
               <View style={[s.tableHeader, { backgroundColor: colors.subtle, borderColor: colors.border }]}>
-                {['Business', 'Owner', 'Document', 'Preview', 'Uploaded'].map(h => (
+                {['Business', 'Owner', 'Document', 'Preview', 'AI Check', 'Uploaded'].map(h => (
                   <Text key={h} style={[s.th, { color: colors.muted }, h === 'Business' && { flex: 2 }]}>{h}</Text>
                 ))}
               </View>
@@ -313,12 +360,26 @@ export default function WebAdminBusinessesScreen() {
                       <Text style={[s.viewLink, { color: colors.primary }]}>View Full</Text>
                     </TouchableOpacity>
                   </View>
+                  <View style={[s.cell, { gap: 4 }]}>
+                    {checking.has(doc.id) ? (
+                      <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+                    ) : checks[doc.id] ? (
+                      <TouchableOpacity onPress={() => setSelectedDoc(doc)}>
+                        <DocCheckBadge verdict={checks[doc.id].verdict} score={checks[doc.id].score} />
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity onPress={() => runCheck(doc.id)}>
+                        <Text style={[s.viewLink, { color: colors.primary }]}>Run AI check</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   <Text style={[s.cell, s.cellText, { color: colors.muted }]} numberOfLines={1}>
                     {doc.uploaded_at.slice(0, 10)}
                   </Text>
                 </View>
               ))}
             </View>
+            </>
           )
         ) : (
           /* Revisions tab */
@@ -369,6 +430,11 @@ export default function WebAdminBusinessesScreen() {
             <Text style={[s.lightboxTitle, { color: colors.text }]}>{selectedDoc.label}</Text>
             <Text style={[s.lightboxSub, { color: colors.muted }]}>{selectedDoc.business_name} · {selectedDoc.owner_name ?? '—'}</Text>
             <Image source={{ uri: selectedDoc.uri }} style={s.lightboxImg} resizeMode="contain" />
+            <DocCheckReport
+              check={checks[selectedDoc.id]}
+              busy={checking.has(selectedDoc.id)}
+              onRecheck={() => runCheck(selectedDoc.id)}
+            />
             <TouchableOpacity
               style={[s.lightboxClose, { backgroundColor: colors.primary }]}
               onPress={() => setSelectedDoc(null)}
@@ -418,12 +484,14 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center', alignItems: 'center',
   } as any,
+  aiBanner: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 14 },
   lightboxCard: {
+    maxHeight: '92%' as any, overflow: 'scroll' as any,
     width: 560, maxWidth: '90%' as any, borderRadius: 16,
     padding: 28, gap: 12, alignItems: 'center',
   },
   lightboxTitle: { fontSize: 18, fontWeight: '700' },
   lightboxSub: { fontSize: 13 },
-  lightboxImg: { width: 480, height: 360, maxWidth: '100%' as any, borderRadius: 8 },
+  lightboxImg: { width: 480, height: 300, maxWidth: '100%' as any, borderRadius: 8 },
   lightboxClose: { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10, marginTop: 8 },
 });

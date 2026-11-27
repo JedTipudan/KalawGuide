@@ -979,6 +979,25 @@ AI tool: Claude Code (Anthropic). The user asked why things that work online did
 
 **Shipped:** committed to `main` as 013de0e and pushed (Vercel redeploys the website from it). EAS Android preview APK build `8aab159b-fa65-40c9-bb7c-b9e709de770e` started from this commit.
 
+## AI Document Check for Admin Verification (2026-11-27)
+
+AI tool: Claude Code (Anthropic). The user asked for AI on the admin side that helps check whether a submitted business document is duplicated, fake, or original/legit, and to improve how it works.
+
+**How it decides** (`features/docCheck/verdict.ts`, new)
+- Two kinds of evidence are combined. The first is KalawGuide's own records, which always run with no AI: is the exact same image (SHA-256), or the same permit/registration number, already on another business's document? Was one image uploaded as two different documents? Is the image too small to read?
+- The second is the AI's reading of the image (Gemini, same free key as Kalaw Assistance). It reports the document type, the names, number, issuer and dates on it, and any signs of editing. It also says whether it looks like a screenshot or photocopy, and gives a 0–100 authenticity score.
+- Verdicts: **Duplicate**, **Possibly fake**, **Needs review**, **Looks original**. Red flags from KalawGuide's records always win over the AI. Without the AI, the best possible verdict is "Needs review". The AI only advises, and nothing is approved automatically.
+- Missing or malformed AI fields fall back to the cautious value. Text inside the image is treated as evidence, not instructions.
+
+**Code**
+- `features/docCheck/aiVision.ts` (new): Gemini `generateContent` with the image inline and a JSON response schema. The default model is `gemini-flash-latest`, and it can be changed with `EXPO_PUBLIC_GEMINI_VISION_MODEL`.
+- `features/docCheck/documentCheckService.ts` (new): runs one check and saves it. It also lists saved checks and finds a business's worst verdict.
+- `database/migrations/init.ts`: new `document_checks` table, with indexes on the image hash and the document number. `database/remote/syncedDatabase.ts`: the table is online-only, like `business_documents`.
+- `components/admin/DocumentCheck.tsx` (new): a verdict badge and the full report.
+- `app/(web)/admin-businesses.tsx`: the Ownership Documents tab has a new "AI Check" column ("Run AI check" or the badge) and a "Check all unchecked" button, which runs the checks one at a time to stay within the free rate limit. The document viewer shows the report with a "Check again" button. The Businesses tab shows each business's worst verdict under its status.
+
+**Checks:** new tests cover the verdict rules, cautious parsing, matching document numbers, a duplicate image across two businesses, a duplicate number on a different image, and falling back when the AI fails. `npx jest`: 199/199 passed. `npx tsc --noEmit` passed. `npx expo lint` showed no new problems. Not yet tried against the live Gemini API with a real permit photo.
+
 ---
 
 ## Last Updated
@@ -1024,3 +1043,4 @@ Fix: Google sign-in redirect_uri_mismatch on the website (2026-11-25).
 Fix: website Google sign-in uses a full-page redirect instead of a popup (2026-11-25).
 Fix: Google reply lost on the website /sign-in rewrite (2026-11-25).
 Offline-first phone app (synced copy + outbox) and assistant actions (2026-11-25).
+AI Document Check for admin verification (2026-11-27).

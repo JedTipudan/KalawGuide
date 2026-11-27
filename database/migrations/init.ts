@@ -157,6 +157,13 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       label TEXT NOT NULL, uri TEXT NOT NULL, mime_type TEXT NOT NULL DEFAULT 'image/jpeg',
       uploaded_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS document_checks (
+      document_id TEXT PRIMARY KEY, business_id TEXT NOT NULL, image_hash TEXT NOT NULL,
+      doc_number TEXT, verdict TEXT NOT NULL, score INTEGER NOT NULL, summary TEXT,
+      flags TEXT NOT NULL DEFAULT '[]', findings TEXT, model TEXT, checked_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_document_checks_hash ON document_checks(image_hash);
+    CREATE INDEX IF NOT EXISTS idx_document_checks_number ON document_checks(doc_number);
     CREATE TABLE IF NOT EXISTS business_services (
       id TEXT PRIMARY KEY, business_id TEXT NOT NULL, name TEXT NOT NULL,
       description TEXT, price REAL NOT NULL, price_verified INTEGER NOT NULL DEFAULT 0,

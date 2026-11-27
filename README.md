@@ -78,6 +78,10 @@ Submits for verification       Manages destinations & contacts      Plans trips,
 ### Administrator
 - **Dashboard:** users, verification queue, destinations and price changes awaiting review.
 - **Business verification:** approve, reject (with a reason) or suspend businesses, and review price changes.
+- **AI Document Check (website admin):** checks each uploaded document and labels it **Duplicate**, **Possibly fake**, **Needs review** or **Looks original**, with the reasons.
+  - KalawGuide's own records: is the same image or the same permit/registration number already on another business's document?
+  - The AI's reading (Gemini, free key): is it the right kind of document, does the name match, has it expired, and are there signs of editing, or is it a screenshot or photocopy?
+  - The records always win over the AI, and without a key only the duplicate checks run. It advises the admin and never approves on its own.
 - **User management:** change roles, block or unblock accounts.
 - **Destinations and categories:** add, edit, feature, hide or show.
 - **Emergency contacts:** add, edit, delete, and mark verified.
@@ -329,6 +333,7 @@ The tests run the app's real migrations and SQL against Node's built-in SQLite (
 | `users` | Accounts with role (tourist / business_owner / admin) and status |
 | `destination_categories`, `destinations` | Destinations with coordinates, fee and verification flag |
 | `businesses`, `business_documents` | Business listings and their verification documents |
+| `document_checks` | AI Document Check results (verdict, reasons, image hash, document number) |
 | `business_products`, `business_services`, `listing_prices`, `listing_facilities` | What a business advertises |
 | `listing_revisions` | Price changes waiting for admin review |
 | `itineraries`, `itinerary_items` | Trips and day-by-day stops |
@@ -375,6 +380,7 @@ contexts/                    AuthContext (session + activity logging), ThemeCont
 database/                    migrations/init.ts (schema), seeds/index.ts, seeds/demoContent.ts (demo listings)
 features/
   assistant/                 Kalaw Assistance engine, intents, guard, budget parser, tests
+  docCheck/                  AI Document Check: verdict rules, Gemini vision reader, service (+ tests)
   map/useLiveLocation.ts     Live GPS hook, distance and directions helpers
 services/
   admin/                     activityLog.ts, reportsService.ts (+ tests)
