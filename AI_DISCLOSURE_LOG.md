@@ -998,6 +998,8 @@ AI tool: Claude Code (Anthropic). The user asked for AI on the admin side that h
 
 **Checks:** new tests cover the verdict rules, cautious parsing, matching document numbers, a duplicate image across two businesses, a duplicate number on a different image, and falling back when the AI fails. `npx jest`: 199/199 passed. `npx tsc --noEmit` passed. `npx expo lint` showed no new problems. Not yet tried against the live Gemini API with a real permit photo.
 
+**Shipped:** committed to `main` as e3439ce and pushed (Vercel redeploys the website from it). No new APK: the check is only on the website admin, and the phone app doesn't use the new table.
+
 ---
 
 ## Last Updated
